@@ -53,6 +53,10 @@ INSTALLED_APPS = [
     # Local apps
     'core',
     'accounts',
+    'cases',
+    'notifications',
+    'hearings',
+    'decisions',
 ]
 
 
@@ -165,6 +169,19 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 }
 
+
+# Channels configuration
+ASGI_APPLICATION = 'config.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
+
+
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
@@ -182,13 +199,25 @@ STATIC_ROOT = BASE_DIR / 'static'
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# File upload settings
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_FILE_TYPES = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # OTP Settings
 OTP_EXPIRE_MINUTES = 5
+
+# Celery (for background tasks)
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379')
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
 
 # REST Framework settings
 REST_FRAMEWORK = {
@@ -203,5 +232,6 @@ REST_FRAMEWORK = {
     ),
 }
 AUTH_USER_MODEL = 'accounts.User'
+
 
 
