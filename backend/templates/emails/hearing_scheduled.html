@@ -3,92 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <style>
+        /* Include the styles from previous templates */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
-            color: #333;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
             max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .header {
-            background: #3498db;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
+            padding: 30px 20px;
             text-align: center;
-            border-radius: 5px 5px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
         }
         .content {
-            background: #f9f9f9;
-            padding: 20px;
-            border: 1px solid #ddd;
+            padding: 30px;
         }
         .hearing-details {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
         }
-        .calendar-link {
+        .detail-row {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            width: 120px;
             display: inline-block;
-            padding: 8px 16px;
-            background: #27ae60;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-right: 10px;
         }
         .button {
             display: inline-block;
-            padding: 10px 20px;
-            background: #3498db;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 25px;
+            font-weight: 600;
+            margin: 20px 0;
         }
         .footer {
-            text-align: center;
+            background: #f8f9fa;
             padding: 20px;
+            text-align: center;
             color: #666;
-            font-size: 12px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Hearing Scheduled</h1>
-    </div>
-    
-    <div class="content">
-        <p>Dear {{ user.get_full_name }},</p>
-        
-        <p>A hearing has been scheduled for your case.</p>
-        
-        <div class="hearing-details">
-            <h3>Hearing Details:</h3>
-            <p><strong>Case:</strong> {{ hearing.case.file_number }} - {{ hearing.case.title }}</p>
-            <p><strong>Date:</strong> {{ hearing.scheduled_date|date:"l, F j, Y" }}</p>
-            <p><strong>Time:</strong> {{ hearing.scheduled_date|date:"g:i A" }}</p>
-            <p><strong>Duration:</strong> {{ hearing.duration_minutes }} minutes</p>
-            <p><strong>Location:</strong> {{ hearing.location }}</p>
-            {% if hearing.virtual_meeting_link %}
-            <p><strong>Virtual Link:</strong> <a href="{{ hearing.virtual_meeting_link }}">{{ hearing.virtual_meeting_link }}</a></p>
-            {% endif %}
-            <p><strong>Agenda:</strong> {{ hearing.agenda }}</p>
+    <div class="container">
+        <div class="header">
+            <h1>⚖️ New Hearing Scheduled</h1>
         </div>
         
-        <div style="text-align: center; margin: 20px 0;">
-            <a href="{{ frontend_url }}/hearings/{{ hearing.id }}/confirm?status=confirmed" class="calendar-link">Confirm Attendance</a>
-            <a href="{{ frontend_url }}/hearings/{{ hearing.id }}/confirm?status=decline" class="calendar-link" style="background: #e74c3c;">Decline</a>
+        <div class="content">
+            <p>Dear {{ user.get_full_name }},</p>
+            
+            <p>A new hearing has been scheduled for your case.</p>
+            
+            <div class="hearing-details">
+                <h3>Hearing Details:</h3>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Case:</span>
+                    <span>{{ hearing.case.file_number }} - {{ hearing.case.title }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Date:</span>
+                    <span>{{ hearing.scheduled_date|date:"l, F j, Y" }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Time:</span>
+                    <span>{{ hearing.scheduled_date|date:"g:i A" }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Location:</span>
+                    <span>{{ hearing.location }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Judge:</span>
+                    <span>Hon. {{ hearing.judge.get_full_name }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Agenda:</span>
+                    <span>{{ hearing.agenda }}</span>
+                </div>
+            </div>
+            
+            <p>Please confirm your attendance at your earliest convenience.</p>
+            
+            <div style="text-align: center;">
+                <a href="{{ frontend_url }}/hearings/{{ hearing.id }}" class="button">View Hearing Details</a>
+            </div>
         </div>
         
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="{{ frontend_url }}/hearings/{{ hearing.id }}" class="button">View Hearing Details</a>
+        <div class="footer">
+            <p>This is an automated message from Justice Hub.</p>
+            <p>&copy; {% now "Y" %} Justice Hub. All rights reserved.</p>
         </div>
-    </div>
-    
-    <div class="footer">
-        <p>This is an automated message from Justice Hub. Please do not reply to this email.</p>
     </div>
 </body>
 </html>
