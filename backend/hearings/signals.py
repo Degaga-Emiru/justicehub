@@ -6,7 +6,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 @receiver(post_save, sender=Hearing)
 def handle_hearing_created(sender, instance, created, **kwargs):
     """

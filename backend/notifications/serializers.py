@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import Notification, NotificationPreference
 
-
 class NotificationSerializer(serializers.ModelSerializer):
     time_ago = serializers.SerializerMethodField()
     
