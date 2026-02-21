@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header .timer {
+            font-size: 48px;
+            font-weight: 700;
+            margin: 20px 0 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+            font-size: 18px;
+        }
+        .content {
+            padding: 30px;
+            background: #ffffff;
+        }
+        .urgent-badge {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 25px;
+            border: 1px solid #ffcdd2;
+        }
+        .hearing-details {
+            background: #f8f9fa;
+            border-left: 4px solid #f5576c;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .hearing-details h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .detail-row {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .detail-value {
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .join-button {
+            display: block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            margin: 25px 0;
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+        .join-button:hover {
+            transform: translateY(-2px);
+        }
+        .virtual-link {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .virtual-link a {
+            color: #2e7d32;
+            word-break: break-all;
+        }
+        .quick-tips {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .quick-tips h4 {
+            margin-top: 0;
+            color: #e65100;
+        }
+        .quick-tips ul {
+            margin: 10px 0 0;
+            padding-left: 20px;
+            color: #666;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 10px;
+            }
+            .header .timer {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="timer">⏰ 1 Hour</div>
+            <h1>Hearing Reminder</h1>
+            <p>Your hearing starts in 1 hour</p>
+        </div>
+        
+        <div class="content">
+            <div class="urgent-badge">
+                ⚠️ URGENT: Hearing starting soon
+            </div>
+            
+            <div class="greeting">
+                Dear <strong>{{ user.get_full_name }}</strong>,
+            </div>
+            
+            <p>This is a reminder that you have a hearing scheduled to begin in <strong>1 hour</strong>. Please ensure you're prepared and ready to join.</p>
+            
+            <div class="hearing-details">
+                <h3>🎯 Hearing Details</h3>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Case Number</span>
+                    <span class="detail-value">{{ hearing.case.file_number }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Case Title</span>
+                    <span class="detail-value">{{ hearing.case.title }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Hearing Type</span>
+                    <span class="detail-value">{{ hearing.get_hearing_type_display }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Time</span>
+                    <span class="detail-value">{{ hearing.scheduled_date|date:"g:i A" }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Duration</span>
+                    <span class="detail-value">{{ hearing.duration_minutes }} minutes</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Location</span>
+                    <span class="detail-value">{{ hearing.location }}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Presiding Judge</span>
+                    <span class="detail-value">Hon. {{ hearing.judge.get_full_name }}</span>
+                </div>
+            </div>
+            
+            {% if hearing.virtual_meeting_link %}
+            <div class="virtual-link">
+                <p style="margin: 0 0 10px;"><strong>🔗 Virtual Meeting Link:</strong></p>
+                <a href="{{ hearing.virtual_meeting_link }}">{{ hearing.virtual_meeting_link }}</a>
+            </div>
+            {% endif %}
+            
+            <a href="{{ frontend_url }}/hearings/{{ hearing.id }}" class="join-button">
+                Join Hearing Room
+            </a>
+            
+            <div class="quick-tips">
+                <h4>📋 Quick Checklist</h4>
+                <ul>
+                    <li>Test your audio and video if joining virtually</li>
+                    <li>Have all case documents ready</li>
+                    <li>Join 5 minutes early to avoid technical issues</li>
+                    <li>Ensure you're in a quiet environment</li>
+                    <li>Keep your case notes accessible</li>
+                </ul>
+            </div>
+            
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="margin: 0; color: #666;">
+                    <strong>Agenda:</strong> {{ hearing.agenda }}
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated reminder from Justice Hub.</p>
+            <p>If you cannot attend, please notify the court immediately.</p>
+            <p>&copy; {% now "Y" %} Justice Hub. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
