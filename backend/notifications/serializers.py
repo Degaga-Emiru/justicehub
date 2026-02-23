@@ -35,12 +35,21 @@ class NotificationPreferenceSerializer(serializers.ModelSerializer):
             'document_updates', 'system_alerts',
             'quiet_hours_start', 'quiet_hours_end', 'timezone'
         ]
-    
+
     def validate(self, data):
         if data.get('quiet_hours_start') and data.get('quiet_hours_end'):
             if data['quiet_hours_start'] >= data['quiet_hours_end']:
                 raise serializers.ValidationError(
                     "Quiet hours end time must be after start time."
                 )
-            
         return data
+
+
+# ✅ OUTSIDE the previous class
+class NotificationStatisticsSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    unread = serializers.IntegerField()
+    read_percentage = serializers.FloatField()
+    by_type = serializers.ListField()
+    by_priority = serializers.ListField()
+    

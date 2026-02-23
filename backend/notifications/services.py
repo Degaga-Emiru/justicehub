@@ -1,7 +1,6 @@
 from django.utils import timezone
 from django.conf import settings
 from .models import Notification, NotificationPreference
-from core.utils.email import send_email_template
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,19 +22,15 @@ def create_notification(user, type, title, message, case=None, priority='MEDIUM'
             metadata=metadata or {}
         )
         
-        # Check if user wants email notifications for this type
+        # Check if user wants email notifications
         try:
             prefs = NotificationPreference.objects.get(user=user)
         except NotificationPreference.DoesNotExist:
             prefs = NotificationPreference.objects.create(user=user)
         
         # Send email if enabled
-        if prefs.email_notifications and should_send_email(prefs, type):
+        if prefs.email_notifications:
             send_notification_email(notification)
-        
-        # Send push notification if enabled (implement based on your push service)
-        if prefs.push_notifications and should_send_push(prefs, type):
-            send_push_notification(notification)
         
         logger.info(f"Notification created for user {user.email}: {type}")
         return notification
@@ -45,44 +40,12 @@ def create_notification(user, type, title, message, case=None, priority='MEDIUM'
         return None
 
 
-def should_send_email(prefs, notification_type):
-    """
-    Check if email should be sent based on preferences and quiet hours
-    """
-    # Check quiet hours
-    if prefs.quiet_hours_start and prefs.quiet_hours_end:
-        current_time = timezone.localtime().time()
-        if prefs.quiet_hours_start <= current_time <= prefs.quiet_hours_end:
-            return False
-    
-    # Check notification type preferences
-    type_mapping = {
-        'CASE_': prefs.case_updates,
-        'HEARING_': prefs.hearing_updates,
-        'DECISION_': prefs.decision_updates,
-        'DOCUMENT_': prefs.document_updates,
-        'SYSTEM_': prefs.system_alerts,
-    }
-    
-    for prefix, preference in type_mapping.items():
-        if notification_type.startswith(prefix):
-            return preference
-    
-    return True
-
-
-def should_send_push(prefs, notification_type):
-    """
-    Check if push notification should be sent
-    """
-    # Implement based on your push notification service
-    return True
-
-
 def send_notification_email(notification):
     """
     Send notification email
     """
+    from core.utils.email import send_email_template
+    
     context = {
         'notification': notification,
         'user': notification.user,
@@ -101,14 +64,6 @@ def send_notification_email(notification):
         notification.save(update_fields=['email_sent'])
     
     return success
-
-
-def send_push_notification(notification):
-    """
-    Send push notification (implement with Firebase or similar)
-    """
-    # Implement push notification logic here
-    pass
 
 
 def notify_case_participants(case, type, title, message, exclude_users=None):

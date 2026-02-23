@@ -18,7 +18,10 @@ from .serializers import (
     CaseCategorySerializer, CaseCreateSerializer, CaseDetailSerializer,
     CaseListSerializer, CaseReviewSerializer, JudgeAssignmentSerializer,
     CaseDocumentSerializer, CaseNotesSerializer, JudgeProfileSerializer,
-    CaseBulkAssignSerializer, CaseStatusUpdateSerializer
+    CaseBulkAssignSerializer, CaseStatusUpdateSerializer,
+     CaseBulkAssignSerializer, CaseStatusUpdateSerializer, DashboardStatsSerializer,
+    JudgeWorkloadSerializer, UserActionLogSerializer
+
 )
 from .permissions import (
     IsRegistrar, IsJudge, IsAssignedJudge, IsAdmin,

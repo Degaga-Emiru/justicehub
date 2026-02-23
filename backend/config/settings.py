@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from dotenv import load_dotenv
 from datetime import timedelta
-
+from django.conf import settings
 
 load_dotenv()
 
@@ -75,7 +75,10 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',  # Keep this for any global templates
+            BASE_DIR / 'accounts' / 'templates',  # Add accounts templates
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

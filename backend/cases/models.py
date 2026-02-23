@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from accounts.models import User
-from .constants import CaseStatus, DocumentType, CasePriority
+
 
 class CaseCategory(models.Model):
     """Legal case classification"""
@@ -32,8 +32,35 @@ class CaseCategory(models.Model):
         return f"{self.code} - {self.name}"
 
 
+class CaseStatus(models.Model):
+    """Case Status Model"""
+    class StatusChoices(models.TextChoices):
+        PENDING_REVIEW = 'PENDING_REVIEW', 'Pending Review'
+        ACCEPTED = 'ACCEPTED', 'Accepted'
+        REJECTED = 'REJECTED', 'Rejected'
+        ASSIGNED = 'ASSIGNED', 'Assigned'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        CLOSED = 'CLOSED', 'Closed'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=20, choices=StatusChoices.choices, unique=True)
+
+    class Meta:
+        verbose_name_plural = "Case Statuses"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.get_name_display()
+
+
 class Case(models.Model):
     """Main Case Model"""
+    class Priority(models.TextChoices):
+        LOW = 'LOW', 'Low'
+        MEDIUM = 'MEDIUM', 'Medium'
+        HIGH = 'HIGH', 'High'
+        URGENT = 'URGENT', 'Urgent'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Basic Information
@@ -45,14 +72,14 @@ class Case(models.Model):
     category = models.ForeignKey(CaseCategory, on_delete=models.PROTECT, related_name='cases')
     status = models.CharField(
         max_length=20,
-        choices=CaseStatus.CHOICES,
-        default=CaseStatus.PENDING_REVIEW,
+        choices=CaseStatus.StatusChoices.choices,
+        default=CaseStatus.StatusChoices.PENDING_REVIEW,
         db_index=True
     )
     priority = models.CharField(
         max_length=20,
-        choices=CasePriority.CHOICES,
-        default=CasePriority.MEDIUM
+        choices=Priority.choices,
+        default=Priority.MEDIUM
     )
     
     # Parties
@@ -134,7 +161,7 @@ class Case(models.Model):
 
     def save(self, *args, **kwargs):
         # Auto-generate file number if status changes to ACCEPTED
-        if self.status == CaseStatus.ACCEPTED and not self.file_number:
+        if self.status == CaseStatus.StatusChoices.ACCEPTED and not self.file_number:
             self.file_number = self.generate_file_number()
         super().save(*args, **kwargs)
 
@@ -153,7 +180,10 @@ class Case(models.Model):
         last_number = last_case['file_number__max']
         
         if last_number:
-            sequence = int(last_number.split('-')[-1]) + 1
+            try:
+                sequence = int(last_number.split('-')[-1]) + 1
+            except (ValueError, IndexError):
+                sequence = 1
         else:
             sequence = 1
         
@@ -161,19 +191,27 @@ class Case(models.Model):
 
     @property
     def is_pending(self):
-        return self.status in [CaseStatus.PENDING_REVIEW, CaseStatus.ASSIGNED]
+        return self.status in [CaseStatus.StatusChoices.PENDING_REVIEW, CaseStatus.StatusChoices.ASSIGNED]
 
     @property
     def is_active(self):
-        return self.status in [CaseStatus.ASSIGNED, CaseStatus.IN_PROGRESS]
+        return self.status in [CaseStatus.StatusChoices.ASSIGNED, CaseStatus.StatusChoices.IN_PROGRESS]
 
     @property
     def is_closed(self):
-        return self.status == CaseStatus.CLOSED
+        return self.status == CaseStatus.StatusChoices.CLOSED
 
 
 class CaseDocument(models.Model):
     """Case Documents Model"""
+    class DocumentType(models.TextChoices):
+        PETITION = 'PETITION', 'Petition'
+        EVIDENCE = 'EVIDENCE', 'Evidence'
+        AFFIDAVIT = 'AFFIDAVIT', 'Affidavit'
+        ORDER = 'ORDER', 'Court Order'
+        JUDGMENT = 'JUDGMENT', 'Judgment'
+        OTHER = 'OTHER', 'Other'
+
     ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
@@ -190,7 +228,7 @@ class CaseDocument(models.Model):
     file_type = models.CharField(max_length=10)
     document_type = models.CharField(
         max_length=50,
-        choices=DocumentType.CHOICES,
+        choices=DocumentType.choices,
         default=DocumentType.OTHER
     )
     description = models.TextField(blank=True, null=True)
@@ -235,6 +273,37 @@ class CaseDocument(models.Model):
             raise ValidationError(f"File size cannot exceed {self.MAX_FILE_SIZE // (1024*1024)}MB")
 
 
+class JudgeProfile(models.Model):
+    """Judge Profile Model - This was missing"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='judge_profile')
+    specializations = models.ManyToManyField(CaseCategory, related_name='judges')
+    max_active_cases = models.IntegerField(default=3, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    bar_certificate_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    years_of_experience = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Judge Profile"
+        verbose_name_plural = "Judge Profiles"
+
+    def __str__(self):
+        return f"Judge {self.user.get_full_name()}"
+
+    def get_active_case_count(self):
+        """Get number of active cases assigned to this judge"""
+        return JudgeAssignment.objects.filter(
+            judge=self.user,
+            is_active=True
+        ).count()
+
+    def can_take_more_cases(self):
+        """Check if judge can take more cases"""
+        return self.get_active_case_count() < self.max_active_cases
+
+
 class JudgeAssignment(models.Model):
     """Judge Assignment Model"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -269,14 +338,16 @@ class JudgeAssignment(models.Model):
     def clean(self):
         """Validate judge assignment limits"""
         if self.is_active:
-            # Check if judge already has 3 active cases
-            active_count = JudgeAssignment.objects.filter(
-                judge=self.judge,
-                is_active=True
-            ).exclude(pk=self.pk).count()
-            
-            if active_count >= 3:
-                raise ValidationError("Judge already has 3 active cases assigned.")
+            # Check if judge already has max active cases
+            judge_profile = JudgeProfile.objects.filter(user=self.judge).first()
+            if judge_profile:
+                active_count = JudgeAssignment.objects.filter(
+                    judge=self.judge,
+                    is_active=True
+                ).exclude(pk=self.pk).count()
+                
+                if active_count >= judge_profile.max_active_cases:
+                    raise ValidationError("Judge already has maximum active cases assigned.")
 
 
 class CaseNotes(models.Model):
@@ -298,3 +369,25 @@ class CaseNotes(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.case.file_number}"
+
+
+class UserActionLog(models.Model):
+    """Audit log for user actions"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='action_logs')
+    action = models.CharField(max_length=100)
+    entity_type = models.CharField(max_length=50)  # Case, Document, etc.
+    entity_id = models.UUIDField(null=True, blank=True)
+    details = models.JSONField(default=dict)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['entity_type', 'entity_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.action} by {self.user} at {self.created_at}"
