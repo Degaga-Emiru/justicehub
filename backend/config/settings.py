@@ -275,6 +275,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
     ),
 }
+FRONTEND_URL = "http://localhost:3000"
 AUTH_USER_MODEL = 'accounts.User'
 
 

@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, generics, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from django.http import HttpResponse
@@ -19,9 +20,7 @@ from .serializers import (
     CaseListSerializer, CaseReviewSerializer, JudgeAssignmentSerializer,
     CaseDocumentSerializer, CaseNotesSerializer, JudgeProfileSerializer,
     CaseBulkAssignSerializer, CaseStatusUpdateSerializer,
-     CaseBulkAssignSerializer, CaseStatusUpdateSerializer, DashboardStatsSerializer,
-    JudgeWorkloadSerializer, UserActionLogSerializer
-
+    DashboardStatsSerializer, JudgeWorkloadSerializer, UserActionLogSerializer
 )
 from .permissions import (
     IsRegistrar, IsJudge, IsAssignedJudge, IsAdmin,
@@ -47,6 +46,7 @@ class CaseCategoryViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'code', 'description']
     ordering_fields = ['name', 'created_at']
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -63,7 +63,7 @@ class CaseCategoryViewSet(viewsets.ModelViewSet):
 
 class CaseViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing cases.
+    ViewSet for managing cases with support for both JSON and form-data.
     """
     queryset = Case.objects.all().select_related(
         'category', 'created_by', 'plaintiff', 'defendant',
@@ -76,6 +76,7 @@ class CaseViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description', 'file_number']
     ordering_fields = ['created_at', 'filing_date', 'priority']
     pagination_class = StandardResultsSetPagination
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def get_serializer_class(self):
         if self.action == 'create':
@@ -84,6 +85,8 @@ class CaseViewSet(viewsets.ModelViewSet):
             return CaseListSerializer
         elif self.action in ['accept_reject', 'review']:
             return CaseReviewSerializer
+        elif self.action == 'upload_documents':
+            return CaseDocumentSerializer
         return CaseDetailSerializer
     
     def get_queryset(self):
@@ -110,6 +113,89 @@ class CaseViewSet(viewsets.ModelViewSet):
                 Q(created_by=user) | Q(plaintiff=user) | Q(defendant=user)
             )
     
+    def create(self, request, *args, **kwargs):
+        """
+        Override create to handle both JSON and multipart/form-data requests.
+        """
+        # Handle multipart/form-data (file uploads)
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Create a mutable copy of request.data
+            data = request.data.copy()
+            
+            # Handle document files if they exist
+            documents = request.FILES.getlist('documents')
+            document_types = request.data.getlist('document_types', [])
+            document_descriptions = request.data.getlist('document_descriptions', [])
+            
+            # Create serializer with the data
+            serializer = self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            
+            # Save the case first
+            self.perform_create(serializer)
+            
+            # Now handle document uploads if any
+            if documents:
+                case = serializer.instance
+                for i, document_file in enumerate(documents):
+                    doc_type = document_types[i] if i < len(document_types) else 'OTHER'
+                    doc_description = document_descriptions[i] if i < len(document_descriptions) else ''
+                    
+                    CaseDocument.objects.create(
+                        case=case,
+                        uploaded_by=request.user,
+                        file=document_file,
+                        document_type=doc_type,
+                        description=doc_description,
+                        is_confidential=request.data.get('is_confidential', False)
+                    )
+            
+            headers = self.get_success_headers(serializer.data)
+            # Return detailed serializer data
+            detail_serializer = CaseDetailSerializer(serializer.instance, context={'request': request})
+            return Response(detail_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        
+        # Default JSON handling
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        """
+        Override update to handle both JSON and multipart/form-data.
+        """
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            
+            # Create a mutable copy of request.data
+            data = request.data.copy()
+            
+            serializer = self.get_serializer(instance, data=data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            
+            # Handle document uploads if any
+            documents = request.FILES.getlist('documents')
+            if documents:
+                document_types = request.data.getlist('document_types', [])
+                document_descriptions = request.data.getlist('document_descriptions', [])
+                
+                for i, document_file in enumerate(documents):
+                    doc_type = document_types[i] if i < len(document_types) else 'OTHER'
+                    doc_description = document_descriptions[i] if i < len(document_descriptions) else ''
+                    
+                    CaseDocument.objects.create(
+                        case=instance,
+                        uploaded_by=request.user,
+                        file=document_file,
+                        document_type=doc_type,
+                        description=doc_description,
+                        is_confidential=request.data.get('is_confidential', False)
+                    )
+            
+            return Response(serializer.data)
+        
+        return super().update(request, *args, **kwargs)
+    
     @action(detail=False, methods=['get'])
     def pending_review(self, request):
         """Get cases pending review (for registrars)"""
@@ -121,7 +207,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         cases = self.get_queryset().filter(status='PENDING_REVIEW')
         page = self.paginate_queryset(cases)
-        serializer = CaseListSerializer(page, many=True)
+        serializer = CaseListSerializer(page, many=True, context={'request': request})
         return self.get_paginated_response(serializer.data)
     
     @action(detail=False, methods=['get'])
@@ -129,7 +215,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         """Get cases related to current user"""
         cases = self.get_queryset()
         page = self.paginate_queryset(cases)
-        serializer = CaseListSerializer(page, many=True)
+        serializer = CaseListSerializer(page, many=True, context={'request': request})
         return self.get_paginated_response(serializer.data)
     
     @action(detail=True, methods=['post'], permission_classes=[CanReviewCases])
@@ -176,9 +262,9 @@ class CaseViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def add_document(self, request, pk=None):
-        """Add document to case"""
+        """Add document to case - supports multipart/form-data"""
         case = self.get_object()
         
         if 'file' not in request.FILES:
@@ -192,6 +278,10 @@ class CaseViewSet(viewsets.ModelViewSet):
         description = request.data.get('description', '')
         is_confidential = request.data.get('is_confidential', False)
         
+        # Handle boolean conversion for is_confidential
+        if isinstance(is_confidential, str):
+            is_confidential = is_confidential.lower() in ['true', '1', 'yes']
+        
         document = CaseDocument.objects.create(
             case=case,
             uploaded_by=request.user,
@@ -201,7 +291,7 @@ class CaseViewSet(viewsets.ModelViewSet):
             is_confidential=is_confidential
         )
         
-        serializer = CaseDocumentSerializer(document)
+        serializer = CaseDocumentSerializer(document, context={'request': request})
         
         # Notify relevant parties
         create_notification(
@@ -213,6 +303,52 @@ class CaseViewSet(viewsets.ModelViewSet):
         )
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    def upload_multiple_documents(self, request, pk=None):
+        """Upload multiple documents to a case"""
+        case = self.get_object()
+        
+        if 'documents' not in request.FILES:
+            return Response(
+                {"error": "No files provided."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        documents = request.FILES.getlist('documents')
+        document_types = request.data.getlist('document_types', [])
+        descriptions = request.data.getlist('descriptions', [])
+        is_confidential = request.data.get('is_confidential', False)
+        
+        # Handle boolean conversion for is_confidential
+        if isinstance(is_confidential, str):
+            is_confidential = is_confidential.lower() in ['true', '1', 'yes']
+        
+        uploaded_docs = []
+        for i, file in enumerate(documents):
+            doc_type = document_types[i] if i < len(document_types) else 'OTHER'
+            description = descriptions[i] if i < len(descriptions) else ''
+            
+            document = CaseDocument.objects.create(
+                case=case,
+                uploaded_by=request.user,
+                file=file,
+                document_type=doc_type,
+                description=description,
+                is_confidential=is_confidential
+            )
+            uploaded_docs.append(CaseDocumentSerializer(document, context={'request': request}).data)
+            
+            # Notify about each document
+            create_notification(
+                user=case.created_by,
+                type='DOCUMENT_UPLOADED',
+                title='Document Uploaded',
+                message=f"A new document has been uploaded to your case: {document.file_name}",
+                case=case
+            )
+        
+        return Response(uploaded_docs, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['get'])
     def timeline(self, request, pk=None):
@@ -280,6 +416,7 @@ class AssignJudgeView(generics.CreateAPIView):
     """
     serializer_class = JudgeAssignmentSerializer
     permission_classes = [IsAuthenticated, IsRegistrar]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def post(self, request, pk):
         try:
@@ -321,6 +458,7 @@ class CaseDocumentViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CaseDocumentSerializer
     permission_classes = [IsAuthenticated, CanManageDocuments]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def get_queryset(self):
         return CaseDocument.objects.filter(case_id=self.kwargs['pk'])
@@ -331,6 +469,32 @@ class CaseDocumentViewSet(viewsets.ModelViewSet):
             case=case,
             uploaded_by=self.request.user
         )
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to handle file uploads"""
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Handle multipart form data
+            case = Case.objects.get(pk=self.kwargs['pk'])
+            
+            if 'file' not in request.FILES:
+                return Response(
+                    {"error": "No file provided."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            # Save with the case and user
+            serializer.save(
+                case=case,
+                uploaded_by=request.user,
+                file=request.FILES['file']
+            )
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return super().create(request, *args, **kwargs)
 
 
 class CaseNotesViewSet(viewsets.ModelViewSet):
@@ -339,6 +503,7 @@ class CaseNotesViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CaseNotesSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def get_queryset(self):
         user = self.request.user
@@ -368,20 +533,38 @@ class JudgeProfileViewSet(viewsets.ModelViewSet):
     queryset = JudgeProfile.objects.all().select_related('user')
     serializer_class = JudgeProfileSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def available(self, request):
         """Get available judges for a category"""
+
         category_id = request.query_params.get('category')
         if not category_id:
             return Response(
                 {"error": "Category ID is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         available = JudgeAssignmentService.find_available_judges(category_id)
-        return Response(available)
-    
+
+        response_data = []
+
+        for item in available:
+            judge = item["judge"]
+
+            # Get judge profile
+            try:
+                profile = JudgeProfile.objects.select_related("user").get(user=judge)
+            except JudgeProfile.DoesNotExist:
+                continue
+
+            serialized_profile = JudgeProfileSerializer(profile).data
+            serialized_profile["caseload"] = item["active_count"]
+            serialized_profile["max_cases"] = item["max_cases"]
+            response_data.append(serialized_profile)
+
+        return Response(response_data, status=status.HTTP_200_OK)
     @action(detail=False, methods=['get'])
     def workload(self, request):
         """Get judge workload statistics"""
@@ -484,6 +667,7 @@ class BulkAssignJudgesView(generics.GenericAPIView):
     """
     permission_classes = [IsAuthenticated, IsRegistrar]
     serializer_class = CaseBulkAssignSerializer
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -524,6 +708,7 @@ class BulkStatusUpdateView(generics.GenericAPIView):
     """
     permission_classes = [IsAuthenticated, IsRegistrar]
     serializer_class = CaseStatusUpdateSerializer
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def post(self, request):
         serializer = self.get_serializer(data=request.data)

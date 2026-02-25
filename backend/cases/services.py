@@ -77,7 +77,8 @@ class JudgeAssignmentService:
         cls._send_assignment_notifications(assignment)
         
         return assignment
-    
+     
+     
     @classmethod
     def _handle_no_judges_available(cls, case):
         """Handle case when no judges are available"""
@@ -97,6 +98,7 @@ class JudgeAssignmentService:
                 case=case,
                 priority='HIGH'
             )
+            
     
     @classmethod
     def _send_assignment_notifications(cls, assignment):
