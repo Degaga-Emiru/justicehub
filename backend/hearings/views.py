@@ -73,7 +73,9 @@ class HearingViewSet(viewsets.ModelViewSet):
         
         # Schedule reminders
         self._schedule_reminders(hearing)
-        
+         # Get participants to notify
+        participants = hearing.participant_list.exclude(user=hearing.judge)
+
         # Notify participants
         notify_case_participants(
             case=hearing.case,
@@ -121,8 +123,9 @@ class HearingViewSet(viewsets.ModelViewSet):
         """Cancel hearing"""
         hearing = self.get_object()
         
-        if hearing.scheduled_date <= timezone.now():
-            raise BusinessLogicError("Cannot cancel past hearings")
+        # Relaxed check: Only prevent cancellation if already COMPLETED or CANCELLED
+        if hearing.status in ['COMPLETED', 'CANCELLED']:
+            raise BusinessLogicError(f"Cannot cancel a hearing with status {hearing.status}")
         
         hearing.status = 'CANCELLED'
         hearing.cancelled_at = timezone.now()
@@ -154,8 +157,9 @@ class HearingViewSet(viewsets.ModelViewSet):
         hearing.save()
         
         return Response({
-            "message": "Hearing marked as completed",
-            "status": "COMPLETED"
+            "message": "Hearing marked as completed.",
+            "status": "COMPLETED",
+            "completed_at": hearing.completed_at
         })
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsHearingJudge])
@@ -203,6 +207,16 @@ class HearingViewSet(viewsets.ModelViewSet):
         )
         
         response_serializer = HearingSerializer(new_hearing)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to return the rich HearingSerializer data"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        # Use HearingSerializer for the response
+        response_serializer = HearingSerializer(serializer.instance, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['get'])
@@ -290,6 +304,10 @@ class ConfirmAttendanceView(generics.UpdateAPIView):
             user=self.request.user
         )
     
+    def post(self, request, *args, **kwargs):
+        """Support POST for confirmation along with PATCH"""
+        return self.patch(request, *args, **kwargs)
+
     def patch(self, request, *args, **kwargs):
         participant = self.get_object()
         participant.attendance_status = request.data.get('status', 'CONFIRMED')

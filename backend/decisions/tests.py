@@ -20,14 +20,16 @@ class DecisionModelTests(TestCase):
             password='testpass123',
             first_name='Test',
             last_name='Judge',
-            role='JUDGE'
+            role='JUDGE',
+            phone_number='+251922222221'
         )
         
         self.client_user = User.objects.create_user(
             email='client@example.com',
             password='testpass123',
             first_name='Test',
-            last_name='Client'
+            last_name='Client',
+            phone_number='+251922222222'
         )
         
         self.category = CaseCategory.objects.create(
@@ -119,21 +121,24 @@ class DecisionAPITests(APITestCase):
             password='testpass123',
             first_name='Test',
             last_name='Judge',
-            role='JUDGE'
+            role='JUDGE',
+            phone_number='+251911111111'
         )
         
         self.client_user = User.objects.create_user(
             email='client@example.com',
             password='testpass123',
             first_name='Test',
-            last_name='Client'
+            last_name='Client',
+            phone_number='+251911111112'
         )
         
         self.other_user = User.objects.create_user(
             email='other@example.com',
             password='testpass123',
             first_name='Other',
-            last_name='User'
+            last_name='User',
+            phone_number='+251911111113'
         )
         
         # Create category and case
@@ -178,9 +183,20 @@ class DecisionAPITests(APITestCase):
         """Test creating decision as judge"""
         self.client.force_authenticate(user=self.judge)
         
+        # Create a fresh case to avoid "decision already exists" validation error
+        new_case = Case.objects.create(
+            title='New Test Case',
+            description='Test Description',
+            category=self.category,
+            created_by=self.client_user,
+            plaintiff=self.client_user,
+            defendant=self.other_user,
+            file_number='NEW-CASE-001'
+        )
+        
         url = '/api/decisions/'
         data = {
-            'case': str(self.case.id),
+            'case': str(new_case.id),
             'title': 'New Decision',
             'decision_type': 'FINAL',
             'introduction': 'New Introduction',
@@ -194,7 +210,7 @@ class DecisionAPITests(APITestCase):
         
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Decision.objects.count(), 2)
+        self.assertEqual(Decision.objects.filter(case=new_case).count(), 1)
     
     def test_create_decision_client_forbidden(self):
         """Test client cannot create decision"""
@@ -215,23 +231,24 @@ class DecisionAPITests(APITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
-    @patch('decisions.services.generate_decision_pdf')
-    @patch('decisions.services.deliver_decision')
-    def test_publish_decision(self, mock_deliver, mock_generate):
+    def test_publish_decision(self):
         """Test publishing a decision"""
-        self.client.force_authenticate(user=self.judge)
-        
-        url = f'/api/decisions/{self.decision.id}/publish/'
-        data = {'confirm': True}
-        
-        response = self.client.post(url, data, format='json')
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
-        self.decision.refresh_from_db()
-        self.assertTrue(self.decision.is_published)
-        self.assertIsNotNone(self.decision.published_at)
-        mock_deliver.assert_called_once_with(self.decision)
+        with patch('decisions.views.generate_decision_pdf') as mock_generate, \
+             patch('decisions.views.deliver_decision') as mock_deliver:
+            
+            self.client.force_authenticate(user=self.judge)
+            
+            url = f'/api/decisions/{self.decision.id}/publish/'
+            data = {'confirm': True}
+            
+            response = self.client.post(url, data, format='json')
+            
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            
+            self.decision.refresh_from_db()
+            self.assertTrue(self.decision.is_published)
+            self.assertIsNotNone(self.decision.published_at)
+            mock_deliver.assert_called_once_with(self.decision)
     
     def test_download_pdf_not_found(self):
         """Test downloading non-existent PDF"""

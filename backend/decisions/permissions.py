@@ -5,6 +5,11 @@ class IsDecisionJudge(permissions.BasePermission):
     """
     Allows access only to the judge who issued the decision.
     """
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role == 'JUDGE'
+
     def has_object_permission(self, request, view, obj):
         if not request.user.is_authenticated:
             return False

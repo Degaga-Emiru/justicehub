@@ -31,7 +31,7 @@ class CanScheduleHearings(permissions.BasePermission):
         return bool(
             request.user and 
             request.user.is_authenticated and 
-            request.user.role in ['JUDGE', 'ADMIN']
+            request.user.role in ['JUDGE', 'ADMIN', 'CLERK', 'REGISTRAR']
         )
 
 

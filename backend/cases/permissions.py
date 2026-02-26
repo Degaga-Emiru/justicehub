@@ -9,7 +9,7 @@ class IsRegistrar(permissions.BasePermission):
         return bool(
             request.user and 
             request.user.is_authenticated and 
-            request.user.role == 'REGISTRAR'
+            request.user.role in ['ADMIN', 'CLERK', 'REGISTRAR']
         )
 
 
@@ -90,7 +90,7 @@ class CanReviewCases(permissions.BasePermission):
         return bool(
             request.user and 
             request.user.is_authenticated and 
-            request.user.role in ['ADMIN', 'REGISTRAR']
+            request.user.role in ['ADMIN', 'CLERK', 'REGISTRAR']
         )
 
 

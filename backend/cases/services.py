@@ -85,7 +85,7 @@ class JudgeAssignmentService:
         logger.warning(f"No judges available for case {case.id} in category {case.category.name}")
         
         # Notify all registrars
-        registrars = User.objects.filter(role='REGISTRAR')
+        registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'])
         for registrar in registrars:
             create_notification(
                 user=registrar,

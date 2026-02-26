@@ -8,12 +8,6 @@ router.register(r'', views.DecisionViewSet, basename='decision')
 urlpatterns = [
     path('', include(router.urls)),
     
-    # Decision specific endpoints
-    path('<uuid:pk>/publish/', views.PublishDecisionView.as_view(), name='publish-decision'),
-    path('<uuid:pk>/download-pdf/', views.DownloadDecisionPDFView.as_view(), name='download-decision-pdf'),
-    path('<uuid:pk>/deliveries/', views.DecisionDeliveriesView.as_view(), name='decision-deliveries'),
-    path('<uuid:pk>/acknowledge/', views.AcknowledgeDecisionView.as_view(), name='acknowledge-decision'),
-    
     # Bulk operations
     path('bulk/publish/', views.BulkPublishDecisionsView.as_view(), name='bulk-publish'),
     

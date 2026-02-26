@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status, generics, pagination
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -41,7 +41,7 @@ class DecisionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         
-        if user.role == 'ADMIN':
+        if user.role in ['ADMIN', 'CLERK', 'REGISTRAR']:
             return self.queryset
         elif user.role == 'JUDGE':
             return self.queryset.filter(judge=user)
@@ -65,12 +65,28 @@ class DecisionViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
     
     def perform_create(self, serializer):
-        decision = serializer.save(judge=self.request.user)
+        return serializer.save()
+    
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        decision = self.perform_create(serializer)
         
         # Generate PDF
         generate_decision_pdf(decision)
         
         logger.info(f"Decision {decision.decision_number} created for case {decision.case.id}")
+        
+        return Response({
+            "id": decision.id,
+            "decision_number": decision.decision_number,
+            "case": decision.case.id,
+            "title": decision.title,
+            "decision_type": decision.decision_type,
+            "judge_name": decision.judge.get_full_name(),
+            "is_published": decision.is_published,
+            "created_at": decision.created_at
+        }, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, CanPublishDecision])
     def publish(self, request, pk=None):
@@ -99,13 +115,13 @@ class DecisionViewSet(viewsets.ModelViewSet):
             exclude_users=[request.user]
         )
         
-        response_serializer = self.get_serializer(decision)
         return Response({
-            "message": "Decision published successfully",
-            "decision": response_serializer.data
+            "message": "Decision published successfully.",
+            "decision_number": decision.decision_number,
+            "published_at": decision.published_at
         })
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], url_path='download-pdf')
     def download_pdf(self, request, pk=None):
         """Download decision PDF"""
         decision = self.get_object()
@@ -122,7 +138,7 @@ class DecisionViewSet(viewsets.ModelViewSet):
             filename=f"Decision_{decision.decision_number}.pdf"
         )
     
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], url_path='deliveries')
     def deliveries(self, request, pk=None):
         """Get decision deliveries"""
         decision = self.get_object()
@@ -130,7 +146,7 @@ class DecisionViewSet(viewsets.ModelViewSet):
         serializer = DecisionDeliverySerializer(deliveries, many=True)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsPartyToDecision])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsPartyToDecision], url_path='acknowledge')
     def acknowledge(self, request, pk=None):
         """Acknowledge receipt of decision"""
         decision = self.get_object()
@@ -154,8 +170,12 @@ class DecisionViewSet(viewsets.ModelViewSet):
         """Get published decisions"""
         decisions = self.get_queryset().filter(is_published=True)
         page = self.paginate_queryset(decisions)
-        serializer = self.get_serializer(page, many=True)
-        return self.get_paginated_response(serializer.data)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(decisions, many=True)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def recent(self, request):
@@ -169,77 +189,6 @@ class DecisionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(decisions, many=True)
         return Response(serializer.data)
-
-
-class PublishDecisionView(generics.UpdateAPIView):
-    """View for publishing decisions"""
-    queryset = Decision.objects.filter(is_published=False)
-    serializer_class = DecisionSerializer
-    permission_classes = [IsAuthenticated, CanPublishDecision]
-    
-    def patch(self, request, *args, **kwargs):
-        decision = self.get_object()
-        
-        decision.is_published = True
-        decision.published_at = timezone.now()
-        decision.save()
-        
-        # Deliver to parties
-        deliver_decision(decision)
-        
-        return Response(self.get_serializer(decision).data)
-
-
-class DownloadDecisionPDFView(generics.RetrieveAPIView):
-    """View for downloading decision PDF"""
-    queryset = Decision.objects.all()
-    permission_classes = [IsAuthenticated, CanViewDecision]
-    
-    def retrieve(self, request, *args, **kwargs):
-        decision = self.get_object()
-        
-        if not decision.pdf_document:
-            return Response(
-                {"error": "PDF document not available"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        return FileResponse(
-            decision.pdf_document.open('rb'),
-            as_attachment=True,
-            filename=f"Decision_{decision.decision_number}.pdf"
-        )
-
-
-class DecisionDeliveriesView(generics.ListAPIView):
-    """View for listing decision deliveries"""
-    serializer_class = DecisionDeliverySerializer
-    permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        return DecisionDelivery.objects.filter(decision_id=self.kwargs['pk'])
-
-
-class AcknowledgeDecisionView(generics.GenericAPIView):
-    """View for acknowledging decision receipt"""
-    permission_classes = [IsAuthenticated]
-    
-    def post(self, request, pk):
-        decision = get_object_or_404(Decision, pk=pk)
-        
-        delivery = get_object_or_404(
-            DecisionDelivery,
-            decision=decision,
-            recipient=request.user
-        )
-        
-        delivery.acknowledged_at = timezone.now()
-        delivery.save()
-        
-        return Response({
-            "message": "Decision acknowledged",
-            "acknowledged_at": delivery.acknowledged_at
-        })
 
 
 class BulkPublishDecisionsView(generics.GenericAPIView):

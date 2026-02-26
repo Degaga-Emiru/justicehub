@@ -8,13 +8,7 @@ router.register(r'', views.HearingViewSet, basename='hearing')
 urlpatterns = [
     path('', include(router.urls)),
     
-    # Hearing specific endpoints
-    path('<uuid:pk>/confirm-attendance/', views.ConfirmAttendanceView.as_view(), name='confirm-attendance'),
-    path('<uuid:pk>/cancel/', views.CancelHearingView.as_view(), name='cancel-hearing'),
-    path('<uuid:pk>/complete/', views.CompleteHearingView.as_view(), name='complete-hearing'),
-    path('<uuid:pk>/participants/', views.HearingParticipantsView.as_view(), name='hearing-participants'),
-    path('<uuid:pk>/reschedule/', views.RescheduleHearingView.as_view(), name='reschedule-hearing'),
-    path('<uuid:pk>/reminders/', views.HearingRemindersView.as_view(), name='hearing-reminders'),
+    # Administrative endpoints are handled by the router
     
     # Calendar views
     path('calendar/judge/<uuid:judge_id>/', views.JudgeCalendarView.as_view(), name='judge-calendar'),

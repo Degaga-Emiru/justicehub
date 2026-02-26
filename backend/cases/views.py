@@ -92,9 +92,9 @@ class CaseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         
-        if user.role == 'ADMIN':
+        if user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
             return self.queryset
-        elif user.role == 'REGISTRAR':
+            return self.queryset
             return self.queryset
         elif user.role == 'JUDGE':
             # Judges see only assigned cases
@@ -199,7 +199,7 @@ class CaseViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def pending_review(self, request):
         """Get cases pending review (for registrars)"""
-        if not request.user.role in ['ADMIN', 'REGISTRAR']:
+        if not request.user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
             return Response(
                 {"error": "Permission denied"},
                 status=status.HTTP_403_FORBIDDEN
@@ -509,7 +509,7 @@ class CaseNotesViewSet(viewsets.ModelViewSet):
         user = self.request.user
         case_id = self.kwargs['pk']
         
-        if user.role in ['ADMIN', 'JUDGE', 'REGISTRAR']:
+        if user.role in ['ADMIN', 'JUDGE', 'REGISTRAR', 'CLERK']:
             return CaseNotes.objects.filter(case_id=case_id)
         else:
             # Only show non-private notes to others
@@ -599,7 +599,7 @@ class CaseTimelineView(generics.RetrieveAPIView):
             )
         
         # Check permission
-        if not (request.user.role in ['ADMIN', 'JUDGE', 'REGISTRAR'] or 
+        if not (request.user.role in ['ADMIN', 'JUDGE', 'REGISTRAR', 'CLERK'] or 
                 case.created_by == request.user):
             return Response(
                 {"error": "Permission denied"},
@@ -741,7 +741,7 @@ class DashboardStatsView(generics.GenericAPIView):
         user = request.user
         stats = {}
         
-        if user.role in ['ADMIN', 'REGISTRAR']:
+        if user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
             stats = {
                 'total_cases': Case.objects.count(),
                 'pending_review': Case.objects.filter(status='PENDING_REVIEW').count(),
