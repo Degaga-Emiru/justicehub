@@ -154,9 +154,9 @@ class CaseReviewService:
     @classmethod
     @transaction.atomic
     def accept_case(cls, case, reviewer, court_name, court_room=None):
-        """Accept a case and trigger judge assignment"""
+        """Accept a case and trigger payment flow"""
         # Update case
-        case.status = CaseStatus.ACCEPTED
+        case.status = CaseStatus.APPROVED
         case.reviewed_by = reviewer
         case.reviewed_at = timezone.now()
         case.court_name = court_name
@@ -164,25 +164,39 @@ class CaseReviewService:
         case.file_number = case.generate_file_number()
         case.save()
         
-        # Trigger judge assignment
-        assignment = JudgeAssignmentService.assign_judge(case, reviewer)
-        
         # Notify client
         create_notification(
             user=case.created_by,
             type='CASE_ACCEPTED',
-            title='Case Accepted',
+            title='Case Approved',
             message=(
-                f"Your case '{case.title}' has been accepted. "
+                f"Your case '{case.title}' has been approved. "
+                f"Please proceed with the payment of {case.category.fee} ETB. "
                 f"File Number: {case.file_number}"
             ),
             case=case
         )
         
-        # Send email
-        cls._send_acceptance_email(case)
+        # Send payment instruction email
+        cls._send_payment_instruction_email(case)
         
         return case
+    
+    @classmethod
+    def _send_payment_instruction_email(cls, case):
+        """Send payment instruction email to client"""
+        context = {
+            'client': case.created_by,
+            'case': case,
+            'frontend_url': settings.FRONTEND_URL
+        }
+        
+        send_email_template(
+            subject=f"Action Required: Payment for Case {case.file_number}",
+            template_name='emails/payment_instruction.html',
+            context=context,
+            recipient_list=[case.created_by.email]
+        )
     
     @classmethod
     @transaction.atomic

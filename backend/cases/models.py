@@ -16,6 +16,7 @@ class CaseCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
     code = models.CharField(max_length=20, unique=True, help_text="Category code (e.g., CIV-001)")
+    fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Required fee for this category")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -36,8 +37,9 @@ class CaseStatus(models.Model):
     """Case Status Model"""
     class StatusChoices(models.TextChoices):
         PENDING_REVIEW = 'PENDING_REVIEW', 'Pending Review'
-        ACCEPTED = 'ACCEPTED', 'Accepted'
+        APPROVED = 'APPROVED', 'Approved'
         REJECTED = 'REJECTED', 'Rejected'
+        PAID = 'PAID', 'Paid'
         ASSIGNED = 'ASSIGNED', 'Assigned'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         CLOSED = 'CLOSED', 'Closed'
@@ -160,8 +162,8 @@ class Case(models.Model):
         return f"{self.file_number or 'PENDING'} - {self.title}"
 
     def save(self, *args, **kwargs):
-        # Auto-generate file number if status changes to ACCEPTED
-        if self.status == CaseStatus.StatusChoices.ACCEPTED and not self.file_number:
+        # Auto-generate file number if status changes to APPROVED
+        if self.status == CaseStatus.StatusChoices.APPROVED and not self.file_number:
             self.file_number = self.generate_file_number()
         super().save(*args, **kwargs)
 
@@ -234,7 +236,7 @@ class CaseDocument(models.Model):
     description = models.TextField(blank=True, null=True)
     
     # Security
-    checksum = models.CharField(max_length=64, unique=True)  # SHA-256
+    checksum = models.CharField(max_length=64)  # SHA-256
     is_confidential = models.BooleanField(default=False)
     
     # Tracking
@@ -246,6 +248,12 @@ class CaseDocument(models.Model):
         indexes = [
             models.Index(fields=['case', 'document_type']),
             models.Index(fields=['uploaded_by', 'uploaded_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['case', 'checksum'],
+                name='unique_checksum_per_case'
+            )
         ]
 
     def __str__(self):

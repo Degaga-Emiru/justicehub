@@ -2,16 +2,18 @@ from django.db import models
 
 class CaseStatus:
     PENDING_REVIEW = 'PENDING_REVIEW'
-    ACCEPTED = 'ACCEPTED'
+    APPROVED = 'APPROVED'
     REJECTED = 'REJECTED'
+    PAID = 'PAID'
     ASSIGNED = 'ASSIGNED'
     IN_PROGRESS = 'IN_PROGRESS'
     CLOSED = 'CLOSED'
     
     CHOICES = [
         (PENDING_REVIEW, 'Pending Review'),
-        (ACCEPTED, 'Accepted'),
+        (APPROVED, 'Approved'),
         (REJECTED, 'Rejected'),
+        (PAID, 'Paid'),
         (ASSIGNED, 'Assigned'),
         (IN_PROGRESS, 'In Progress'),
         (CLOSED, 'Closed'),

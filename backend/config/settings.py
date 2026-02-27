@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'notifications',
     'hearings',
     'decisions',
+    'payments',
 ]
 
 

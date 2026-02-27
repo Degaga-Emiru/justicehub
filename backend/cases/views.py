@@ -137,18 +137,8 @@ class CaseViewSet(viewsets.ModelViewSet):
             # Now handle document uploads if any
             if documents:
                 case = serializer.instance
-                for i, document_file in enumerate(documents):
-                    doc_type = document_types[i] if i < len(document_types) else 'OTHER'
-                    doc_description = document_descriptions[i] if i < len(document_descriptions) else ''
-                    
-                    CaseDocument.objects.create(
-                        case=case,
-                        uploaded_by=request.user,
-                        file=document_file,
-                        document_type=doc_type,
-                        description=doc_description,
-                        is_confidential=request.data.get('is_confidential', False)
-                    )
+                # Document creation is already handled by CaseCreateSerializer.create
+                # No need for manual creation here.
             
             headers = self.get_success_headers(serializer.data)
             # Return detailed serializer data
@@ -631,9 +621,9 @@ class CaseTimelineView(generics.RetrieveAPIView):
         
         # Review events
         if case.reviewed_at:
-            event_type = 'CASE_ACCEPTED' if case.status == 'ACCEPTED' else 'CASE_REJECTED'
-            title = 'Case Accepted' if case.status == 'ACCEPTED' else 'Case Rejected'
-            icon = 'check-circle' if case.status == 'ACCEPTED' else 'x-circle'
+            event_type = 'CASE_APPROVED' if case.status in ['APPROVED', 'PAID', 'ASSIGNED', 'IN_PROGRESS', 'CLOSED'] else 'CASE_REJECTED'
+            title = 'Case Approved' if case.status != 'REJECTED' else 'Case Rejected'
+            icon = 'check-circle' if case.status != 'REJECTED' else 'x-circle'
             
             timeline.append({
                 'date': case.reviewed_at,
@@ -643,6 +633,18 @@ class CaseTimelineView(generics.RetrieveAPIView):
                 'user': case.reviewed_by.get_full_name(),
                 'icon': icon
             })
+
+        # Payment events
+        for payment in getattr(case, 'payments', []).all():
+            if payment.status == 'VERIFIED':
+                timeline.append({
+                    'date': payment.updated_at,
+                    'event_type': 'PAYMENT_RECEIVED',
+                    'title': 'Payment Verified',
+                    'description': f'Payment of {payment.amount} ETB verified (Ref: {payment.transaction_reference})',
+                    'user': payment.user.get_full_name(),
+                    'icon': 'credit-card'
+                })
         
         # Judge assignments
         for assignment in case.judge_assignments.all():
