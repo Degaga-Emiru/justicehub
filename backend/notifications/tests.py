@@ -327,3 +327,76 @@ class NotificationPreferenceAPITests(APITestCase):
         
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class NotificationEnhancementTests(APITestCase):
+    """Test new notification enhancements"""
+    
+    def setUp(self):
+        from cases.models import Case
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='verify@example.com',
+            password='testpass123'
+        )
+        
+        # Create a case
+        self.case = Case.objects.create(
+            title="Test Case",
+            description="Test Description",
+            created_by=self.user
+        )
+        
+        # Create notifications
+        self.notif_read = Notification.objects.create(
+            user=self.user,
+            type='CASE_ACCEPTED',
+            title='Read Notification',
+            message='Read',
+            is_read=True,
+            case=self.case
+        )
+        self.notif_unread = Notification.objects.create(
+            user=self.user,
+            type='HEARING_SCHEDULED',
+            title='Unread Notification',
+            message='Unread',
+            is_read=False,
+            case=self.case
+        )
+
+    def test_nested_case_data(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/notifications/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        results = response.data['results']
+        for item in results:
+            self.assertIn('case', item)
+            self.assertIsNotNone(item['case'])
+            self.assertEqual(item['case']['title'], "Test Case")
+            self.assertIn('file_number', item['case'])
+
+    def test_filtering_by_is_read(self):
+        self.client.force_authenticate(user=self.user)
+        # Filter for unread
+        response = self.client.get('/api/notifications/?is_read=false')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['id'], str(self.notif_unread.id))
+        
+        # Filter for read
+        response = self.client.get('/api/notifications/?is_read=true')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['id'], str(self.notif_read.id))
+
+    def test_filtering_by_type(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/notifications/?type=CASE_ACCEPTED')
+        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(response.data['results'][0]['type'], 'CASE_ACCEPTED')
+
+    def test_time_ago_format(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/notifications/')
+        item = response.data['results'][0]
+        self.assertTrue(item['time_ago'].endswith(' ago'))

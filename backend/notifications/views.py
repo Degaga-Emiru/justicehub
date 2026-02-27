@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Notification, NotificationPreference
 from .serializers import (
@@ -23,6 +24,8 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['is_read', 'type']
     
     def get_queryset(self):
         return Notification.objects.filter(
@@ -112,14 +115,19 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         
         total = Notification.objects.filter(user=user).count()
         unread = Notification.objects.filter(user=user, is_read=False).count()
-        by_type = Notification.objects.filter(user=user).values('type').annotate(
+        by_type = list(Notification.objects.filter(user=user).values('type').annotate(
             count=Count('id')
-        )
+        ))
+        by_priority = list(Notification.objects.filter(user=user).values('priority').annotate(
+            count=Count('id')
+        ))
         
         data = {
             'total': total,
             'unread': unread,
-            'by_type': by_type
+            'read_percentage': (total - unread) / total * 100 if total > 0 else 0,
+            'by_type': by_type,
+            'by_priority': by_priority
         }
         serializer = NotificationStatisticsSerializer(data)
         return Response(serializer.data)

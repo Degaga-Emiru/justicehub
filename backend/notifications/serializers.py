@@ -1,21 +1,27 @@
 from rest_framework import serializers
 from .models import Notification, NotificationPreference
+from cases.models import Case
+
+class CaseNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Case
+        fields = ['id', 'title', 'file_number']
 
 class NotificationSerializer(serializers.ModelSerializer):
     time_ago = serializers.SerializerMethodField()
+    case = CaseNotificationSerializer(read_only=True)
     
     class Meta:
         model = Notification
         fields = [
             'id', 'type', 'priority', 'title', 'message',
-            'action_url', 'icon', 'metadata', 'is_read',
-            'created_at', 'time_ago'
+            'is_read', 'time_ago', 'case', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
     
     def get_time_ago(self, obj):
         from django.utils.timesince import timesince
-        return timesince(obj.created_at)
+        return f"{timesince(obj.created_at).split(',')[0]} ago"
 
 
 class NotificationMarkReadSerializer(serializers.Serializer):

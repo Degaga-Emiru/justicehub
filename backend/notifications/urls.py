@@ -6,8 +6,6 @@ router = DefaultRouter()
 router.register(r'', views.NotificationViewSet, basename='notification')
 
 urlpatterns = [
-    path('', include(router.urls)),
-    
     # Notification preferences
     path('preferences/', views.NotificationPreferenceView.as_view(), name='notification-preferences'),
     path('preferences/update/', views.UpdateNotificationPreferencesView.as_view(), name='update-preferences'),
@@ -22,4 +20,6 @@ urlpatterns = [
     
     # Email test (admin only)
     path('test-email/', views.TestEmailView.as_view(), name='test-email'),
+
+    path('', include(router.urls)),
 ]
