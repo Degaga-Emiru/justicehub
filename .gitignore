@@ -50,3 +50,30 @@ Thumbs.db
 # Static & Media
 staticfiles/
 media/
+
+# Test result files
+test_*.txt
+*_results*.txt
+*_output*.txt
+*_err*.txt
+backend/test_*.txt
+backend/*_results*.txt
+backend/*_output*.txt
+backend/*_err*.txt
+# ===============================
+# Test output / result files
+# ===============================
+backend/test_create_err.txt
+backend/test_output.txt
+backend/test_results.txt
+backend/test_results_v2.txt
+backend/test_results_v3.txt
+backend/test_results_v4.txt
+backend/test_results_v5.txt
+backend/test_results_v6.txt
+backend/test_results_v7.txt
+
+# Ignore any future test result files
+backend/test_*.txt
+# Virtual environment
+venv/
