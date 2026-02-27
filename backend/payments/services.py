@@ -80,6 +80,15 @@ class PaymentService:
         # 8. Send confirmation email
         PaymentService._send_confirmation_email(payment)
 
+        # Log action
+        from cases.services import AuditService
+        AuditService.log_action(
+            user=user,
+            action='PAYMENT_SUBMITTED',
+            entity=payment,
+            details={'reference': payment.transaction_reference, 'case_id': str(case_id)}
+        )
+
         # 9. Trigger judge assignment (Automatically move to ASSIGNED)
         # In a real system, there might be an admin verification step here.
         # But per requirements, we proceed to assign judge.

@@ -227,9 +227,24 @@ class CaseCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         request = self.context.get('request')
         
-        # For citizens, they can only create cases for themselves
+        # 1.1: Party Role Constraints
+        plaintiff = attrs.get('plaintiff')
+        defendant = attrs.get('defendant')
+        
+        # For citizens, they can only create cases for themselves as plaintiff
         if request.user.role == 'CITIZEN':
             attrs['plaintiff'] = request.user
+            plaintiff = request.user
+
+        # 1.2: A case must have at least 1 Plaintiff and 1 Defendant
+        if not plaintiff:
+            raise serializers.ValidationError("A case must have a Plaintiff.")
+        if not defendant:
+            raise serializers.ValidationError("A case must have a Defendant.")
+
+        # 1.1: Plaintiff and Defendant cannot be the same person
+        if plaintiff == defendant:
+            raise serializers.ValidationError("A person cannot be both Plaintiff and Defendant in the same case.")
         
         return attrs
 
@@ -254,6 +269,18 @@ class CaseCreateSerializer(serializers.ModelSerializer):
                 file=file,
                 document_type=doc_type
             )
+        
+        # Trigger registrar notification
+        from .services import CaseNotificationService, AuditService
+        CaseNotificationService.notify_registrars_new_case(case)
+        
+        # Log action
+        AuditService.log_action(
+            user=request.user,
+            action='CASE_CREATED',
+            entity=case,
+            details={'title': case.title, 'category': case.category.name}
+        )
         
         return case
 

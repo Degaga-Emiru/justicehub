@@ -127,29 +127,86 @@ class HearingCreateSerializer(serializers.ModelSerializer):
         ]
     
     def validate(self, data):
-        case = data.get('case')
+        from core.utils.scheduling import check_time_overlap, is_within_working_hours
+        from cases.constants import CaseStatus as CaseStatusConst
         
-        # Check if case is active
-        if case.status not in ['ASSIGNED', 'IN_PROGRESS']:
-            raise serializers.ValidationError(
-                "Hearings can only be scheduled for active cases."
+        case = data.get('case')
+        scheduled_date = data.get('scheduled_date')
+        duration = data.get('duration_minutes', 60)
+        location = data.get('location')
+        judge = data.get('judge')
+        
+        # 2.2: Case status check (Must be PAID or later)
+        # Allowed status for hearing: PAID, ASSIGNED, IN_PROGRESS
+        allowed_statuses = [CaseStatusConst.PAID, CaseStatusConst.ASSIGNED, CaseStatusConst.IN_PROGRESS]
+        if case.status not in allowed_statuses:
+             raise serializers.ValidationError(
+                f"Hearings can only be scheduled for cases with status: {', '.join(allowed_statuses)}. "
+                f"Current status: {case.status}"
             )
+
+        # 13: Working Hours Constraint
+        is_val, msg = is_within_working_hours(scheduled_date, duration)
+        if not is_val:
+            raise serializers.ValidationError(msg)
+
+        # Time conflict validation logic
+        end_date = scheduled_date + timezone.timedelta(minutes=duration)
+        
+        # 3.1: Judge Overlap
+        if judge:
+            judge_conflicts = Hearing.objects.filter(
+                judge=judge,
+                scheduled_date__date=scheduled_date.date()
+            ).exclude(status='CANCELLED')
+            
+            for h in judge_conflicts:
+                h_end = h.scheduled_date + timezone.timedelta(minutes=h.duration_minutes)
+                if check_time_overlap(scheduled_date, end_date, h.scheduled_date, h_end):
+                    raise serializers.ValidationError(f"Judge is already booked for another hearing at this time.")
+
+        # 3.2: Room Overlap
+        if location:
+            room_conflicts = Hearing.objects.filter(
+                location=location,
+                scheduled_date__date=scheduled_date.date()
+            ).exclude(status='CANCELLED')
+            
+            for h in room_conflicts:
+                h_end = h.scheduled_date + timezone.timedelta(minutes=h.duration_minutes)
+                if check_time_overlap(scheduled_date, end_date, h.scheduled_date, h_end):
+                    raise serializers.ValidationError(f"Courtroom '{location}' is already booked for another hearing.")
+
+        # 3.4 & 3.5: Defendant/Plaintiff Overlap
+        parties = [case.plaintiff, case.defendant]
+        for party in filter(None, parties):
+             party_conflicts = Hearing.objects.filter(
+                Q(case__plaintiff=party) | Q(case__defendant=party),
+                scheduled_date__date=scheduled_date.date()
+            ).exclude(status='CANCELLED')
+             
+             for h in party_conflicts:
+                 h_end = h.scheduled_date + timezone.timedelta(minutes=h.duration_minutes)
+                 if check_time_overlap(scheduled_date, end_date, h.scheduled_date, h_end):
+                     raise serializers.ValidationError(f"Party {party.get_full_name()} has another hearing conflict at this time.")
+
+        # 8: Role-based Constraint (Judge cannot be party)
+        if judge and (judge == case.plaintiff or judge == case.defendant):
+            raise serializers.ValidationError("Judge cannot preside over a case where they are a party.")
+
+        # Permission checks
         request = self.context.get('request')
         if not request or not request.user:
              raise serializers.ValidationError("Authentication required.")
 
-        # Allow ADMIN, CLERK, and REGISTRAR to schedule for any active case
         if request.user.role in ['ADMIN', 'CLERK', 'REGISTRAR']:
             return data
 
-        # For JUDGE role, perform additional checks
         if request.user.role == 'JUDGE':
-            # Check if judge is assigned to this case
             is_assigned = case.judge_assignments.filter(
                 judge=request.user,
                 is_active=True
             ).exists()
-            
             if not is_assigned:
                 raise serializers.ValidationError("You are not assigned to this case.")
         else:

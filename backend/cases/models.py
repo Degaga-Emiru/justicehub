@@ -10,6 +10,30 @@ from django.db.models import Q
 from accounts.models import User
 
 
+class SoftDeleteManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
+class SoftDeleteModel(models.Model):
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def hard_delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+
+
 class CaseCategory(models.Model):
     """Legal case classification"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -55,9 +79,20 @@ class CaseStatus(models.Model):
         return self.get_name_display()
 
 
-class Case(models.Model):
+class Case(SoftDeleteModel):
     """Main Case Model"""
+    
+    # Status Flow Definition
+    STATUS_FLOW = {
+        CaseStatus.StatusChoices.PENDING_REVIEW: [CaseStatus.StatusChoices.APPROVED, CaseStatus.StatusChoices.REJECTED],
+        CaseStatus.StatusChoices.APPROVED: [CaseStatus.StatusChoices.PAID],
+        CaseStatus.StatusChoices.PAID: [CaseStatus.StatusChoices.ASSIGNED],
+        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS],
+        CaseStatus.StatusChoices.IN_PROGRESS: [CaseStatus.StatusChoices.CLOSED],
+    }
+
     class Priority(models.TextChoices):
+
         LOW = 'LOW', 'Low'
         MEDIUM = 'MEDIUM', 'Medium'
         HIGH = 'HIGH', 'High'
@@ -161,11 +196,38 @@ class Case(models.Model):
     def __str__(self):
         return f"{self.file_number or 'PENDING'} - {self.title}"
 
+    def clean(self):
+        super().clean()
+        
+        # 1.1: Party Role Constraints
+        if self.plaintiff and self.defendant and self.plaintiff == self.defendant:
+            raise ValidationError("A person cannot be both Plaintiff and Defendant in the same case.")
+        
+        # 12.1: A closed case cannot be edited.
+        if self.pk:
+            old_instance = Case.all_objects.get(pk=self.pk)
+            if old_instance.status == CaseStatus.StatusChoices.CLOSED:
+                raise ValidationError("A closed case cannot be modified.")
+
     def save(self, *args, **kwargs):
+        self.clean()
+        
+        # 2.2: Strict Status Flow Enforcement
+        if self.pk:
+            old_instance = Case.all_objects.get(pk=self.pk)
+            if old_instance.status != self.status:
+                allowed_next = self.STATUS_FLOW.get(old_instance.status, [])
+                if self.status not in allowed_next:
+                    raise ValidationError(
+                        f"Invalid status transition from {old_instance.status} to {self.status}. "
+                        f"Allowed transitions: {', '.join(allowed_next)}"
+                    )
+
         # Auto-generate file number if status changes to APPROVED
         if self.status == CaseStatus.StatusChoices.APPROVED and not self.file_number:
             self.file_number = self.generate_file_number()
         super().save(*args, **kwargs)
+
 
     def generate_file_number(self):
         """Generate unique file number in format: JH-YYYY-XXXX"""

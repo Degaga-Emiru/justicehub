@@ -4,12 +4,31 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from accounts.models import User
-from .models import Case, JudgeAssignment, CaseCategory
+from .models import Case, JudgeAssignment, CaseCategory, UserActionLog
 from notifications.services import create_notification
 from core.utils.email import send_email_template
 from .constants import CaseStatus
 
 logger = logging.getLogger(__name__)
+
+
+class AuditService:
+    """Service for logging system and user actions"""
+    
+    @classmethod
+    def log_action(cls, user, action, entity, details=None):
+        """Log a user action to the audit trail"""
+        try:
+            UserActionLog.objects.create(
+                user=user,
+                action=action,
+                entity_type=entity.__class__.__name__,
+                entity_id=entity.id if hasattr(entity, 'id') else None,
+                details=details or {}
+            )
+        except Exception as e:
+            logger.error(f"Failed to log action '{action}': {str(e)}")
+
 
 class JudgeAssignmentService:
     """Service for automatic judge assignment"""
@@ -177,6 +196,15 @@ class CaseReviewService:
             case=case
         )
         
+        # Trigger registrar notification
+        # Log action
+        AuditService.log_action(
+            user=reviewer,
+            action='CASE_APPROVED',
+            entity=case,
+            details={'court_name': court_name, 'file_number': case.file_number}
+        )
+
         # Send payment instruction email
         cls._send_payment_instruction_email(case)
         
@@ -218,6 +246,14 @@ class CaseReviewService:
             priority='HIGH'
         )
         
+        # Log action
+        AuditService.log_action(
+            user=reviewer,
+            action='CASE_REJECTED',
+            entity=case,
+            details={'reason': reason}
+        )
+
         # Send email
         cls._send_rejection_email(case)
         
@@ -253,4 +289,43 @@ class CaseReviewService:
             template_name='emails/case_rejected.html',
             context=context,
             recipient_list=[case.created_by.email]
+        )
+
+
+class CaseNotificationService:
+    """Service for complex case-related notifications"""
+
+    @classmethod
+    def notify_registrars_new_case(cls, case):
+        """Notify all users with REGISTRAR role about a new case"""
+        registrars = User.objects.filter(role='REGISTRAR', is_active=True)
+        
+        for registrar in registrars:
+            # 1. Internal Notification
+            create_notification(
+                user=registrar,
+                type='NEW_CASE_FILED',
+                title='New Case Filed',
+                message=f"A new case '{case.title}' has been filed and is pending review.",
+                case=case,
+                priority='MEDIUM'
+            )
+            
+            # 2. Email Notification
+            cls._send_registrar_new_case_email(registrar, case)
+
+    @classmethod
+    def _send_registrar_new_case_email(cls, registrar, case):
+        """Send email to registrar about new case"""
+        context = {
+            'registrar': registrar,
+            'case': case,
+            'frontend_url': settings.FRONTEND_URL
+        }
+        
+        send_email_template(
+            subject=f"New Case Assignment Review Needed - {case.title[:50]}",
+            template_name='emails/registrar_new_case.html',
+            context=context,
+            recipient_list=[registrar.email]
         )

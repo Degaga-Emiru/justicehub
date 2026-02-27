@@ -4,9 +4,9 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.conf import settings
 from accounts.models import User
-from cases.models import Case
+from cases.models import Case, SoftDeleteModel
 
-class Hearing(models.Model):
+class Hearing(SoftDeleteModel):
     """Hearing/Scheduling Model"""
     class HearingType(models.TextChoices):
         INITIAL = 'INITIAL', 'Initial Hearing'
