@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'hearings',
     'decisions',
     'payments',
+    'audit_logs',
 ]
 
 
@@ -257,6 +258,11 @@ LOGGING = {
             'propagate': True,
         },
         'notifications': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'audit_logs': {
             'handlers': ['file', 'console'],
             'level': 'INFO',
             'propagate': True,

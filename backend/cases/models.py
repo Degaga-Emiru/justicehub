@@ -182,6 +182,9 @@ class Case(SoftDeleteModel):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['file_number']),
+            models.Index(fields=['status']),
+            models.Index(fields=['category']),
+            models.Index(fields=['created_at']),
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['created_by', 'status']),
             models.Index(fields=['priority']),
@@ -439,25 +442,3 @@ class CaseNotes(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.case.file_number}"
-
-
-class UserActionLog(models.Model):
-    """Audit log for user actions"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='action_logs')
-    action = models.CharField(max_length=100)
-    entity_type = models.CharField(max_length=50)  # Case, Document, etc.
-    entity_id = models.UUIDField(null=True, blank=True)
-    details = models.JSONField(default=dict)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['user', '-created_at']),
-            models.Index(fields=['entity_type', 'entity_id']),
-        ]
-
-    def __str__(self):
-        return f"{self.action} by {self.user} at {self.created_at}"

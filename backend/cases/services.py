@@ -4,7 +4,9 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from accounts.models import User
-from .models import Case, JudgeAssignment, CaseCategory, UserActionLog
+from .models import Case, JudgeAssignment, CaseCategory
+from audit_logs.services import create_log
+from audit_logs.models import UserActionLog
 from notifications.services import create_notification
 from core.utils.email import send_email_template
 from .constants import CaseStatus
@@ -88,10 +90,18 @@ class JudgeAssignmentService:
             is_active=True
         )
         
-        # Update case status
         case.status = CaseStatus.ASSIGNED
         case.save()
         
+        # Log Assignment
+        create_log(
+            action_type=UserActionLog.ActionType.ASSIGN,
+            obj=case,
+            description=f"Judge {selected.get_full_name()} assigned to case {case.file_number}.",
+            user=assigned_by or case.reviewed_by,
+            new_data={'judge_id': str(selected.id), 'judge_name': selected.get_full_name()}
+        )
+
         # Create notifications
         cls._send_assignment_notifications(assignment)
         
@@ -179,10 +189,19 @@ class CaseReviewService:
         case.reviewed_by = reviewer
         case.reviewed_at = timezone.now()
         case.court_name = court_name
-        case.court_room = court_room
         case.file_number = case.generate_file_number()
         case.save()
         
+        # Log Approval
+        create_log(
+            action_type=UserActionLog.ActionType.STATUS_CHANGE,
+            obj=case,
+            description=f"Case {case.file_number} approved by {reviewer.get_full_name()}.",
+            user=reviewer,
+            old_data={'status': 'PENDING_REVIEW'},
+            new_data={'status': CaseStatus.APPROVED, 'file_number': case.file_number, 'court_name': court_name}
+        )
+
         # Notify client
         create_notification(
             user=case.created_by,
@@ -232,10 +251,19 @@ class CaseReviewService:
         """Reject a case with reason"""
         case.status = CaseStatus.REJECTED
         case.reviewed_by = reviewer
-        case.reviewed_at = timezone.now()
         case.rejection_reason = reason
         case.save()
         
+        # Log Rejection
+        create_log(
+            action_type=UserActionLog.ActionType.STATUS_CHANGE,
+            obj=case,
+            description=f"Case rejected by {reviewer.get_full_name()}. Reason: {reason}",
+            user=reviewer,
+            old_data={'status': 'PENDING_REVIEW'},
+            new_data={'status': CaseStatus.REJECTED, 'rejection_reason': reason}
+        )
+
         # Notify client
         create_notification(
             user=case.created_by,

@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/hearings/', include('hearings.urls')),
     path('api/decisions/', include('decisions.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('api/logs/', include('audit_logs.urls')),
     path('api/payments/', include('payments.urls')),
 ]
 

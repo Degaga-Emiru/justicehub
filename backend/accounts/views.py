@@ -13,6 +13,8 @@ from .serializers import (
     LoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
     ChangePasswordSerializer, UserProfileSerializer, TokenResponseSerializer
 )
+from audit_logs.services import create_log
+from audit_logs.models import UserActionLog
 from .permissions import IsAdmin
 from .utils import send_otp_email
 from .utils import send_password_change_notification, send_password_reset_confirmation
@@ -130,6 +132,14 @@ class LoginView(APIView):
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
         
+        # Log Login
+        create_log(
+            request=request,
+            action_type=UserActionLog.ActionType.LOGIN,
+            obj=user,
+            description=f"User {user.email} logged in successfully."
+        )
+
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),

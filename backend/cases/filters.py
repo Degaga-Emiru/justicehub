@@ -20,6 +20,8 @@ class CaseFilter(django_filters.FilterSet):
     created_by = django_filters.UUIDFilter(field_name='created_by__id')
     plaintiff = django_filters.UUIDFilter(field_name='plaintiff__id')
     defendant = django_filters.UUIDFilter(field_name='defendant__id')
+    plaintiff_name = django_filters.CharFilter(method='plaintiff_name_filter')
+    defendant_name = django_filters.CharFilter(method='defendant_name_filter')
     plaintiff_lawyer = django_filters.UUIDFilter(field_name='plaintiff_lawyer__id')
     defendant_lawyer = django_filters.UUIDFilter(field_name='defendant_lawyer__id')
     
@@ -30,10 +32,8 @@ class CaseFilter(django_filters.FilterSet):
     # Date filters
     date_from = django_filters.DateFilter(field_name='created_at', lookup_expr='gte')
     date_to = django_filters.DateFilter(field_name='created_at', lookup_expr='lte')
-    filing_date_from = django_filters.DateFilter(field_name='filing_date', lookup_expr='gte')
-    filing_date_to = django_filters.DateFilter(field_name='filing_date', lookup_expr='lte')
-    closed_date_from = django_filters.DateFilter(field_name='closed_date', lookup_expr='gte')
-    closed_date_to = django_filters.DateFilter(field_name='closed_date', lookup_expr='lte')
+    created_at = django_filters.DateFromToRangeFilter()
+    opened_at = django_filters.DateFromToRangeFilter(field_name='filing_date')
     
     # Boolean filters
     is_active = django_filters.BooleanFilter(method='active_filter')
@@ -47,12 +47,28 @@ class CaseFilter(django_filters.FilterSet):
         ]
     
     def search_filter(self, queryset, name, value):
-        """Search by title, file number, or description"""
+        """Search by title, file number, description, or names"""
         return queryset.filter(
             Q(title__icontains=value) |
             Q(file_number__icontains=value) |
             Q(description__icontains=value) |
-            Q(case_summary__icontains=value)
+            Q(case_summary__icontains=value) |
+            Q(plaintiff__first_name__icontains=value) |
+            Q(plaintiff__last_name__icontains=value) |
+            Q(defendant__first_name__icontains=value) |
+            Q(defendant__last_name__icontains=value)
+        )
+
+    def plaintiff_name_filter(self, queryset, name, value):
+        return queryset.filter(
+            Q(plaintiff__first_name__icontains=value) |
+            Q(plaintiff__last_name__icontains=value)
+        )
+
+    def defendant_name_filter(self, queryset, name, value):
+        return queryset.filter(
+            Q(defendant__first_name__icontains=value) |
+            Q(defendant__last_name__icontains=value)
         )
     
     def judge_filter(self, queryset, name, value):

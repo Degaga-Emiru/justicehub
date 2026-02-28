@@ -18,6 +18,8 @@ from .permissions import (
     IsPartyToDecision
 )
 from .services import generate_decision_pdf, deliver_decision
+from audit_logs.services import create_log
+from audit_logs.models import UserActionLog
 from notifications.services import create_notification, notify_case_participants
 from core.exceptions import BusinessLogicError
 import logging
@@ -75,6 +77,14 @@ class DecisionViewSet(viewsets.ModelViewSet):
         # Generate PDF
         generate_decision_pdf(decision)
         
+        # Log Decision Creation
+        create_log(
+            request=request,
+            action_type=UserActionLog.ActionType.DECISION,
+            obj=decision,
+            description=f"Decision {decision.decision_number} issued for case {decision.case.file_number}."
+        )
+
         logger.info(f"Decision {decision.decision_number} created for case {decision.case.id}")
         
         return Response({

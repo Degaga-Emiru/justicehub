@@ -4,7 +4,7 @@ from django.db import transaction
 from .models import (
     CaseCategory, Case, CaseDocument, 
     JudgeAssignment, CaseNotes, JudgeProfile,
-    CaseStatus, UserActionLog
+    CaseStatus
 )
 from accounts.models import User
 from accounts.serializers import UserProfileSerializer
@@ -381,16 +381,6 @@ class CaseStatusUpdateSerializer(serializers.Serializer):
         'ACCEPTED', 'REJECTED', 'ASSIGNED', 'IN_PROGRESS', 'CLOSED'
     ])
     reason = serializers.CharField(required=False, allow_blank=True)
-
-
-class UserActionLogSerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
-    
-    class Meta:
-        model = UserActionLog
-        fields = ['id', 'user', 'user_name', 'action', 'entity_type', 'entity_id', 'details', 'ip_address', 'created_at']
-        read_only_fields = ['id', 'created_at']
-
 
 class DashboardStatsSerializer(serializers.Serializer):
     """Serializer for dashboard statistics"""
