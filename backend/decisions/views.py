@@ -8,18 +8,19 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from datetime import timedelta
 
-from .models import Decision, DecisionDelivery
+from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
 from .serializers import (
     DecisionSerializer, DecisionDeliverySerializer,
-    DecisionPublishSerializer
+    DecisionPublishSerializer, DecisionVersionSerializer,
+    DecisionCommentSerializer, DecisionAppealSerializer
 )
 from .permissions import (
     IsDecisionJudge, CanPublishDecision, CanViewDecision,
     IsPartyToDecision
 )
-from .services import generate_decision_pdf, deliver_decision
-from audit_logs.services import create_log
-from audit_logs.models import UserActionLog
+from .services import generate_decision_pdf, deliver_decision, DecisionWorkflowService
+from audit_logs.services import create_audit_log
+from audit_logs.models import AuditLog
 from notifications.services import create_notification, notify_case_participants
 from core.exceptions import BusinessLogicError
 import logging
@@ -29,32 +30,44 @@ logger = logging.getLogger(__name__)
 
 class DecisionViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing decisions.
+    ViewSet for managing decisions with workflow states (Draft, Finalized, Published).
     """
     queryset = Decision.objects.all().select_related(
         'case', 'judge'
-    ).prefetch_related('deliveries__recipient')
+    ).prefetch_related(
+        'deliveries__recipient', 'versions', 'comments__author', 'appeals__appellant'
+    )
     
     permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
+        if self.action == 'publish':
+            return DecisionPublishSerializer
+        elif self.action == 'appeal':
+            return DecisionAppealSerializer
+        elif self.action == 'comments':
+            return DecisionCommentSerializer
         return DecisionSerializer
     
     def get_queryset(self):
         user = self.request.user
         
-        if user.role in ['ADMIN', 'CLERK', 'REGISTRAR']:
+        if user.role in ['ADMIN', 'REGISTRAR']:
             return self.queryset
         elif user.role == 'JUDGE':
-            return self.queryset.filter(judge=user)
+            # Judges see their own decisions (any state) and published decisions
+            return self.queryset.filter(Q(judge=user) | Q(status=Decision.DecisionStatus.PUBLISHED)).distinct()
         else:
-            # Clients see decisions for their cases
+            # Clients/Parties see ONLY published decisions for their cases
             return self.queryset.filter(
-                Q(case__created_by=user) |
-                Q(case__plaintiff=user) |
-                Q(case__defendant=user) |
-                Q(case__plaintiff_lawyer=user) |
-                Q(case__defendant_lawyer=user)
+                Q(status=Decision.DecisionStatus.PUBLISHED) &
+                (
+                    Q(case__created_by=user) |
+                    Q(case__plaintiff=user) |
+                    Q(case__defendant=user) |
+                    Q(case__plaintiff_lawyer=user) |
+                    Q(case__defendant_lawyer=user)
+                )
             ).distinct()
     
     def get_permissions(self):
@@ -64,69 +77,88 @@ class DecisionViewSet(viewsets.ModelViewSet):
             self.permission_classes = [IsAuthenticated, IsDecisionJudge]
         elif self.action in ['retrieve']:
             self.permission_classes = [IsAuthenticated, CanViewDecision]
+        elif self.action in ['finalize']:
+            self.permission_classes = [IsAuthenticated, IsDecisionJudge]
+        elif self.action in ['publish']:
+            self.permission_classes = [IsAuthenticated, CanPublishDecision]
+        elif self.action in ['acknowledge', 'appeal']:
+            self.permission_classes = [IsAuthenticated, IsPartyToDecision]
         return super().get_permissions()
-    
-    def perform_create(self, serializer):
-        return serializer.save()
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        decision = self.perform_create(serializer)
+        decision = serializer.save(judge=request.user, status=Decision.DecisionStatus.DRAFT)
         
-        # Generate PDF
-        generate_decision_pdf(decision)
+        # Snapshot the initial version
+        DecisionWorkflowService.save_draft(decision, request.user, is_major_change=True)
         
         # Log Decision Creation
-        create_log(
+        create_audit_log(
             request=request,
-            action_type=UserActionLog.ActionType.DECISION,
+            action_type=AuditLog.ActionType.DECISION_CREATED,
             obj=decision,
-            description=f"Decision {decision.decision_number} issued for case {decision.case.file_number}."
+            description=f"Draft decision created for case {decision.case.file_number}",
+            entity_name=decision.title
+        )
+        
+        return Response(DecisionSerializer(decision).data, status=status.HTTP_201_CREATED)
+
+    def perform_update(self, serializer):
+        is_major_change = self.request.data.get('is_major_change', False)
+        if isinstance(is_major_change, str):
+            is_major_change = is_major_change.lower() in ['true', '1', 'yes']
+            
+        decision = serializer.save()
+        DecisionWorkflowService.save_draft(decision, self.request.user, is_major_change=is_major_change)
+        
+        # Log Decision Update
+        create_audit_log(
+            request=self.request,
+            action_type=AuditLog.ActionType.DECISION_UPDATED,
+            obj=decision,
+            description=f"Decision draft updated (Major change: {is_major_change})",
+            entity_name=decision.decision_number or "DRAFT"
         )
 
-        logger.info(f"Decision {decision.decision_number} created for case {decision.case.id}")
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsDecisionJudge])
+    def finalize(self, request, pk=None):
+        """Finalize a draft decision"""
+        decision = self.get_object()
+        DecisionWorkflowService.finalize_decision(decision, request.user)
         
-        return Response({
-            "id": decision.id,
-            "decision_number": decision.decision_number,
-            "case": decision.case.id,
-            "title": decision.title,
-            "decision_type": decision.decision_type,
-            "judge_name": decision.judge.get_full_name(),
-            "is_published": decision.is_published,
-            "created_at": decision.created_at
-        }, status=status.HTTP_201_CREATED)
-    
+        # Log Decision Finalized
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DECISION_UPDATED, # Use UPDATED for state transition
+            obj=decision,
+            description=f"Decision {decision.decision_number} finalized and sent for review.",
+            entity_name=decision.decision_number
+        )
+        
+        return Response({"message": "Decision finalized. Registrar notified.", "status": decision.status})
+
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, CanPublishDecision])
     def publish(self, request, pk=None):
-        """Publish a decision"""
+        """Publish a finalized decision"""
         decision = self.get_object()
         
-        serializer = DecisionPublishSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        if decision.is_published:
-            raise BusinessLogicError("Decision is already published")
+        DecisionWorkflowService.publish_decision(decision, request.user)
         
-        decision.is_published = True
-        decision.published_at = timezone.now()
-        decision.save()
-        
-        # Deliver to parties
-        deliver_decision(decision)
-        
-        # Notify all parties
-        notify_case_participants(
-            case=decision.case,
-            type='DECISION_ISSUED',
-            title='Decision Issued',
-            message=f'A decision has been issued for your case. Decision Number: {decision.decision_number}',
-            exclude_users=[request.user]
+        # Log Decision Published
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DECISION_PUBLISHED,
+            obj=decision,
+            description=f"Decision {decision.decision_number} published. Case resolved.",
+            entity_name=decision.decision_number
         )
         
         return Response({
-            "message": "Decision published successfully.",
+            "message": "Decision published successfully. Case RESOLVED.",
             "decision_number": decision.decision_number,
             "published_at": decision.published_at
         })
@@ -142,6 +174,15 @@ class DecisionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
+        # Log Decision Downloaded
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DECISION_DOWNLOADED,
+            obj=decision,
+            description=f"Decision PDF {decision.decision_number} downloaded",
+            entity_name=decision.decision_number
+        )
+
         return FileResponse(
             decision.pdf_document.open('rb'),
             as_attachment=True,
@@ -160,25 +201,112 @@ class DecisionViewSet(viewsets.ModelViewSet):
     def acknowledge(self, request, pk=None):
         """Acknowledge receipt of decision"""
         decision = self.get_object()
+        delivery = DecisionWorkflowService.acknowledge_receipt(decision, request.user)
         
-        delivery = get_object_or_404(
-            DecisionDelivery,
-            decision=decision,
-            recipient=request.user
+        # Log Acknowledgment
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DECISION_UPDATED,
+            obj=decision,
+            description=f"Decision {decision.decision_number} acknowledgment received from {request.user.email}",
+            entity_name=decision.decision_number
         )
-        
-        delivery.acknowledged_at = timezone.now()
-        delivery.save()
         
         return Response({
             "message": "Decision acknowledged",
             "acknowledged_at": delivery.acknowledged_at
         })
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsPartyToDecision])
+    def appeal(self, request, pk=None):
+        """File an appeal for a decision"""
+        decision = self.get_object()
+        reasons = request.data.get('reasons')
+        if not reasons:
+            raise BusinessLogicError("Reasons for appeal are required.")
+            
+        appeal = DecisionWorkflowService.file_appeal(decision, request.user, reasons)
+        
+        # Log Appeal
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DECISION_UPDATED,
+            obj=decision,
+            description=f"Appeal filed for decision {decision.decision_number} by {request.user.email}",
+            entity_name=decision.decision_number
+        )
+        
+        return Response({
+            "message": "Appeal filed successfully",
+            "appeal_id": appeal.id,
+            "filed_at": appeal.filed_at
+        })
+
+    @action(detail=True, methods=['post', 'get'], permission_classes=[IsAuthenticated])
+    def comments(self, request, pk=None):
+        """Add or list comments for a decision"""
+        decision = self.get_object()
+        
+        if request.method == 'POST':
+            text = request.data.get('text')
+            if not text:
+                raise BusinessLogicError("Comment text is required.")
+            comment = DecisionWorkflowService.add_comment(decision, request.user, text)
+            
+            # Log Comment
+            create_audit_log(
+                request=request,
+                action_type=AuditLog.ActionType.DECISION_UPDATED,
+                obj=decision,
+                description=f"Comment added to decision {decision.decision_number or 'DRAFT'} by {request.user.email}",
+                entity_name=decision.decision_number or "DRAFT"
+            )
+            
+            return Response(DecisionCommentSerializer(comment).data, status=status.HTTP_201_CREATED)
+        else:
+            comments = decision.comments.all()
+            return Response(DecisionCommentSerializer(comments, many=True).data)
+
+    @action(detail=True, methods=['get'])
+    def versions(self, request, pk=None):
+        """Get version history of a decision"""
+        decision = self.get_object()
+        if request.user.role not in ['JUDGE', 'REGISTRAR', 'ADMIN']:
+            raise BusinessLogicError("Only court officials can view version history.")
+            
+        versions = decision.versions.all()
+        return Response(DecisionVersionSerializer(versions, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def pending(self, request):
+        """Get pending decisions (DRAFT or FINALIZED) for Judge/Registrar"""
+        user = request.user
+        if user.role == 'JUDGE':
+            decisions = self.get_queryset().filter(judge=user, status__in=['DRAFT', 'FINALIZED'])
+        elif user.role == 'REGISTRAR':
+            decisions = self.get_queryset().filter(status='FINALIZED')
+        else:
+            decisions = self.get_queryset().filter(status__in=['DRAFT', 'FINALIZED'])
+            
+        page = self.paginate_queryset(decisions)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(decisions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='by-case/(?P<case_id>[^/.]+)')
+    def by_case(self, request, case_id=None):
+        """Get decisions by case ID"""
+        decisions = self.get_queryset().filter(case_id=case_id)
+        serializer = self.get_serializer(decisions, many=True)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def published(self, request):
         """Get published decisions"""
-        decisions = self.get_queryset().filter(is_published=True)
+        decisions = self.get_queryset().filter(status=Decision.DecisionStatus.PUBLISHED)
         page = self.paginate_queryset(decisions)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -194,7 +322,8 @@ class DecisionViewSet(viewsets.ModelViewSet):
         cutoff = timezone.now() - timedelta(days=days)
         
         decisions = self.get_queryset().filter(
-            created_at__gte=cutoff
+            created_at__gte=cutoff,
+            status=Decision.DecisionStatus.PUBLISHED
         ).order_by('-created_at')[:20]
         
         serializer = self.get_serializer(decisions, many=True)

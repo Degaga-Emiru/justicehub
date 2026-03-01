@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from django.utils import timezone
 from unittest.mock import patch
-from .models import CaseCategory, Case, CaseDocument, JudgeAssignment
+from .models import CaseCategory, Case, CaseDocument, JudgeAssignment, JudgeProfile
 from .services import JudgeAssignmentService, CaseReviewService
 
 User = get_user_model()
@@ -19,14 +19,15 @@ class CaseModelTests(TestCase):
             password='testpass123',
             first_name='Test',
             last_name='User',
-            phone_number='+1234567890'
+            phone_number='+1234567891'
         )
         
-        self.category = CaseCategory.objects.create(
+        self.category, _ = CaseCategory.objects.get_or_create(
             name='Test Category',
             code='TEST-001',
-            description='Test Description'
+            defaults={'description': 'Test Description'}
         )
+
     
     def test_create_case(self):
         """Test creating a case"""
@@ -50,7 +51,7 @@ class CaseModelTests(TestCase):
             created_by=self.user
         )
         
-        case.status = 'ACCEPTED'
+        case.status = 'APPROVED'
         case.save()
         
         self.assertIsNotNone(case.file_number)
@@ -65,7 +66,7 @@ class CaseModelTests(TestCase):
             created_by=self.user
         )
         
-        case.status = 'ACCEPTED'
+        case.status = 'APPROVED'
         case.file_number = 'JH-2024-0001'
         case.save()
         
@@ -106,6 +107,15 @@ class CaseAPITests(APITestCase):
             role='REGISTRAR'
         )
         
+        self.defendant = User.objects.create_user(
+            email='defendant@example.com',
+            password='defendant123',
+            first_name='Defendant',
+            last_name='User',
+            phone_number='+9999999999',
+            role='CITIZEN'
+        )
+        
         self.judge = User.objects.create_user(
             email='judge@example.com',
             password='judge123',
@@ -116,10 +126,11 @@ class CaseAPITests(APITestCase):
         )
         
         # Create category
-        self.category = CaseCategory.objects.create(
-            name='Civil',
-            code='CIV-001'
+        self.category, _ = CaseCategory.objects.get_or_create(
+            code='CIV-001',
+            defaults={'name': 'Civil'}
         )
+
         
         # Create test case
         self.case = Case.objects.create(
@@ -138,7 +149,8 @@ class CaseAPITests(APITestCase):
             'title': 'New Case',
             'description': 'New Description',
             'category': str(self.category.id),
-            'priority': 'HIGH'
+            'priority': 'HIGH',
+            'defendant': str(self.defendant.id)
         }
         
         response = self.client.post(url, data, format='json')
@@ -206,7 +218,7 @@ class CaseAPITests(APITestCase):
             
             # Refresh case
             self.case.refresh_from_db()
-            self.assertEqual(self.case.status, 'ACCEPTED')
+            self.assertEqual(self.case.status, 'APPROVED')
             self.assertIsNotNone(self.case.file_number)
     
     def test_review_case_reject(self):
@@ -253,10 +265,11 @@ class JudgeAssignmentServiceTests(TestCase):
     """Test Judge Assignment Service"""
     
     def setUp(self):
-        self.category = CaseCategory.objects.create(
-            name='Civil',
-            code='CIV-001'
+        self.category, _ = CaseCategory.objects.get_or_create(
+            code='CIV-001',
+            defaults={'name': 'Civil'}
         )
+
         
         self.judge_user = User.objects.create_user(
             email='judge@example.com',

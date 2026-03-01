@@ -13,6 +13,7 @@ urlpatterns = [
     # Case specific endpoints
     path('<uuid:pk>/assign-judge/', views.AssignJudgeView.as_view(), name='assign-judge'),
     path('<uuid:pk>/documents/', views.CaseDocumentViewSet.as_view({'get': 'list', 'post': 'create'}), name='case-documents'),
+    path('documents/<uuid:pk>/download/', views.CaseDocumentViewSet.as_view({'get': 'download'}), name='case-document-download'),
     path('<uuid:pk>/notes/', views.CaseNotesViewSet.as_view({'get': 'list', 'post': 'create'}), name='case-notes'),
     path('<uuid:pk>/timeline/', views.CaseTimelineView.as_view(), name='case-timeline'),
     

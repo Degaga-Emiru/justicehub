@@ -5,8 +5,8 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from accounts.models import User
 from .models import Case, JudgeAssignment, CaseCategory
-from audit_logs.services import create_log
-from audit_logs.models import UserActionLog
+from audit_logs.services import create_audit_log
+from audit_logs.models import AuditLog
 from notifications.services import create_notification
 from core.utils.email import send_email_template
 from .constants import CaseStatus
@@ -21,12 +21,21 @@ class AuditService:
     def log_action(cls, user, action, entity, details=None):
         """Log a user action to the audit trail"""
         try:
-            UserActionLog.objects.create(
+            # Map legacy action names to AuditLog.ActionType
+            if action == 'CASE_APPROVED':
+                action_type = AuditLog.ActionType.CASE_ACCEPTED
+            elif hasattr(AuditLog.ActionType, action):
+                action_type = getattr(AuditLog.ActionType, action)
+            else:
+                action_type = AuditLog.ActionType.CASE_UPDATED
+                
+            create_audit_log(
+                action_type=action_type,
                 user=user,
-                action=action,
-                entity_type=entity.__class__.__name__,
-                entity_id=entity.id if hasattr(entity, 'id') else None,
-                details=details or {}
+                obj=entity,
+                description=f"Action: {action}",
+                changes=details,
+                entity_name=getattr(entity, 'title', str(entity))
             )
         except Exception as e:
             logger.error(f"Failed to log action '{action}': {str(e)}")
@@ -94,12 +103,13 @@ class JudgeAssignmentService:
         case.save()
         
         # Log Assignment
-        create_log(
-            action_type=UserActionLog.ActionType.ASSIGN,
+        create_audit_log(
+            action_type=AuditLog.ActionType.CASE_ASSIGNED,
             obj=case,
             description=f"Judge {selected.get_full_name()} assigned to case {case.file_number}.",
             user=assigned_by or case.reviewed_by,
-            new_data={'judge_id': str(selected.id), 'judge_name': selected.get_full_name()}
+            changes={'judge': {'old': None, 'new': selected.get_full_name()}},
+            entity_name=case.file_number
         )
 
         # Create notifications
@@ -193,13 +203,13 @@ class CaseReviewService:
         case.save()
         
         # Log Approval
-        create_log(
-            action_type=UserActionLog.ActionType.STATUS_CHANGE,
+        create_audit_log(
+            action_type=AuditLog.ActionType.CASE_ACCEPTED,
             obj=case,
             description=f"Case {case.file_number} approved by {reviewer.get_full_name()}.",
             user=reviewer,
-            old_data={'status': 'PENDING_REVIEW'},
-            new_data={'status': CaseStatus.APPROVED, 'file_number': case.file_number, 'court_name': court_name}
+            changes={'status': {'old': 'PENDING_REVIEW', 'new': CaseStatus.APPROVED}},
+            entity_name=case.file_number
         )
 
         # Notify client
@@ -255,13 +265,13 @@ class CaseReviewService:
         case.save()
         
         # Log Rejection
-        create_log(
-            action_type=UserActionLog.ActionType.STATUS_CHANGE,
+        create_audit_log(
+            action_type=AuditLog.ActionType.CASE_REJECTED,
             obj=case,
             description=f"Case rejected by {reviewer.get_full_name()}. Reason: {reason}",
             user=reviewer,
-            old_data={'status': 'PENDING_REVIEW'},
-            new_data={'status': CaseStatus.REJECTED, 'rejection_reason': reason}
+            changes={'status': {'old': 'PENDING_REVIEW', 'new': CaseStatus.REJECTED}},
+            entity_name=case.title
         )
 
         # Notify client

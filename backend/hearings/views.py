@@ -6,6 +6,8 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
+from audit_logs.services import create_audit_log
+from audit_logs.models import AuditLog
 
 from .models import Hearing, HearingParticipant, HearingReminder
 from .serializers import (
@@ -115,6 +117,15 @@ class HearingViewSet(viewsets.ModelViewSet):
             case=hearing.case
         )
         
+        # Log Attendance
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.HEARING_ATTENDANCE,
+            obj=hearing,
+            description=f"{request.user.get_full_name()} confirmed attendance: {participant.get_attendance_status_display()}",
+            entity_name=hearing.case.file_number
+        )
+        
         response_serializer = HearingParticipantSerializer(participant)
         return Response(response_serializer.data)
     
@@ -140,6 +151,15 @@ class HearingViewSet(viewsets.ModelViewSet):
             exclude_users=[request.user]
         )
         
+        # Log Cancellation
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.HEARING_CANCELLED,
+            obj=hearing,
+            description=f"Hearing for case {hearing.case.file_number} has been cancelled",
+            entity_name=hearing.case.file_number
+        )
+
         return Response({
             "message": "Hearing cancelled successfully",
             "status": "CANCELLED"
@@ -156,6 +176,15 @@ class HearingViewSet(viewsets.ModelViewSet):
         hearing.transcript_url = request.data.get('transcript_url')
         hearing.save()
         
+        # Log Completion
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.HEARING_COMPLETED,
+            obj=hearing,
+            description=f"Hearing for case {hearing.case.file_number} completed",
+            entity_name=hearing.case.file_number
+        )
+
         return Response({
             "message": "Hearing marked as completed.",
             "status": "COMPLETED",
@@ -214,6 +243,16 @@ class HearingViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        hearing = serializer.instance
+        
+        # Log Hearing Scheduled
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.HEARING_SCHEDULED,
+            obj=hearing,
+            description=f"Hearing scheduled for case {hearing.case.file_number} at {hearing.scheduled_date}",
+            entity_name=hearing.case.file_number
+        )
         
         # Use HearingSerializer for the response
         response_serializer = HearingSerializer(serializer.instance, context={'request': request})

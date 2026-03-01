@@ -7,13 +7,18 @@ from accounts.models import User
 from cases.models import Case, JudgeAssignment
 
 class Decision(models.Model):
-    """Court Decision/Judgment Model"""
+    """Court Decision/Judgment Model with Workflow States"""
     class DecisionType(models.TextChoices):
         INTERIM = 'INTERIM', 'Interim Order'
         FINAL = 'FINAL', 'Final Judgment'
         DISMISSAL = 'DISMISSAL', 'Dismissal'
         SETTLEMENT = 'SETTLEMENT', 'Settlement Approval'
         OTHER = 'OTHER', 'Other'
+
+    class DecisionStatus(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        FINALIZED = 'FINALIZED', 'Finalized'
+        PUBLISHED = 'PUBLISHED', 'Published'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='decisions')
@@ -22,7 +27,15 @@ class Decision(models.Model):
     # Decision details
     title = models.CharField(max_length=200)
     decision_type = models.CharField(max_length=20, choices=DecisionType.choices)
-    decision_number = models.CharField(max_length=50, unique=True)
+    decision_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    
+    # Workflow fields
+    status = models.CharField(
+        max_length=20, 
+        choices=DecisionStatus.choices, 
+        default=DecisionStatus.DRAFT
+    )
+    version = models.PositiveIntegerField(default=1)
     
     # Content
     introduction = models.TextField()
@@ -43,9 +56,10 @@ class Decision(models.Model):
         blank=True
     )
     
-    # Status
+    # Keep is_published for backward compatibility/legacy logic if needed
     is_published = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
+    finalized_at = models.DateTimeField(null=True, blank=True)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -55,18 +69,20 @@ class Decision(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['decision_number']),
+            models.Index(fields=['status']),
             models.Index(fields=['case', '-created_at']),
             models.Index(fields=['judge', '-created_at']),
         ]
         permissions = [
             ('can_publish_decision', 'Can publish decision'),
+            ('can_finalize_decision', 'Can finalize decision'),
         ]
 
     def __str__(self):
-        return f"{self.decision_number} - {self.case.file_number}"
+        return f"{self.decision_number or 'DRAFT'} - {self.case.file_number}"
 
     def save(self, *args, **kwargs):
-        if not self.decision_number:
+        if not self.decision_number and self.status != self.DecisionStatus.DRAFT:
             self.decision_number = self.generate_decision_number()
         super().save(*args, **kwargs)
 
@@ -85,11 +101,47 @@ class Decision(models.Model):
         last_number = last_decision['decision_number__max']
         
         if last_number:
-            sequence = int(last_number.split('-')[-1]) + 1
+            try:
+                sequence = int(last_number.split('-')[-1]) + 1
+            except (ValueError, IndexError):
+                sequence = 1
         else:
             sequence = 1
         
         return f"{prefix}-{sequence:04d}"
+
+
+class DecisionVersion(models.Model):
+    """Snapshot of a decision draft"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    decision = models.ForeignKey(Decision, on_delete=models.CASCADE, related_name='versions')
+    version = models.PositiveIntegerField()
+    
+    title = models.CharField(max_length=200)
+    introduction = models.TextField()
+    background = models.TextField()
+    analysis = models.TextField()
+    conclusion = models.TextField()
+    order = models.TextField()
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        ordering = ['-version']
+        unique_together = ['decision', 'version']
+
+
+class DecisionComment(models.Model):
+    """Feedback from Judge/Registrar during review"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    decision = models.ForeignKey(Decision, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
 
 
 class DecisionDelivery(models.Model):
@@ -114,3 +166,18 @@ class DecisionDelivery(models.Model):
     class Meta:
         ordering = ['-delivered_at']
         unique_together = ['decision', 'recipient']
+
+
+class DecisionAppeal(models.Model):
+    """Tracks appeals filed by parties"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    decision = models.ForeignKey(Decision, on_delete=models.CASCADE, related_name='appeals')
+    appellant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='filed_appeals')
+    reasons = models.TextField()
+    filed_at = models.DateTimeField(auto_now_add=True)
+    
+    # Placeholder for appeal case reference if implemented later
+    # appeal_case = models.OneToOneField('cases.Case', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        ordering = ['-filed_at']

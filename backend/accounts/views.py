@@ -13,8 +13,8 @@ from .serializers import (
     LoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
     ChangePasswordSerializer, UserProfileSerializer, TokenResponseSerializer
 )
-from audit_logs.services import create_log
-from audit_logs.models import UserActionLog
+from audit_logs.services import create_audit_log
+from audit_logs.models import AuditLog
 from .permissions import IsAdmin
 from .utils import send_otp_email
 from .utils import send_password_change_notification, send_password_reset_confirmation
@@ -28,6 +28,15 @@ class CitizenRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
+        # Log User Created
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.USER_CREATED,
+            obj=user,
+            description=f"New user registered: {user.email} with role {user.role}",
+            entity_name=user.email
+        )
         
         return Response({
             "message": "Registration successful. Please check your email for OTP verification.",
@@ -45,6 +54,15 @@ class AdminCreateUserView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
+        # Log User Created
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.USER_CREATED,
+            obj=user,
+            description=f"User created by admin: {user.email} with role {user.role}",
+            entity_name=user.email
+        )
         
         return Response({
             "message": f"User created successfully. OTP sent to {user.email} for account setup.",
@@ -132,10 +150,10 @@ class LoginView(APIView):
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
         
-        # Log Login
-        create_log(
+        # Log Login Success
+        create_audit_log(
             request=request,
-            action_type=UserActionLog.ActionType.LOGIN,
+            action_type=AuditLog.ActionType.LOGIN,
             obj=user,
             description=f"User {user.email} logged in successfully."
         )

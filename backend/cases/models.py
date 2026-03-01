@@ -207,7 +207,7 @@ class Case(SoftDeleteModel):
             raise ValidationError("A person cannot be both Plaintiff and Defendant in the same case.")
         
         # 12.1: A closed case cannot be edited.
-        if self.pk:
+        if not self._state.adding:
             old_instance = Case.all_objects.get(pk=self.pk)
             if old_instance.status == CaseStatus.StatusChoices.CLOSED:
                 raise ValidationError("A closed case cannot be modified.")
@@ -216,7 +216,7 @@ class Case(SoftDeleteModel):
         self.clean()
         
         # 2.2: Strict Status Flow Enforcement
-        if self.pk:
+        if not self._state.adding:
             old_instance = Case.all_objects.get(pk=self.pk)
             if old_instance.status != self.status:
                 allowed_next = self.STATUS_FLOW.get(old_instance.status, [])

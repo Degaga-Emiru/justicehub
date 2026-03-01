@@ -29,6 +29,8 @@ from .permissions import (
 from .filters import CaseFilter
 from .pagination import StandardResultsSetPagination
 from .services import JudgeAssignmentService, CaseReviewService
+from audit_logs.services import create_audit_log
+from audit_logs.models import AuditLog
 from notifications.services import create_notification
 from core.exceptions import BusinessLogicError
 import logging
@@ -147,6 +149,21 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         # Default JSON handling
         return super().create(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Log Case Viewed
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.CASE_VIEWED,
+            obj=instance,
+            description=f"User {request.user.email} viewed case {instance.file_number or instance.title}",
+            entity_name=instance.file_number or instance.title
+        )
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     def update(self, request, *args, **kwargs):
         """
@@ -338,8 +355,19 @@ class CaseViewSet(viewsets.ModelViewSet):
                 case=case
             )
         
+        # Log Document Uploads
+        for doc in uploaded_docs:
+            create_audit_log(
+                request=request,
+                action_type=AuditLog.ActionType.DOCUMENT_UPLOADED,
+                obj=CaseDocument.objects.get(id=doc['id']),
+                description=f"Document {doc['file_name']} uploaded to case {case.file_number}",
+                entity_name=doc['file_name']
+            )
+
         return Response(uploaded_docs, status=status.HTTP_201_CREATED)
     
+
     @action(detail=True, methods=['get'])
     def timeline(self, request, pk=None):
         """Get case timeline"""
@@ -485,6 +513,53 @@ class CaseDocumentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         return super().create(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Log Document Viewed
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_VIEWED,
+            obj=instance,
+            description=f"User {request.user.email} viewed document {instance.file_name}",
+            entity_name=instance.file_name
+        )
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        doc_name = instance.file_name
+        
+        # Log Document Deleted
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_DELETED,
+            obj=instance,
+            description=f"Document {doc_name} deleted from case {instance.case.file_number}",
+            entity_name=doc_name
+        )
+        
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """Download document and log event"""
+        instance = self.get_object()
+        
+        # Log Document Downloaded
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_DOWNLOADED,
+            obj=instance,
+            description=f"Document {instance.file_name} downloaded",
+            entity_name=instance.file_name
+        )
+        
+        from django.http import FileResponse
+        return FileResponse(instance.file.open('rb'), as_attachment=True, filename=instance.file_name)
 
 
 class CaseNotesViewSet(viewsets.ModelViewSet):
@@ -874,6 +949,19 @@ class ExportCasesCSVView(generics.GenericAPIView):
                 current_judge.judge.get_full_name() if current_judge else ''
             ])
         
+        # Log Document Downloaded
+        # Note: 'instance' and 'file_name' are not defined in this context.
+        # This log entry might be intended for a single document download,
+        # not a bulk CSV export.
+        # For a CSV export, you might log the type of report downloaded.
+        # create_audit_log(
+        #     request=request,
+        #     action_type=AuditLog.ActionType.DOCUMENT_DOWNLOADED,
+        #     obj=instance, # Undefined
+        #     description=f"Document {instance.file_name} downloaded", # Undefined
+        #     entity_name=instance.file_name # Undefined
+        # )
+
         return response
 
 

@@ -1,14 +1,156 @@
-import os
-from django.conf import settings
-from django.core.files.base import ContentFile
-from django.template.loader import render_to_string
-from weasyprint import HTML
-from .models import Decision, DecisionDelivery
+from django.db import transaction
+from django.utils import timezone
+from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
 from notifications.services import create_notification
+from cases.constants import CaseStatus
+from accounts.models import User
+from core.exceptions import BusinessLogicError
 from core.utils.email import send_email_template
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class DecisionWorkflowService:
+    @staticmethod
+    def save_draft(decision, user, is_major_change=False):
+        """
+        Saves a decision draft and creates a version snapshot if it's a major change.
+        """
+        if decision.status != Decision.DecisionStatus.DRAFT:
+            raise BusinessLogicError("Only draft decisions can be updated as drafts.")
+
+        with transaction.atomic():
+            if is_major_change:
+                # Create snapshot before incrementing version
+                DecisionVersion.objects.create(
+                    decision=decision,
+                    version=decision.version,
+                    title=decision.title,
+                    introduction=decision.introduction,
+                    background=decision.background,
+                    analysis=decision.analysis,
+                    conclusion=decision.conclusion,
+                    order=decision.order,
+                    created_by=user
+                )
+                decision.version += 1
+            
+            decision.save()
+        return decision
+
+    @staticmethod
+    def finalize_decision(decision, user):
+        """
+        Finalizes a decision, generates PDF, and notifies Registrar for review.
+        """
+        if decision.status != Decision.DecisionStatus.DRAFT:
+            raise BusinessLogicError("Only draft decisions can be finalized.")
+
+        with transaction.atomic():
+            decision.status = Decision.DecisionStatus.FINALIZED
+            decision.finalized_at = timezone.now()
+            
+            # Generate decision number if not exists
+            if not decision.decision_number:
+                decision.decision_number = decision.generate_decision_number()
+            
+            decision.save()
+            
+            # Generate PDF
+            generate_decision_pdf(decision)
+            
+            # Notify Registrar
+            registrars = User.objects.filter(role='REGISTRAR')
+            for reg in registrars:
+                create_notification(
+                    user=reg,
+                    type='DECISION_FINALIZED',
+                    title='Decision Finalized for Review',
+                    message=f'Judge {user.get_full_name()} has finalized a decision for case {decision.case.file_number}. Please review.',
+                    case=decision.case,
+                    action_url=f"/decisions/{decision.id}"
+                )
+                
+        return decision
+
+    @staticmethod
+    def publish_decision(decision, user):
+        """
+        Publishes a decision, notifies parties, and closes the case.
+        """
+        if decision.status != Decision.DecisionStatus.FINALIZED:
+            raise BusinessLogicError("Only finalized decisions can be published.")
+
+        with transaction.atomic():
+            decision.status = Decision.DecisionStatus.PUBLISHED
+            decision.is_published = True
+            decision.published_at = timezone.now()
+            decision.save()
+            
+            # Update Case Status to RESOLVED
+            case = decision.case
+            case.status = CaseStatus.RESOLVED
+            case.save()
+            
+            # Deliver to parties
+            deliver_decision(decision)
+            
+            # Log and trigger notifications for parties already handled by deliver_decision
+            
+        return decision
+
+    @staticmethod
+    def acknowledge_receipt(decision, user):
+        """
+        Acknowledges receipt of a published decision by a party.
+        """
+        if decision.status != Decision.DecisionStatus.PUBLISHED:
+            raise BusinessLogicError("Only published decisions can be acknowledged.")
+            
+        delivery = DecisionDelivery.objects.filter(decision=decision, recipient=user).first()
+        if not delivery:
+            raise BusinessLogicError("No delivery record found for this user.")
+            
+        delivery.acknowledged_at = timezone.now()
+        delivery.save()
+        return delivery
+
+    @staticmethod
+    def file_appeal(decision, user, reasons):
+        """
+        Files an appeal for a published decision.
+        """
+        if decision.status != Decision.DecisionStatus.PUBLISHED:
+            raise BusinessLogicError("Only published decisions can be appealed.")
+            
+        # Check if user is a party to the case
+        case = decision.case
+        is_party = user in [case.created_by, case.plaintiff, case.defendant, case.plaintiff_lawyer, case.defendant_lawyer]
+        if not is_party:
+            raise BusinessLogicError("Only parties to the case can file an appeal.")
+
+        appeal = DecisionAppeal.objects.create(
+            decision=decision,
+            appellant=user,
+            reasons=reasons
+        )
+        return appeal
+
+    @staticmethod
+    def add_comment(decision, user, text):
+        """
+        Adds a comment during review.
+        """
+        if user.role not in ['JUDGE', 'REGISTRAR', 'ADMIN']:
+            raise BusinessLogicError("Only court officials can comment on decisions.")
+            
+        comment = DecisionComment.objects.create(
+            decision=decision,
+            author=user,
+            text=text
+        )
+        return comment
 
 
 def generate_decision_pdf(decision):

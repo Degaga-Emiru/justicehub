@@ -41,7 +41,8 @@ class DecisionModelTests(TestCase):
             title='Test Case',
             description='Test Description',
             category=self.category,
-            created_by=self.client_user
+            created_by=self.client_user,
+            file_number='FILE-001'
         )
     
     def test_create_decision(self):
@@ -153,7 +154,8 @@ class DecisionAPITests(APITestCase):
             category=self.category,
             created_by=self.client_user,
             plaintiff=self.client_user,
-            defendant=self.other_user
+            defendant=self.other_user,
+            file_number='FILE-001'
         )
         
         # Create decision
