@@ -28,7 +28,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         CLERK = 'CLERK', 'Court Clerk'
         DEFENDANT = 'DEFENDANT', 'Defendant'
         CITIZEN = 'CITIZEN', 'Citizen'
-    
+        
     role = models.CharField(
         max_length=20,
         choices=Role.choices,

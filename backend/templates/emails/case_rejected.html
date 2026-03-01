@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #e74c3c;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        .rejection-box {
+            background: #fde8e8;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Case Status Update</h1>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ client.get_full_name }},</p>
+        
+        <p>We regret to inform you that your case has been <strong>rejected</strong>.</p>
+        
+        <div class="rejection-box">
+            <h3>Reason for Rejection:</h3>
+            <p>{{ case.rejection_reason }}</p>
+        </div>
+        
+        <div class="case-details">
+            <h3>Case Details:</h3>
+            <p><strong>Title:</strong> {{ case.title }}</p>
+            <p><strong>Category:</strong> {{ case.category.name }}</p>
+        </div>
+        
+        <p>You may address the issues mentioned above and resubmit your case.</p>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ frontend_url }}/cases/new" class="button">Submit New Case</a>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message from Justice Hub. Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

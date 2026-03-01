@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #27ae60;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        .case-details {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Case Accepted</h1>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ client.get_full_name }},</p>
+        
+        <p>We are pleased to inform you that your case has been <strong>accepted</strong> by the registrar.</p>
+        
+        <div class="case-details">
+            <h3>Case Details:</h3>
+            <p><strong>File Number:</strong> {{ case.file_number }}</p>
+            <p><strong>Title:</strong> {{ case.title }}</p>
+            <p><strong>Category:</strong> {{ case.category.name }}</p>
+            <p><strong>Court:</strong> {{ case.court_name }}</p>
+            {% if case.court_room %}
+            <p><strong>Court Room:</strong> {{ case.court_room }}</p>
+            {% endif %}
+        </div>
+        
+        <p>A judge will be assigned to your case shortly. You will receive another notification once the assignment is complete.</p>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ frontend_url }}/cases/{{ case.id }}" class="button">View Case Details</a>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message from Justice Hub. Please do not reply to this email.</p>
+    </div>
+</body>
+</html>

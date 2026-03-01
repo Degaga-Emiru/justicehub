@@ -17,8 +17,38 @@ Including another URLconf
 from xml.etree.ElementInclude import include
 from django.contrib import admin
 from django.urls import path, include  # ✅ include must come from django.urls
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
+from django.conf import settings
+from django.conf.urls.static import static  # ✅ REQUIRED
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Justice Hub API",
+        default_version='v1',
+        description="API for Justice Hub Judicial Service Platform",
+        terms_of_service="https://www.justicehub.com/terms/",
+        contact=openapi.Contact(email="support@justicehub.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny],
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('accounts.urls')),  # Include accounts app URLs
+    path('api/', include('accounts.urls')), # Include accounts app URLs
+
+    path('api/cases/', include('cases.urls')),
+    path('api/hearings/', include('hearings.urls')),
+    path('api/decisions/', include('decisions.urls')),
+    path('api/notifications/', include('notifications.urls')),
+    path('api/audit/', include('audit_logs.urls')),
+    path('api/payments/', include('payments.urls')),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

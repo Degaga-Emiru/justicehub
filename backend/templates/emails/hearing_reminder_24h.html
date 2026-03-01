@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header .date {
+            font-size: 24px;
+            font-weight: 500;
+            margin: 15px 0 5px;
+        }
+        .header p {
+            margin: 5px 0 0;
+            opacity: 0.9;
+            font-size: 18px;
+        }
+        .content {
+            padding: 30px;
+            background: #ffffff;
+        }
+        .reminder-badge {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 25px;
+            border: 1px solid #bbdefb;
+        }
+        .hearing-details {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .hearing-details h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .detail-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .detail-value {
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .preparation-box {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        .preparation-box h4 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+        .preparation-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0;
+        }
+        .preparation-list li {
+            padding: 8px 0 8px 25px;
+            position: relative;
+            border-bottom: 1px solid #c8e6c9;
+        }
+        .preparation-list li:before {
+            content: "✓";
+            color: #2e7d32;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: transform 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        .calendar-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #fff;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 500;
+            border: 2px solid #667eea;
+            margin-left: 10px;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        @media only screen and (max-width: 600px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+            .button {
+                display: block;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="date">📅 Tomorrow</div>
+            <h1>Hearing Reminder</h1>
+            <p>Your hearing is scheduled for tomorrow</p>
+        </div>
+        
+        <div class="content">
+            <div class="reminder-badge">
+                🔔 24-Hour Notice: Hearing Tomorrow
+            </div>
+            
+            <div class="greeting">
+                Dear <strong>{{ user.get_full_name }}</strong>,
+            </div>
+            
+            <p>This is a friendly reminder that you have a hearing scheduled for <strong>tomorrow</strong>. Please review the details below and ensure you're prepared.</p>
+            
+            <div class="hearing-details">
+                <h3>📋 Hearing Information</h3>
+                
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Case Number</div>
+                        <div class="detail-value">{{ hearing.case.file_number }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Case Title</div>
+                        <div class="detail-value">{{ hearing.case.title }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Date</div>
+                        <div class="detail-value">{{ hearing.scheduled_date|date:"l, F j, Y" }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Time</div>
+                        <div class="detail-value">{{ hearing.scheduled_date|date:"g:i A" }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Duration</div>
+                        <div class="detail-value">{{ hearing.duration_minutes }} minutes</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Location</div>
+                        <div class="detail-value">{{ hearing.location }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Hearing Type</div>
+                        <div class="detail-value">{{ hearing.get_hearing_type_display }}</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">Presiding Judge</div>
+                        <div class="detail-value">Hon. {{ hearing.judge.get_full_name }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="preparation-box">
+                <h4>📝 Preparation Checklist</h4>
+                <ul class="preparation-list">
+                    <li>Review all case documents and evidence</li>
+                    <li>Prepare your arguments or testimony</li>
+                    <li>Organize any exhibits you plan to present</li>
+                    <li>Confirm attendance (click below)</li>
+                    <li>Test your equipment if joining virtually</li>
+                    <li>Plan your travel time to the courthouse</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{ frontend_url }}/hearings/{{ hearing.id }}/confirm?status=confirmed" class="button">
+                    ✅ Confirm Attendance
+                </a>
+                <a href="{{ frontend_url }}/hearings/{{ hearing.id }}" class="calendar-button">
+                    📅 View Details
+                </a>
+            </div>
+            
+            {% if hearing.virtual_meeting_link %}
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                <p style="margin: 0;"><strong>Virtual Meeting Link:</strong></p>
+                <p style="margin: 5px 0 0; word-break: break-all;">{{ hearing.virtual_meeting_link }}</p>
+            </div>
+            {% endif %}
+            
+            <div style="margin-top: 25px; padding: 15px; background: #fff3e0; border-radius: 8px;">
+                <p style="margin: 0;"><strong>Agenda:</strong> {{ hearing.agenda }}</p>
+                {% if hearing.notes %}
+                <p style="margin: 10px 0 0;"><strong>Additional Notes:</strong> {{ hearing.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated reminder from Justice Hub.</p>
+            <p>Please confirm your attendance or contact the court if you have any questions.</p>
+            <p>&copy; {% now "Y" %} Justice Hub. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

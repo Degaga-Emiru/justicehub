@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .header {
+            background: #673ab7;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .details {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #673ab7;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Case Registration</h1>
+        </div>
+        <div class="content">
+            <p>Dear Registrar {{ registrar.get_full_name }},</p>
+            <p>A new case has been registered on the JusticeHub platform and requires your review.</p>
+
+            <div class="details">
+                <p><strong>Case Title:</strong> {{ case.title }}</p>
+                <p><strong>Category:</strong> {{ case.category.name }}</p>
+                <p><strong>Priority:</strong> {{ case.get_priority_display }}</p>
+                <p><strong>Filed By:</strong> {{ case.created_by.get_full_name }}</p>
+                <p><strong>Filing Date:</strong> {{ case.created_at|date:"F d, Y" }}</p>
+            </div>
+
+            <p>Please log in to the JusticeHub Staff Dashboard to review and process this case.</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ frontend_url }}/staff/cases/{{ case.id }}" class="button">View Case Details</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>This is an automated message from JusticeHub Judicial Service Platform.</p>
+        </div>
+    </div>
+</body>
+
+</html>
