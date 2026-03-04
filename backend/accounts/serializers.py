@@ -294,8 +294,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'full_name', 'email', 'phone_number', 'role', 'is_verified', 'date_joined']
-        read_only_fields = ['id', 'email', 'role', 'is_verified', 'date_joined']
+        fields = [
+            'id', 'first_name', 'last_name', 'full_name', 'email', 
+            'phone_number', 'role', 'is_verified', 'is_active', 
+            'date_joined', 'last_login'
+        ]
+        read_only_fields = ['id', 'email', 'role', 'is_verified', 'date_joined', 'last_login']
     
     def get_full_name(self, obj):
         return obj.get_full_name()
@@ -305,3 +309,123 @@ class TokenResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
     user = UserProfileSerializer()
+
+
+# Admin Serializers
+
+class UserAdminDetailSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    judge_profile = serializers.SerializerMethodField()
+    activity_log = serializers.SerializerMethodField()
+    audit_trail = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'full_name', 'phone_number', 
+            'role', 'is_active', 'is_verified', 'date_joined', 'last_login', 
+            'last_login_ip', 'login_count', 'judge_profile', 'activity_log', 'audit_trail'
+        ]
+
+    def get_full_name(self, obj):
+        return obj.get_full_name()
+
+    def get_judge_profile(self, obj):
+        if obj.role == 'JUDGE':
+            from cases.models import JudgeProfile, JudgeAssignment
+            from hearings.models import Hearing
+            from decisions.models import Decision
+            
+            profile = JudgeProfile.objects.filter(user=obj).first()
+            if profile:
+                active_cases = JudgeAssignment.objects.filter(judge=obj, is_active=True)
+                assigned_cases_data = []
+                for assignment in active_cases:
+                    case = assignment.case
+                    assigned_cases_data.append({
+                        "id": str(case.id),
+                        "file_number": case.file_number,
+                        "title": case.title,
+                        "status": case.status
+                    })
+
+                decisions_count = Decision.objects.filter(judge=obj).count()
+                hearings_count = Hearing.objects.filter(judge=obj, status='COMPLETED').count()
+
+                return {
+                    "specializations": list(profile.specializations.values_list('name', flat=True)),
+                    "active_cases": active_cases.count(),
+                    "max_active_cases": profile.max_active_cases,
+                    "cases_assigned": assigned_cases_data,
+                    "decisions_issued": decisions_count,
+                    "hearings_conducted": hearings_count
+                }
+        return None
+
+    def get_activity_log(self, obj):
+        from audit_logs.models import AuditLog
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        now = timezone.now()
+        last_7 = AuditLog.objects.filter(user=obj, timestamp__gte=now - timedelta(days=7)).count()
+        last_30 = AuditLog.objects.filter(user=obj, timestamp__gte=now - timedelta(days=30)).count()
+        
+        recent = AuditLog.objects.filter(user=obj).order_by('-timestamp')[:10]
+        recent_data = []
+        for log in recent:
+            recent_data.append({
+                "action": log.action_type,
+                "timestamp": log.timestamp,
+                "details": log.description
+            })
+            
+        return {
+            "last_7_days": last_7,
+            "last_30_days": last_30,
+            "recent_actions": recent_data
+        }
+
+    def get_audit_trail(self, obj):
+        return f"/api/admin/audit/entity_trail/?entity_type=accounts.user&entity_id={obj.id}"
+
+
+class UserToggleStatusSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['activate', 'deactivate'])
+    reason = serializers.CharField(required=True)
+
+
+class AdminResetPasswordSerializer(serializers.Serializer):
+    send_email = serializers.BooleanField(default=True)
+    require_change_on_login = serializers.BooleanField(default=True)
+
+
+class BulkUserActionSerializer(serializers.Serializer):
+    user_ids = serializers.ListField(child=serializers.UUIDField())
+    action = serializers.ChoiceField(choices=['activate', 'deactivate', 'verify', 'send_welcome_email'])
+    reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class RoleSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    display_name = serializers.CharField(source='name', required=False)
+    description = serializers.CharField(default="", required=False)
+    user_count = serializers.SerializerMethodField()
+    permissions = serializers.ListField(child=serializers.CharField(), default=list)
+
+    def get_user_count(self, obj):
+        role_name = getattr(obj, 'name', obj)
+        return User.objects.filter(role=role_name).count()
+
+
+class CustomRoleCreateSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    display_name = serializers.CharField()
+    description = serializers.CharField()
+    permissions = serializers.ListField(child=serializers.CharField())
+    based_on = serializers.CharField(required=False)
+
+
+class RolePermissionUpdateSerializer(serializers.Serializer):
+    add = serializers.ListField(child=serializers.CharField(), required=False)
+    remove = serializers.ListField(child=serializers.CharField(), required=False)
