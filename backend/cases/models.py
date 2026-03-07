@@ -246,8 +246,8 @@ class Case(SoftDeleteModel):
         return self.status == CaseStatus.StatusChoices.CLOSED
 
 
-class CaseDocument(models.Model):
-    """Case Documents Model"""
+class CaseDocument(SoftDeleteModel):
+    """Case Documents Model - Container for versions"""
     class DocumentType(models.TextChoices):
         PETITION = 'PETITION', 'Petition'
         EVIDENCE = 'EVIDENCE', 'Evidence'
@@ -256,29 +256,16 @@ class CaseDocument(models.Model):
         JUDGMENT = 'JUDGMENT', 'Judgment'
         OTHER = 'OTHER', 'Other'
 
-    ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='documents')
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='uploaded_documents')
     
-    file = models.FileField(
-        upload_to='case_documents/%Y/%m/%d/',
-        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXTENSIONS)]
-    )
-    file_name = models.CharField(max_length=255)
-    file_size = models.IntegerField(help_text="File size in bytes")
-    file_type = models.CharField(max_length=10)
     document_type = models.CharField(
         max_length=50,
         choices=DocumentType.choices,
         default=DocumentType.OTHER
     )
     description = models.TextField(blank=True, null=True)
-    
-    # Security
-    checksum = models.CharField(max_length=64)  # SHA-256
     is_confidential = models.BooleanField(default=False)
     
     # Tracking
@@ -291,18 +278,63 @@ class CaseDocument(models.Model):
             models.Index(fields=['case', 'document_type']),
             models.Index(fields=['uploaded_by', 'uploaded_at']),
         ]
-        constraints = [
-            models.UniqueConstraint(
-                fields=['case', 'checksum'],
-                name='unique_checksum_per_case'
-            )
+
+    def __str__(self):
+        return f"{self.document_type} - {self.case.file_number}"
+
+    def get_active_version(self):
+        return self.versions.filter(is_active=True).first()
+
+
+class CaseDocumentVersion(models.Model):
+    """Versions of a Case Document"""
+    class VersionStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending Approval'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+
+    ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.ForeignKey(CaseDocument, on_delete=models.CASCADE, related_name='versions')
+    version_number = models.IntegerField(default=1)
+    
+    file = models.FileField(
+        upload_to='case_documents/%Y/%m/%d/',
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_EXTENSIONS)]
+    )
+    file_name = models.CharField(max_length=255)
+    file_size = models.IntegerField(help_text="File size in bytes")
+    file_type = models.CharField(max_length=10)
+    checksum = models.CharField(max_length=64)  # SHA-256
+    
+    change_description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=20,
+        choices=VersionStatus.choices,
+        default=VersionStatus.PENDING
+    )
+    review_notes = models.TextField(blank=True, null=True)
+    
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='uploaded_versions')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-version_number']
+        unique_together = ('document', 'version_number')
+        indexes = [
+            models.Index(fields=['document', 'version_number']),
+            models.Index(fields=['status']),
+            models.Index(fields=['is_active']),
         ]
 
     def __str__(self):
-        return f"{self.file_name} - {self.case.file_number}"
+        return f"{self.document} (v{self.version_number})"
 
     def save(self, *args, **kwargs):
-        if self.file and not self.file_size:
+        if self.file and not self.checksum:
             self.file_size = self.file.size
             self.file_name = self.file.name
             
