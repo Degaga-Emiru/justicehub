@@ -147,3 +147,41 @@ class SystemStatusReportSerializer(serializers.Serializer):
 class JudgeStatusReportSerializer(serializers.Serializer):
     report_id = serializers.CharField()
     judges = serializers.ListField(child=serializers.DictField())
+
+# Phase 2: Analytics Serializers
+class AnalyticsCaseTypeSerializer(serializers.Serializer):
+    distribution = serializers.ListField(child=serializers.DictField())
+    most_frequent = serializers.CharField()
+
+class AnalyticsDisputeSerializer(serializers.Serializer):
+    most_common_disputes = serializers.ListField(child=serializers.DictField())
+    issue_ranking = serializers.ListField(child=serializers.CharField())
+
+class ResolutionTimeSerializer(serializers.Serializer):
+    average = serializers.IntegerField()
+    fastest = serializers.IntegerField()
+    slowest = serializers.IntegerField()
+    min_days = serializers.IntegerField()
+    max_days = serializers.IntegerField()
+
+class DemographicsSerializer(serializers.Serializer):
+    education_distribution = serializers.DictField(child=serializers.IntegerField())
+    gender_distribution = serializers.DictField(child=serializers.CharField())
+    age_distribution = serializers.DictField(child=serializers.IntegerField())
+    occupation_distribution = serializers.DictField(child=serializers.IntegerField())
+
+class AnalyticsIntelligenceSerializer(serializers.Serializer):
+    insights = serializers.ListField(child=serializers.CharField())
+
+class CourtProblemSerializer(serializers.Serializer):
+from .models import Report
+
+class ReportModelSerializer(serializers.ModelSerializer):
+    generated_by_name = serializers.CharField(source='generated_by.get_full_name', read_only=True)
+    judge_name = serializers.CharField(source='judge.get_full_name', read_only=True)
+    registrar_name = serializers.CharField(source='registrar.get_full_name', read_only=True)
+
+    class Meta:
+        model = Report
+        fields = '__all__'
+        read_only_fields = ['id', 'generated_at', 'download_count', 'last_downloaded_at', 'file_size', 'storage_path']

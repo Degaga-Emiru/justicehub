@@ -18,6 +18,7 @@ class Case(models.Model):
     status = models.CharField(max_length=20)
     priority = models.CharField(max_length=20)
     category = models.ForeignKey(CaseCategory, on_delete=models.DO_NOTHING)
+    main_issue = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField()
     closed_date = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='created_cases')

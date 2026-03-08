@@ -35,6 +35,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=Role.CITIZEN,
         db_index=True
     )
+
+    # Demographic Information
+    education_level = models.CharField(max_length=50, null=True, blank=True)
+    age = models.PositiveIntegerField(null=True, blank=True)
+    gender = models.CharField(max_length=20, null=True, blank=True)
+    occupation = models.CharField(max_length=100, null=True, blank=True)
     
     # Status flags
     is_active = models.BooleanField(default=False)

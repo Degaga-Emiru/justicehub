@@ -1,11 +1,15 @@
-from rest_framework import status
+from rest_framework import status, viewsets, decorators
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .services import ReportService
+from .analytics_services import AnalyticsService
 from django.http import HttpResponse
+from django.utils import timezone
 from .utils import ExportGenerator
 from .permissions import IsJudge, IsAdminUserRole
+from .models import Report
+from .serializers import ReportModelSerializer
 
 class ReportBaseView(APIView):
     permission_classes = [IsAuthenticated]
@@ -102,6 +106,9 @@ class ExportReportView(ReportBaseView):
         elif report_type == 'status':
             data = ReportService.get_status_report()
             title = "Cases Status Breakdown Report"
+        elif report_type == 'analytics':
+            data = AnalyticsService.get_master_analytics()
+            title = "Advanced Case Intelligence & Analytics Report"
         else:
             data = ReportService.get_system_overview(days=days)
             title = "System Overview Report"
@@ -118,3 +125,109 @@ class ExportReportView(ReportBaseView):
             return response
         
         return Response(data)
+
+# Phase 2: Analytics Views
+class AnalyticsCaseTypeView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        data = AnalyticsService.get_case_type_analysis()
+        return Response(data)
+
+class AnalyticsDisputeView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        data = AnalyticsService.get_dispute_analysis()
+        return Response(data)
+
+class AnalyticsProblemView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        data = AnalyticsService.get_court_problems()
+        return Response(data)
+
+class AnalyticsResolutionTimeView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        data = AnalyticsService.get_resolution_time_metrics()
+        return Response(data)
+
+class AnalyticsDemographicsView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        data = AnalyticsService.get_demographics()
+        return Response(data)
+
+class AnalyticsIntelligenceView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        data = AnalyticsService.get_intelligence_insights()
+        return Response(data)
+
+class ReportViewSet(viewsets.ModelViewSet):
+    queryset = Report.objects.all()
+    serializer_class = ReportModelSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Role-based filtering
+        if hasattr(self.request.user, 'role'):
+            if self.request.user.role == 'JUDGE':
+                queryset = queryset.filter(judge=self.request.user)
+            elif self.request.user.role == 'REGISTRAR':
+                queryset = queryset.filter(registrar=self.request.user)
+        # ADMIN can see all
+
+        # Parameter-based filtering
+        format = self.request.query_params.get('format')
+        if format:
+            queryset = queryset.filter(file_format=format)
+            
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(generated_at__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(generated_at__date__lte=end_date)
+            
+        return queryset
+
+    @decorators.action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        report = self.get_object()
+        if not report.file:
+            return Response({"detail": "No file associated with this report."}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Increment download count
+        report.download_count += 1
+        report.last_downloaded_at = timezone.now()
+        report.save()
+        
+        # Determine content type
+        content_type = 'application/octet-stream'
+        if report.file_format == 'pdf':
+            content_type = 'application/pdf'
+        elif report.file_format == 'csv':
+            content_type = 'text/csv'
+        elif report.file_format == 'json':
+            content_type = 'application/json'
+            
+        response = HttpResponse(report.file.read(), content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{report.file.name.split("/")[-1]}"'
+        return response
+
+    @decorators.action(detail=False, methods=['get'], url_path='download')
+    def download_filtered(self, request):
+        """
+        Endpoint for GET /reports/download/?format=pdf or date ranges
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @decorators.action(detail=False, methods=['get'], url_path='download-all')
+    def download_all(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
