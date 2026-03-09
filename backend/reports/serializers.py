@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import Report
 
 class PeriodSerializer(serializers.Serializer):
     type = serializers.CharField()
@@ -174,7 +175,7 @@ class AnalyticsIntelligenceSerializer(serializers.Serializer):
     insights = serializers.ListField(child=serializers.CharField())
 
 class CourtProblemSerializer(serializers.Serializer):
-from .models import Report
+    problem_indicators = serializers.ListField(child=serializers.DictField())
 
 class ReportModelSerializer(serializers.ModelSerializer):
     generated_by_name = serializers.CharField(source='generated_by.get_full_name', read_only=True)

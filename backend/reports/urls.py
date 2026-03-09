@@ -11,7 +11,7 @@ from .views import (
 )
 
 router = DefaultRouter()
-router.register(r'reports', ReportViewSet, basename='report')
+router.register(r'', ReportViewSet, basename='report')
 
 urlpatterns = [
     # Stored Reports (Enhanced Model)
