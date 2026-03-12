@@ -21,8 +21,9 @@ from .permissions import (
     CanConfirmAttendance, CanViewHearing
 )
 from notifications.services import create_notification, notify_case_participants
-from cases.models import Case
+from cases.models import Case, JudgeAssignment
 from core.exceptions import BusinessLogicError
+from accounts.permissions import IsJudge
 import logging
 
 logger = logging.getLogger(__name__)
@@ -585,3 +586,26 @@ class JudgeHearingWorkloadView(generics.GenericAPIView):
             })
         
         return Response(data)
+
+
+class JudgeCaseHearingListView(generics.ListAPIView):
+    """
+    Get Hearings for a Case
+    GET /api/judge/cases/{case_id}/hearings
+    """
+    serializer_class = HearingSerializer
+    permission_classes = [IsAuthenticated, IsJudge]
+
+    def get_queryset(self):
+        judge = self.request.user
+        case_id = self.kwargs.get('case_id')
+        
+        # Ensure the case is assigned to this judge
+        is_assigned = JudgeAssignment.objects.filter(
+            judge=judge, case_id=case_id, is_active=True
+        ).exists()
+        
+        if not is_assigned:
+            return Hearing.objects.none()
+            
+        return Hearing.objects.filter(case_id=case_id)

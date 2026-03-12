@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 from django.utils import timezone
 from .models import Hearing, HearingParticipant, HearingReminder
 from cases.models import Case

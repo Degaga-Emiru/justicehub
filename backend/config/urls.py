@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/notifications/', include('notifications.urls')),
     path('api/audit/', include('audit_logs.urls')),
     path('api/payments/', include('payments.urls')),
+    path('api/judge/', include('cases.urls_judge')),
     # Schema
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     # Swagger UI

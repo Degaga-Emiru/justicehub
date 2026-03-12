@@ -47,6 +47,9 @@ class CaseDocumentVersionSerializer(serializers.ModelSerializer):
 
     def get_file_url(self, obj):
         if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
             return obj.file.url
         return None
 
@@ -60,9 +63,12 @@ class CaseDocumentVersionSerializer(serializers.ModelSerializer):
 
 
 class CaseDocumentSerializer(serializers.ModelSerializer):
-    uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
-    active_version = serializers.SerializerMethodField()
-    version_count = serializers.IntegerField(source='versions.count', read_only=True)
+    """
+    Serializer for CaseDocument to return all versions.
+    """
+    document_id = serializers.UUIDField(source='id', read_only=True)
+    document_type = serializers.CharField(source='get_document_type_display', read_only=True)
+    versions = serializers.SerializerMethodField()
     
     # Fields for initial upload
     file = serializers.FileField(write_only=True, required=False)
@@ -70,22 +76,18 @@ class CaseDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseDocument
         fields = [
-            'id', 'case', 'uploaded_by', 'uploaded_by_name',
-            'document_type', 'description', 'is_confidential',
-            'uploaded_at', 'active_version', 'version_count',
-            'file' # For initial upload
+            'document_id', 'document_type', 'description', 
+            'is_confidential', 'uploaded_by', 'versions', 'file'
         ]
-        read_only_fields = [
-            'id', 'case', 'uploaded_by', 'uploaded_at', 'active_version', 'version_count'
-        ]
+        read_only_fields = ['document_id', 'document_type', 'versions']
 
-    def get_active_version(self, obj):
-        active = obj.get_active_version()
-        if active:
-            return CaseDocumentVersionSerializer(active).data
-        return None
+    def get_versions(self, obj):
+        # Retrieve all document versions as requested
+        versions = obj.versions.all()
+        return CaseDocumentVersionSerializer(versions, many=True, context=self.context).data
 
     def validate_file(self, value):
+        from .models import CaseDocumentVersion
         if value.size > CaseDocumentVersion.MAX_FILE_SIZE:
             raise serializers.ValidationError(
                 f"File size cannot exceed {CaseDocumentVersion.MAX_FILE_SIZE // (1024 * 1024)}MB"
@@ -94,6 +96,7 @@ class CaseDocumentSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        from .models import CaseDocumentVersion
         file = validated_data.pop('file', None)
         request = self.context.get('request')
         
@@ -346,6 +349,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
 
 class CaseDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for single case view"""
+    case_number = serializers.CharField(source='file_number', read_only=True)
     category = CaseCategorySerializer(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
@@ -363,7 +367,7 @@ class CaseDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Case
         fields = [
-            'id', 'title', 'description', 'case_summary',
+            'id', 'case_number', 'title', 'description', 'case_summary',
             'category', 'status', 'status_display', 'priority', 'priority_display',
             'file_number', 'court_name', 'court_room',
             'created_by', 'plaintiff', 'defendant',
@@ -463,3 +467,26 @@ class JudgeWorkloadSerializer(serializers.Serializer):
     max_cases = serializers.IntegerField()
     available_slots = serializers.IntegerField()
     utilization_percentage = serializers.FloatField()
+
+
+class JudgeDashboardSerializer(serializers.Serializer):
+    """Serializer for judge dashboard data"""
+    assigned_cases = serializers.IntegerField()
+    pending_cases = serializers.IntegerField()
+    closed_cases = serializers.IntegerField()
+    upcoming_hearings = serializers.IntegerField()
+
+
+class JudgeCaseSerializer(serializers.ModelSerializer):
+    """Serializer for judge-specific case list/detail"""
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    
+    class Meta:
+        model = Case
+        fields = [
+            'id', 'title', 'file_number', 'category_name', 
+            'status', 'status_display', 'priority', 'priority_display',
+            'created_at'
+        ]
