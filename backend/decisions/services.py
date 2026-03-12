@@ -1,9 +1,14 @@
 from django.db import transaction
 from django.utils import timezone
+from django.template.loader import render_to_string
+from django.core.files.base import ContentFile
+from weasyprint import HTML
+from django.conf import settings
 from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
 from notifications.services import create_notification
 from cases.constants import CaseStatus
-from accounts.models import User
+from cases.models import User, CaseDocument
+from hearings.models import Hearing
 from core.exceptions import BusinessLogicError
 from core.utils.email import send_email_template
 import logging
@@ -88,9 +93,9 @@ class DecisionWorkflowService:
             decision.published_at = timezone.now()
             decision.save()
             
-            # Update Case Status to RESOLVED
+            # Update Case Status to CLOSED
             case = decision.case
-            case.status = CaseStatus.RESOLVED
+            case.status = CaseStatus.CLOSED
             case.save()
             
             # Deliver to parties
@@ -155,33 +160,47 @@ class DecisionWorkflowService:
 
 def generate_decision_pdf(decision):
     """
-    Generate PDF for decision
+    Generate professional PDF for decision including case details, hearings, and evidence.
     """
     try:
+        case = decision.case
+        
+        # Get hearings for this case
+        hearings = Hearing.objects.filter(case=case, status='COMPLETED').order_by('scheduled_date')
+        
+        # Get documents (evidence) for this case
+        evidence = CaseDocument.objects.filter(case=case, document_type='EVIDENCE')
+        
         # Render HTML template
         context = {
             'decision': decision,
-            'case': decision.case,
+            'case': case,
             'judge': decision.judge,
-            'court_name': decision.case.court_name or 'City Court',
-            'date': decision.created_at.strftime('%B %d, %Y')
+            'court_name': case.court_name or 'Federal High Court',
+            'hearings': hearings,
+            'evidence': evidence,
+            'date': decision.finalized_at.strftime('%B %d, %Y') if decision.finalized_at else timezone.now().strftime('%B %d, %Y'),
+            'signature_placeholder': "____________________"
         }
         
-        html_string = render_to_string('decisions/decision_template.html', context)
+        html_string = render_to_string('decisions/decision_professional.html', context)
         
         # Generate PDF
         html = HTML(string=html_string)
         pdf_file = html.write_pdf()
         
         # Save PDF
-        filename = f"decision_{decision.decision_number}.pdf"
+        filename = f"Decision_{case.file_number or case.id}.pdf"
         decision.pdf_document.save(filename, ContentFile(pdf_file), save=True)
         
-        logger.info(f"PDF generated for decision {decision.decision_number}")
+        logger.info(f"Professional PDF generated for decision {decision.decision_number}")
         return True
         
     except Exception as e:
-        logger.error(f"Failed to generate PDF for decision {decision.decision_number}: {str(e)}")
+        logger.error(f"Failed to generate professional PDF for decision {decision.decision_number}: {str(e)}")
+        # Log full traceback for debugging if needed
+        import traceback
+        logger.error(traceback.format_exc())
         return False
 
 

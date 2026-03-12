@@ -64,7 +64,7 @@ class Case(SoftDeleteModel):
         CaseStatus.StatusChoices.PENDING_REVIEW: [CaseStatus.StatusChoices.APPROVED, CaseStatus.StatusChoices.REJECTED],
         CaseStatus.StatusChoices.APPROVED: [CaseStatus.StatusChoices.PAID],
         CaseStatus.StatusChoices.PAID: [CaseStatus.StatusChoices.ASSIGNED],
-        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS],
+        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS, CaseStatus.StatusChoices.CLOSED],
         CaseStatus.StatusChoices.IN_PROGRESS: [CaseStatus.StatusChoices.CLOSED],
     }
 

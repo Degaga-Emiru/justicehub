@@ -71,19 +71,26 @@ class DecisionViewSet(viewsets.ModelViewSet):
             ).distinct()
     
     def get_permissions(self):
-        if self.action in ['create']:
-            self.permission_classes = [IsAuthenticated, IsDecisionJudge]
+        """
+        Assigns permissions based on action.
+        """
+        # Default: must be authenticated
+        permission_classes = [IsAuthenticated]
+        
+        if self.action == 'create':
+            permission_classes += [IsDecisionJudge]
         elif self.action in ['update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAuthenticated, IsDecisionJudge]
-        elif self.action in ['retrieve']:
-            self.permission_classes = [IsAuthenticated, CanViewDecision]
-        elif self.action in ['finalize']:
-            self.permission_classes = [IsAuthenticated, IsDecisionJudge]
-        elif self.action in ['publish']:
-            self.permission_classes = [IsAuthenticated, CanPublishDecision]
+            permission_classes += [IsDecisionJudge]
+        elif self.action == 'retrieve':
+            permission_classes += [CanViewDecision]
+        elif self.action == 'finalize':
+            permission_classes += [IsDecisionJudge]
+        elif self.action == 'publish':
+            permission_classes += [CanPublishDecision]
         elif self.action in ['acknowledge', 'appeal']:
-            self.permission_classes = [IsAuthenticated, IsPartyToDecision]
-        return super().get_permissions()
+            permission_classes += [IsPartyToDecision]
+            
+        return [permission() for permission in permission_classes]
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -121,26 +128,30 @@ class DecisionViewSet(viewsets.ModelViewSet):
             entity_name=decision.decision_number or "DRAFT"
         )
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsDecisionJudge])
+    @action(detail=True, methods=['post'])
     def finalize(self, request, pk=None):
-        """Finalize a draft decision"""
+        """Finalize a draft decision and generate PDF"""
         decision = self.get_object()
         DecisionWorkflowService.finalize_decision(decision, request.user)
         
         # Log Decision Finalized
         create_audit_log(
             request=request,
-            action_type=AuditLog.ActionType.DECISION_UPDATED, # Use UPDATED for state transition
+            action_type=AuditLog.ActionType.DECISION_UPDATED,
             obj=decision,
-            description=f"Decision {decision.decision_number} finalized and sent for review.",
+            description=f"Decision {decision.decision_number} finalized. PDF generated.",
             entity_name=decision.decision_number
         )
         
-        return Response({"message": "Decision finalized. Registrar notified.", "status": decision.status})
+        return Response({
+            "message": "Decision finalized. PDF generated and Registrar notified.", 
+            "status": decision.status,
+            "decision_number": decision.decision_number
+        })
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, CanPublishDecision])
+    @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
-        """Publish a finalized decision"""
+        """Publish a finalized decision and close case"""
         decision = self.get_object()
         
         serializer = self.get_serializer(data=request.data)
@@ -153,14 +164,15 @@ class DecisionViewSet(viewsets.ModelViewSet):
             request=request,
             action_type=AuditLog.ActionType.DECISION_PUBLISHED,
             obj=decision,
-            description=f"Decision {decision.decision_number} published. Case resolved.",
+            description=f"Decision {decision.decision_number} published. Case CLOSED.",
             entity_name=decision.decision_number
         )
         
         return Response({
-            "message": "Decision published successfully. Case RESOLVED.",
+            "message": "Decision published successfully. Case CLOSED. Participants notified.",
             "decision_number": decision.decision_number,
-            "published_at": decision.published_at
+            "published_at": decision.published_at,
+            "case_status": decision.case.status
         })
     
     @action(detail=True, methods=['get'], url_path='download-pdf')

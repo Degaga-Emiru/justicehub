@@ -27,7 +27,10 @@ class CanPublishDecision(permissions.BasePermission):
         if not request.user.is_authenticated:
             return False
         
-        return request.user.role in ['ADMIN', 'REGISTRAR']
+        if request.user.role in ['ADMIN', 'REGISTRAR']:
+            return True
+        
+        return request.user.role == 'JUDGE' and obj.judge == request.user
 
 
 class CanViewDecision(permissions.BasePermission):

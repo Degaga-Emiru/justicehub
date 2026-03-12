@@ -3,6 +3,7 @@ from django.utils import timezone
 from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
 from cases.serializers import CaseListSerializer
 from accounts.serializers import UserProfileSerializer
+from cases.models import JudgeAssignment
 
 
 class DecisionVersionSerializer(serializers.ModelSerializer):
@@ -55,7 +56,7 @@ class DecisionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id', 'decision_number', 'status', 'version', 'judge',
-            'is_published', 'published_at', 'finalized_at', 
+            'pdf_document', 'is_published', 'published_at', 'finalized_at', 
             'created_at', 'updated_at'
         ]
     
@@ -74,11 +75,25 @@ class DecisionSerializer(serializers.ModelSerializer):
         }
     
     def validate(self, attrs):
+        request = self.context.get('request')
+        user = request.user
+        case = attrs.get('case') if not self.instance else self.instance.case
+
         # Check if decision already exists for this case (only if creating)
         if not self.instance:
-            case = attrs.get('case')
             if case and Decision.objects.filter(case=case).exists():
                 raise serializers.ValidationError("A decision already exists for this case.")
+        
+        # Ensure judge is assigned to this case
+        if user.role == 'JUDGE':
+            is_assigned = JudgeAssignment.objects.filter(
+                case=case,
+                judge=user,
+                is_active=True
+            ).exists()
+            if not is_assigned:
+                raise serializers.ValidationError("You are not assigned as the active judge for this case.")
+        
         return attrs
     
     def create(self, validated_data):
