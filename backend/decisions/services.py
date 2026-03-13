@@ -47,7 +47,7 @@ class DecisionWorkflowService:
     @staticmethod
     def finalize_decision(decision, user):
         """
-        Finalizes a decision, generates PDF, and notifies Registrar for review.
+        Finalizes a decision, uses uploaded doc or generates PDF, closes case, and notifies parties.
         """
         if decision.status != Decision.DecisionStatus.DRAFT:
             raise BusinessLogicError("Only draft decisions can be finalized.")
@@ -60,10 +60,50 @@ class DecisionWorkflowService:
             if not decision.decision_number:
                 decision.decision_number = decision.generate_decision_number()
             
+            # Check if document is already uploaded
+            if decision.document:
+                logger.info(f"Using uploaded document for decision {decision.decision_number}")
+            else:
+                # Generate PDF if no document is attached
+                logger.info(f"Generating PDF for decision {decision.decision_number}")
+                generate_decision_pdf(decision)
+                
+                # Link generated PDF to CaseDocument for consistency
+                if decision.pdf_document:
+                    case_doc = CaseDocument.objects.create(
+                        case=decision.case,
+                        uploaded_by=decision.judge,
+                        document_type=CaseDocument.DocumentType.JUDGMENT,
+                        description=f"Generated Decision PDF for {decision.decision_number}"
+                    )
+                    
+                    # File name for CaseDocumentVersion
+                    import os
+                    file_name = os.path.basename(decision.pdf_document.name)
+                    
+                    from cases.models import CaseDocumentVersion
+                    CaseDocumentVersion.objects.create(
+                        document=case_doc,
+                        file=decision.pdf_document,
+                        uploaded_by=decision.judge,
+                        version_number=1,
+                        status=CaseDocumentVersion.VersionStatus.APPROVED,
+                        is_active=True,
+                        file_name=file_name,
+                        file_size=decision.pdf_document.size,
+                        file_type='pdf' # Since it's generated as PDF
+                    )
+                    decision.document = case_doc
+
             decision.save()
             
-            # Generate PDF
-            generate_decision_pdf(decision)
+            # Update Case Status to CLOSED
+            case = decision.case
+            case.status = CaseStatus.CLOSED
+            case.save()
+
+            # Notify parties (participants) only after finalization
+            deliver_decision(decision)
             
             # Notify Registrar
             registrars = User.objects.filter(role='REGISTRAR')
@@ -71,8 +111,8 @@ class DecisionWorkflowService:
                 create_notification(
                     user=reg,
                     type='DECISION_FINALIZED',
-                    title='Decision Finalized for Review',
-                    message=f'Judge {user.get_full_name()} has finalized a decision for case {decision.case.file_number}. Please review.',
+                    title='Decision Finalized and Case Closed',
+                    message=f'Judge {user.get_full_name()} has finalized a decision and closed case {decision.case.file_number}.',
                     case=decision.case,
                     action_url=f"/decisions/{decision.id}"
                 )
@@ -93,14 +133,7 @@ class DecisionWorkflowService:
             decision.published_at = timezone.now()
             decision.save()
             
-            # Update Case Status to CLOSED
-            case = decision.case
-            case.status = CaseStatus.CLOSED
-            case.save()
-            
-            # Deliver to parties
-            deliver_decision(decision)
-            
+            # Deliver to parties - ALREADY HANDLED AT FINALIZATION
             # Log and trigger notifications for parties already handled by deliver_decision
             
         return decision

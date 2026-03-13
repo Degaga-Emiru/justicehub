@@ -49,6 +49,14 @@ class Decision(models.Model):
     cases_cited = models.TextField(blank=True, null=True)
     
     # Documents
+    document = models.ForeignKey(
+        'cases.CaseDocument',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='decisions_uploaded'
+    )
+    
     pdf_document = models.FileField(
         upload_to='decisions/%Y/%m/%d/',
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],

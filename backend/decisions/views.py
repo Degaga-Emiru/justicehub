@@ -2,17 +2,20 @@ from rest_framework import viewsets, status, generics, pagination
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.db import transaction
 from datetime import timedelta
 
 from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
 from .serializers import (
     DecisionSerializer, DecisionDeliverySerializer,
     DecisionPublishSerializer, DecisionVersionSerializer,
-    DecisionCommentSerializer, DecisionAppealSerializer
+    DecisionCommentSerializer, DecisionAppealSerializer,
+    DecisionDocumentUploadSerializer
 )
 from .permissions import (
     IsDecisionJudge, CanPublishDecision, CanViewDecision,
@@ -22,6 +25,7 @@ from .services import generate_decision_pdf, deliver_decision, DecisionWorkflowS
 from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
 from notifications.services import create_notification, notify_case_participants
+from cases.models import CaseDocument, CaseDocumentVersion
 from core.exceptions import BusinessLogicError
 import logging
 
@@ -47,6 +51,8 @@ class DecisionViewSet(viewsets.ModelViewSet):
             return DecisionAppealSerializer
         elif self.action == 'comments':
             return DecisionCommentSerializer
+        elif self.action == 'upload_decision_document':
+            return DecisionDocumentUploadSerializer
         return DecisionSerializer
     
     def get_queryset(self):
@@ -55,8 +61,13 @@ class DecisionViewSet(viewsets.ModelViewSet):
         if user.role in ['ADMIN', 'REGISTRAR']:
             return self.queryset
         elif user.role == 'JUDGE':
-            # Judges see their own decisions (any state) and published decisions
-            return self.queryset.filter(Q(judge=user) | Q(status=Decision.DecisionStatus.PUBLISHED)).distinct()
+            # Judges see only decisions for cases they are assigned to (as active judge)
+            from cases.models import JudgeAssignment
+            assigned_cases = JudgeAssignment.objects.filter(
+                judge=user, 
+                is_active=True
+            ).values_list('case_id', flat=True)
+            return self.queryset.filter(case_id__in=assigned_cases).distinct()
         else:
             # Clients/Parties see ONLY published decisions for their cases
             return self.queryset.filter(
@@ -89,6 +100,8 @@ class DecisionViewSet(viewsets.ModelViewSet):
             permission_classes += [CanPublishDecision]
         elif self.action in ['acknowledge', 'appeal']:
             permission_classes += [IsPartyToDecision]
+        elif self.action == 'upload_decision_document':
+            permission_classes += [IsDecisionJudge]
             
         return [permission() for permission in permission_classes]
     
@@ -144,10 +157,57 @@ class DecisionViewSet(viewsets.ModelViewSet):
         )
         
         return Response({
-            "message": "Decision finalized. PDF generated and Registrar notified.", 
+            "message": "Decision finalized. Case CLOSED and Participants notified.", 
             "status": decision.status,
-            "decision_number": decision.decision_number
+            "decision_number": decision.decision_number,
+            "case_status": decision.case.status
         })
+
+    @action(detail=True, methods=['post'], url_path='upload-decision-document', parser_classes=[MultiPartParser, FormParser])
+    def upload_decision_document(self, request, pk=None):
+        """Upload a manual decision document (PDF/DOCX)"""
+        decision = self.get_object()
+        
+        if decision.status != Decision.DecisionStatus.DRAFT:
+            raise BusinessLogicError("Documents can only be uploaded for draft decisions.")
+            
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        uploaded_file = serializer.validated_data['file']
+        
+        with transaction.atomic():
+            # 1. Create CaseDocument
+            case_doc = CaseDocument.objects.create(
+                case=decision.case,
+                uploaded_by=request.user,
+                document_type=CaseDocument.DocumentType.JUDGMENT,
+                description=f"Uploaded Decision for {decision.title}"
+            )
+            
+            # 2. Create CaseDocumentVersion
+            ext = uploaded_file.name.split('.')[-1].lower()
+            CaseDocumentVersion.objects.create(
+                document=case_doc,
+                file=uploaded_file,
+                uploaded_by=request.user,
+                version_number=1,
+                status=CaseDocumentVersion.VersionStatus.APPROVED,
+                is_active=True,
+                file_name=uploaded_file.name,
+                file_size=uploaded_file.size,
+                file_type=ext
+            )
+            
+            # 3. Link to Decision
+            decision.document = case_doc
+            decision.save()
+            
+        return Response({
+            "message": "Decision document uploaded successfully.",
+            "document_id": case_doc.id,
+            "file_name": uploaded_file.name
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):

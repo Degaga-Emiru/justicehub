@@ -51,7 +51,7 @@ class DecisionSerializer(serializers.ModelSerializer):
             'title', 'decision_type', 'status', 'version',
             'introduction', 'background', 'analysis', 'conclusion', 'order',
             'laws_cited', 'cases_cited',
-            'pdf_document', 'is_published', 'published_at', 'finalized_at',
+            'document', 'pdf_document', 'is_published', 'published_at', 'finalized_at',
             'created_at', 'updated_at', 'versions', 'comments', 'appeals'
         ]
         read_only_fields = [
@@ -128,4 +128,15 @@ class DecisionPublishSerializer(serializers.Serializer):
     def validate_confirm(self, value):
         if not value:
             raise serializers.ValidationError("You must confirm to publish the decision.")
+        return value
+
+
+class DecisionDocumentUploadSerializer(serializers.Serializer):
+    """Serializer for judge to upload decision document manually"""
+    file = serializers.FileField(required=True)
+    
+    def validate_file(self, value):
+        ext = value.name.split('.')[-1].lower()
+        if ext not in ['pdf', 'docx']:
+            raise serializers.ValidationError("Only PDF and DOCX files are allowed.")
         return value
