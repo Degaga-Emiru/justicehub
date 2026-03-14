@@ -21,8 +21,13 @@ class Hearing(SoftDeleteModel):
         CONFIRMED = 'CONFIRMED', 'Confirmed'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         COMPLETED = 'COMPLETED', 'Completed'
+        POSTPONED = 'POSTPONED', 'Postponed'
         CANCELLED = 'CANCELLED', 'Cancelled'
         RESCHEDULED = 'RESCHEDULED', 'Rescheduled'
+
+    class HearingFormat(models.TextChoices):
+        PHYSICAL = 'PHYSICAL', 'Physical Hearing'
+        VIRTUAL = 'VIRTUAL', 'Virtual Hearing'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='hearings')
@@ -31,6 +36,7 @@ class Hearing(SoftDeleteModel):
     # Scheduling
     title = models.CharField(max_length=200)
     hearing_type = models.CharField(max_length=20, choices=HearingType.choices)
+    hearing_format = models.CharField(max_length=20, choices=HearingFormat.choices, default=HearingFormat.PHYSICAL)
     status = models.CharField(max_length=20, choices=HearingStatus.choices, default=HearingStatus.SCHEDULED)
     
     # Date and Location
@@ -42,6 +48,7 @@ class Hearing(SoftDeleteModel):
     # Details
     agenda = models.TextField()
     notes = models.TextField(blank=True, null=True)
+    cancellation_reason = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)
     
     # Participants tracking
@@ -82,18 +89,28 @@ class Hearing(SoftDeleteModel):
 
 class HearingParticipant(models.Model):
     """Track hearing participants and their attendance"""
-    class AttendanceStatus(models.TextChoices):
+    class ConfirmationStatus(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         CONFIRMED = 'CONFIRMED', 'Confirmed'
-        ATTENDED = 'ATTENDED', 'Attended'
+        DECLINED = 'DECLINED', 'Declined'
+
+    class AttendanceStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        PRESENT = 'PRESENT', 'Present'
         ABSENT = 'ABSENT', 'Absent'
-        EXCUSED = 'EXCUSED', 'Excused'
+        LATE = 'LATE', 'Late'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     hearing = models.ForeignKey(Hearing, on_delete=models.CASCADE, related_name='participant_list')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hearing_invitations')
     
     role_in_hearing = models.CharField(max_length=50)  # e.g., 'Plaintiff', 'Defendant', 'Lawyer', 'Witness'
+    confirmation_status = models.CharField(
+        max_length=20,
+        choices=ConfirmationStatus.choices,
+        default=ConfirmationStatus.PENDING
+    )
+    decline_reason = models.TextField(blank=True, null=True)
     attendance_status = models.CharField(
         max_length=20,
         choices=AttendanceStatus.choices,

@@ -6,9 +6,25 @@ class IsHearingJudge(permissions.BasePermission):
     Allows access only to the judge presiding over the hearing.
     """
     def has_object_permission(self, request, view, obj):
-        if not request.user.is_authenticated:
+        user = request.user
+        if not user.is_authenticated:
             return False
-        return obj.judge == request.user
+            
+        # Admin, Clerks, and Registrars have management access
+        if user.role in ['ADMIN', 'CLERK', 'REGISTRAR']:
+            return True
+            
+        # Presiding judge has access
+        if obj.judge == user:
+            return True
+            
+        # Any judge actively assigned to the case has access
+        from cases.models import JudgeAssignment
+        return JudgeAssignment.objects.filter(
+            case=obj.case,
+            judge=user,
+            is_active=True
+        ).exists()
 
 
 class IsHearingParticipant(permissions.BasePermission):

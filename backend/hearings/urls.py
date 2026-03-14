@@ -6,6 +6,7 @@ router = DefaultRouter()
 router.register(r'', views.HearingViewSet, basename='hearing')
 
 urlpatterns = [
+    path('create/', views.HearingViewSet.as_view({'post': 'create'}), name='hearing-create'),
     path('', include(router.urls)),
     
     # Administrative endpoints are handled by the router

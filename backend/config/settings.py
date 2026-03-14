@@ -268,6 +268,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'hearings': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 
