@@ -11,7 +11,9 @@ from cases.models import User, CaseDocument
 from hearings.models import Hearing
 from core.exceptions import BusinessLogicError
 from core.utils.email import send_email_template
+from core.cryptography import get_document_hash, sign_hash
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +99,10 @@ class DecisionWorkflowService:
 
             decision.save()
             
+            # Digital Signature Logic
+            if decision.document:
+                DecisionWorkflowService.sign_decision_document(decision, user)
+
             # Update Case Status to CLOSED
             case = decision.case
             case.status = CaseStatus.CLOSED
@@ -118,6 +124,73 @@ class DecisionWorkflowService:
                 )
                 
         return decision
+
+    @staticmethod
+    def sign_decision_document(decision, user):
+        """
+        Calculates hash and signs the decision document.
+        """
+        if not decision.document:
+            # Fallback to pdf_document if document object is missing (newly generated)
+            if not decision.pdf_document:
+                raise BusinessLogicError("No document found to sign.")
+            
+            from cases.models import CaseDocument, CaseDocumentVersion
+            # Double check if case_doc was created but not linked
+            case_doc = CaseDocument.objects.filter(
+                case=decision.case, 
+                document_type=CaseDocument.DocumentType.JUDGMENT,
+                uploaded_by=decision.judge
+            ).order_by('-uploaded_at').first()
+            
+            if not case_doc:
+                case_doc = CaseDocument.objects.create(
+                    case=decision.case,
+                    uploaded_by=decision.judge,
+                    document_type=CaseDocument.DocumentType.JUDGMENT,
+                    description=f"Decision PDF for {decision.decision_number}"
+                )
+                
+                CaseDocumentVersion.objects.create(
+                    document=case_doc,
+                    file=decision.pdf_document,
+                    uploaded_by=decision.judge,
+                    version_number=1,
+                    status=CaseDocumentVersion.VersionStatus.APPROVED,
+                    is_active=True,
+                    file_name=os.path.basename(decision.pdf_document.name),
+                    file_size=decision.pdf_document.size,
+                    file_type='pdf'
+                )
+            
+            decision.document = case_doc
+            decision.save()
+
+        active_version = decision.document.get_active_version()
+        if not active_version or not active_version.file:
+            raise BusinessLogicError("Active document version file not found.")
+            
+        file_path = active_version.file.path
+        
+        # 1. Calculate Hash
+        doc_hash = get_document_hash(file_path)
+        
+        # 2. Sign Hash
+        signature = sign_hash(doc_hash)
+        
+        # 3. Update CaseDocument fields
+        doc = decision.document
+        doc.document_hash = doc_hash
+        doc.digital_signature = signature
+        doc.signature_algorithm = 'RSA-SHA256'
+        doc.signed_at = timezone.now()
+        doc.is_signed = True
+        doc.signed_by = user
+        doc.signature_verified = True # Just signed, so it's verified
+        doc.save()
+        
+        logger.info(f"Decision {decision.decision_number} digitally signed by {user.email}")
+        return doc
 
     @staticmethod
     def publish_decision(decision, user):

@@ -43,6 +43,7 @@ class DecisionSerializer(serializers.ModelSerializer):
     versions = DecisionVersionSerializer(many=True, read_only=True)
     comments = DecisionCommentSerializer(many=True, read_only=True)
     appeals = DecisionAppealSerializer(many=True, read_only=True)
+    signature_details = serializers.SerializerMethodField()
     
     class Meta:
         model = Decision
@@ -52,7 +53,7 @@ class DecisionSerializer(serializers.ModelSerializer):
             'introduction', 'background', 'analysis', 'conclusion', 'order',
             'laws_cited', 'cases_cited',
             'document', 'pdf_document', 'is_published', 'published_at', 'finalized_at',
-            'created_at', 'updated_at', 'versions', 'comments', 'appeals'
+            'created_at', 'updated_at', 'versions', 'comments', 'appeals', 'signature_details'
         ]
         read_only_fields = [
             'id', 'decision_number', 'status', 'version', 'judge',
@@ -72,6 +73,20 @@ class DecisionSerializer(serializers.ModelSerializer):
         return {
             "id": obj.judge.id,
             "full_name": obj.judge.get_full_name()
+        }
+    
+    def get_signature_details(self, obj):
+        if not obj.document or not obj.document.is_signed:
+            return None
+        
+        doc = obj.document
+        return {
+            "is_signed": doc.is_signed,
+            "signature_algorithm": doc.signature_algorithm,
+            "signed_by": doc.signed_by.get_full_name() if doc.signed_by else None,
+            "signed_at": doc.signed_at,
+            "document_hash": doc.document_hash,
+            "signature_verified": doc.signature_verified
         }
     
     def validate(self, attrs):
@@ -140,3 +155,15 @@ class DecisionDocumentUploadSerializer(serializers.Serializer):
         if ext not in ['pdf', 'docx']:
             raise serializers.ValidationError("Only PDF and DOCX files are allowed.")
         return value
+
+
+class DecisionSignatureSerializer(serializers.Serializer):
+    """Serializer for digital signature information"""
+    case_id = serializers.UUIDField(source='case.id', read_only=True)
+    decision_id = serializers.UUIDField(source='id', read_only=True)
+    is_signed = serializers.BooleanField(source='document.is_signed', read_only=True)
+    signature_algorithm = serializers.CharField(source='document.signature_algorithm', read_only=True)
+    signed_by = serializers.CharField(source='document.signed_by.get_full_name', read_only=True)
+    signed_at = serializers.DateTimeField(source='document.signed_at', read_only=True)
+    document_hash = serializers.CharField(source='document.document_hash', read_only=True)
+    signature_verified = serializers.BooleanField(source='document.signature_verified', read_only=True)

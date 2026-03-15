@@ -15,7 +15,7 @@ from .serializers import (
     DecisionSerializer, DecisionDeliverySerializer,
     DecisionPublishSerializer, DecisionVersionSerializer,
     DecisionCommentSerializer, DecisionAppealSerializer,
-    DecisionDocumentUploadSerializer
+    DecisionDocumentUploadSerializer, DecisionSignatureSerializer
 )
 from .permissions import (
     IsDecisionJudge, CanPublishDecision, CanViewDecision,
@@ -27,6 +27,7 @@ from audit_logs.models import AuditLog
 from notifications.services import create_notification, notify_case_participants
 from cases.models import CaseDocument, CaseDocumentVersion
 from core.exceptions import BusinessLogicError
+from core.cryptography import verify_signature as crypto_verify_signature
 import logging
 
 logger = logging.getLogger(__name__)
@@ -102,6 +103,8 @@ class DecisionViewSet(viewsets.ModelViewSet):
             permission_classes += [IsPartyToDecision]
         elif self.action == 'upload_decision_document':
             permission_classes += [IsDecisionJudge]
+        elif self.action in ['signature', 'verify_signature']:
+            permission_classes += [CanViewDecision]
             
         return [permission() for permission in permission_classes]
     
@@ -128,6 +131,9 @@ class DecisionViewSet(viewsets.ModelViewSet):
         is_major_change = self.request.data.get('is_major_change', False)
         if isinstance(is_major_change, str):
             is_major_change = is_major_change.lower() in ['true', '1', 'yes']
+            
+        if self.instance.document and self.instance.document.is_signed:
+            raise BusinessLogicError("Signed court decisions cannot be modified.")
             
         decision = serializer.save()
         DecisionWorkflowService.save_draft(decision, self.request.user, is_major_change=is_major_change)
@@ -400,6 +406,69 @@ class DecisionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(decisions, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def signature(self, request, pk=None):
+        """Get digital signature metadata for the decision"""
+        decision = self.get_object()
+        if not decision.document or not decision.document.is_signed:
+            return Response(
+                {"error": "Decision has not been digitally signed yet."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = DecisionSignatureSerializer(decision)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='verify-signature')
+    def verify_signature(self, request, pk=None):
+        """Recalculate hash and verify the digital signature"""
+        decision = self.get_object()
+        if not decision.document or not decision.document.is_signed:
+            return Response(
+                {"error": "Decision has not been digitally signed yet."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        doc = decision.document
+        active_version = doc.get_active_version()
+        if not active_version or not active_version.file:
+            return Response(
+                {"error": "Document file not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        from core.cryptography import get_document_hash
+        try:
+            current_hash = get_document_hash(active_version.file.path)
+            is_valid = crypto_verify_signature(current_hash, doc.digital_signature)
+            
+            if is_valid:
+                return Response({
+                    "valid": True,
+                    "message": "Decision signature is valid"
+                })
+            else:
+                return Response({
+                    "valid": False,
+                    "message": "Decision document integrity compromised"
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response(
+                {"error": f"Verification failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """Alias for download_pdf as requested"""
+        return self.download_pdf(request, pk)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.document and instance.document.is_signed:
+            raise BusinessLogicError("Signed court decisions cannot be deleted.")
+        return super().destroy(request, *args, **kwargs)
 
 
 class BulkPublishDecisionsView(generics.GenericAPIView):

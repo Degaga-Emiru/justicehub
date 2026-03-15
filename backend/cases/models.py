@@ -270,6 +270,21 @@ class CaseDocument(SoftDeleteModel):
     description = models.TextField(blank=True, null=True)
     is_confidential = models.BooleanField(default=False)
     
+    # Digital Signature Fields
+    document_hash = models.CharField(max_length=64, null=True, blank=True, help_text="SHA-256 hash of the document")
+    digital_signature = models.TextField(null=True, blank=True)
+    signature_algorithm = models.CharField(max_length=50, default='RSA-SHA256')
+    signed_at = models.DateTimeField(null=True, blank=True)
+    is_signed = models.BooleanField(default=False)
+    signature_verified = models.BooleanField(default=False)
+    signed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='signed_documents'
+    )
+    
     # Tracking
     uploaded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
