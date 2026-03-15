@@ -12,8 +12,10 @@ from hearings.models import Hearing
 from core.exceptions import BusinessLogicError
 from core.utils.email import send_email_template
 from core.cryptography import get_document_hash, sign_hash
+from .pdf_utils import append_visual_signature
 import logging
 import os
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -172,13 +174,33 @@ class DecisionWorkflowService:
             
         file_path = active_version.file.path
         
-        # 1. Calculate Hash
+        # 1. Add Visual Signature Box BEFORE hashing
+        signature_id = f"SIG-{uuid.uuid4().hex[:8].upper()}"
+        date_signed = timezone.now().strftime('%Y-%m-%d %H:%M')
+        judge_name = user.get_full_name()
+        
+        try:
+            append_visual_signature(
+                file_path,
+                file_path,  # Overwrite existing file with signed version
+                judge_name,
+                date_signed,
+                signature_id
+            )
+            logger.info(f"Visual signature box appended to {file_path}")
+        except Exception as e:
+            logger.error(f"Failed to append visual signature box: {str(e)}")
+            # Continue with signing even if visual box fails, or should we raise?
+            # User requirement says it MUST appear, so maybe raise error.
+            raise BusinessLogicError(f"Failed to add visual signature: {str(e)}")
+
+        # 2. Calculate Hash of the document (now including the visual box)
         doc_hash = get_document_hash(file_path)
         
-        # 2. Sign Hash
+        # 3. Sign Hash
         signature = sign_hash(doc_hash)
         
-        # 3. Update CaseDocument fields
+        # 4. Update CaseDocument fields
         doc = decision.document
         doc.document_hash = doc_hash
         doc.digital_signature = signature
