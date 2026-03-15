@@ -77,3 +77,6 @@ backend/keys/
 backend/test_*.txt
 # Virtual environment
 venv/
+
+debug_*.py
+verify_*.py
