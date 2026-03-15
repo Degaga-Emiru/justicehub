@@ -72,7 +72,7 @@ backend/test_results_v4.txt
 backend/test_results_v5.txt
 backend/test_results_v6.txt
 backend/test_results_v7.txt
-
+backend/keys/
 # Ignore any future test result files
 backend/test_*.txt
 # Virtual environment
