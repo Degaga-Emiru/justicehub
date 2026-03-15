@@ -7,6 +7,7 @@ class CaseStatus:
     PAID = 'PAID'
     ASSIGNED = 'ASSIGNED'
     IN_PROGRESS = 'IN_PROGRESS'
+    DECIDED = 'DECIDED'
     RESOLVED = 'RESOLVED'
     CLOSED = 'CLOSED'
     
@@ -17,6 +18,7 @@ class CaseStatus:
         (PAID, 'Paid'),
         (ASSIGNED, 'Assigned'),
         (IN_PROGRESS, 'In Progress'),
+        (DECIDED, 'Decided'),
         (RESOLVED, 'Resolved'),
         (CLOSED, 'Closed'),
     ]
@@ -27,7 +29,7 @@ class CaseStatus:
     
     @classmethod
     def get_closed_statuses(cls):
-        return [cls.CLOSED, cls.REJECTED, cls.RESOLVED]
+        return [cls.CLOSED, cls.REJECTED, cls.RESOLVED, cls.DECIDED]
 
 
 class CasePriority:

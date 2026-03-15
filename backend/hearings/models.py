@@ -10,6 +10,13 @@ class Hearing(SoftDeleteModel):
     """Hearing/Scheduling Model"""
     class HearingType(models.TextChoices):
         INITIAL = 'INITIAL', 'Initial Hearing'
+        INTRO = 'INTRO', 'Case Introduction'
+        EVIDENCE = 'EVIDENCE', 'Evidence Hearing'
+        WITNESS = 'WITNESS', 'Witness Hearing'
+        ARGUMENT = 'ARGUMENT', 'Argument Hearing'
+        FINAL = 'FINAL', 'Final Hearing'
+        FINAL_ARGUMENT = 'FINAL_ARGUMENT', 'Final Argument'
+        JUDGMENT = 'JUDGMENT', 'Judgment'
         STATUS = 'STATUS', 'Status Conference'
         EVIDENTIARY = 'EVIDENTIARY', 'Evidentiary Hearing'
         MOTION = 'MOTION', 'Motion Hearing'
@@ -32,6 +39,8 @@ class Hearing(SoftDeleteModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='hearings')
     judge = models.ForeignKey(User, on_delete=models.PROTECT, related_name='presiding_hearings')
+    
+    hearing_number = models.IntegerField(null=True, blank=True, help_text="Sequence number of the hearing for this case")
     
     # Scheduling
     title = models.CharField(max_length=200)
@@ -79,7 +88,20 @@ class Hearing(SoftDeleteModel):
     def __str__(self):
         return f"{self.hearing_type} - {self.case.file_number} - {self.scheduled_date}"
 
+    def clean(self):
+        super().clean()
+        from cases.models import CaseStatus as CaseStatusConst
+        if self.case.status in [CaseStatusConst.StatusChoices.CLOSED, CaseStatusConst.StatusChoices.DECIDED]:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(f"Cannot schedule hearings for a {self.case.get_status_display()} case.")
+
     def save(self, *args, **kwargs):
+        self.clean()
+        if self.hearing_number is None:
+            # Automatically assign the next hearing number
+            existing_count = Hearing.objects.filter(case=self.case).count()
+            self.hearing_number = existing_count + 1
+
         if self.status == self.HearingStatus.COMPLETED and not self.completed_at:
             self.completed_at = timezone.now()
         elif self.status == self.HearingStatus.CANCELLED and not self.cancelled_at:

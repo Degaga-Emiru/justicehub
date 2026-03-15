@@ -428,6 +428,30 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         return Response(timeline)
 
+    @action(detail=True, methods=['get'], url_path='hearing-timeline')
+    def hearing_timeline(self, request, pk=None):
+        """Get case hearing timeline"""
+        case = self.get_object()
+        hearings = case.hearings.all().order_by('hearing_number')
+        
+        timeline = []
+        for h in hearings:
+            timeline.append({
+                "hearing_number": h.hearing_number,
+                "title": h.title,
+                "type": h.get_hearing_type_display(),
+                "status": h.get_status_display(),
+                "date": h.scheduled_date,
+                "location": h.location
+            })
+            
+        return Response({
+            "case_id": case.id,
+            "file_number": case.file_number,
+            "title": case.title,
+            "timeline": timeline
+        })
+
 
 class AssignJudgeView(generics.CreateAPIView):
     """

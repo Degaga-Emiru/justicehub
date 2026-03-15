@@ -43,6 +43,7 @@ class CaseStatus(models.Model):
         PAID = 'PAID', 'Paid'
         ASSIGNED = 'ASSIGNED', 'Assigned'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        DECIDED = 'DECIDED', 'Decided'
         CLOSED = 'CLOSED', 'Closed'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -64,8 +65,9 @@ class Case(SoftDeleteModel):
         CaseStatus.StatusChoices.PENDING_REVIEW: [CaseStatus.StatusChoices.APPROVED, CaseStatus.StatusChoices.REJECTED],
         CaseStatus.StatusChoices.APPROVED: [CaseStatus.StatusChoices.PAID],
         CaseStatus.StatusChoices.PAID: [CaseStatus.StatusChoices.ASSIGNED],
-        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS, CaseStatus.StatusChoices.CLOSED],
-        CaseStatus.StatusChoices.IN_PROGRESS: [CaseStatus.StatusChoices.CLOSED],
+        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS, CaseStatus.StatusChoices.DECIDED, CaseStatus.StatusChoices.CLOSED],
+        CaseStatus.StatusChoices.IN_PROGRESS: [CaseStatus.StatusChoices.DECIDED, CaseStatus.StatusChoices.CLOSED],
+        CaseStatus.StatusChoices.DECIDED: [CaseStatus.StatusChoices.CLOSED],
     }
 
     class Priority(models.TextChoices):
@@ -243,7 +245,7 @@ class Case(SoftDeleteModel):
 
     @property
     def is_closed(self):
-        return self.status == CaseStatus.StatusChoices.CLOSED
+        return self.status in [CaseStatus.StatusChoices.CLOSED, CaseStatus.StatusChoices.DECIDED]
 
 
 class CaseDocument(SoftDeleteModel):

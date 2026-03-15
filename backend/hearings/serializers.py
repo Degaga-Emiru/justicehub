@@ -39,13 +39,13 @@ class HearingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hearing
         fields = [
-            'id', 'case', 'case_details', 
+            'id', 'case', 'case_details', 'hearing_number',
             'title', 'hearing_type', 'hearing_format', 'status',
             'scheduled_date', 'duration_minutes', 'location', 'virtual_meeting_link',
             'agenda', 'notes', 'cancellation_reason', 'is_public',
             'participants', 'created_at', 'completed_at', 'cancelled_at'
         ]
-        read_only_fields = ['id', 'status', 'created_at']
+        read_only_fields = ['id', 'status', 'created_at', 'hearing_number']
     
     def get_case_details(self, obj):
         return {
@@ -136,7 +136,7 @@ class HearingCreateSerializer(serializers.ModelSerializer):
         model = Hearing
         fields = [
             'case', 'judge', 'title', 'hearing_type', 'hearing_format', 'scheduled_date',
-            'hearing_date', 'start_time', 'end_time',
+            'hearing_date', 'start_time', 'end_time', 'hearing_number',
             'duration_minutes', 'location', 'virtual_meeting_link',
             'agenda', 'notes', 'is_public', 'participants'
         ]
@@ -145,6 +145,24 @@ class HearingCreateSerializer(serializers.ModelSerializer):
             'duration_minutes': {'required': False}
         }
     
+    def to_internal_value(self, data):
+        # Allow labels to be used for hearing_type
+        if 'hearing_type' in data and data['hearing_type']:
+            val = data['hearing_type']
+            choices = Hearing.HearingType.choices
+            
+            # Map labels to keys (case-insensitive)
+            label_map = {label.lower(): key for key, label in choices}
+            key_map = {key.lower(): key for key, label in choices}
+            
+            lower_val = val.lower()
+            if lower_val in label_map:
+                data['hearing_type'] = label_map[lower_val]
+            elif lower_val in key_map:
+                data['hearing_type'] = key_map[lower_val]
+                
+        return super().to_internal_value(data)
+
     def validate(self, data):
         from core.utils.scheduling import check_time_overlap, is_within_working_hours
         from cases.constants import CaseStatus as CaseStatusConst
@@ -184,6 +202,10 @@ class HearingCreateSerializer(serializers.ModelSerializer):
         # Only validate case status on creation
         if not is_update and case:
             allowed_statuses = [CaseStatusConst.PAID, CaseStatusConst.ASSIGNED, CaseStatusConst.IN_PROGRESS]
+            if case.status in [CaseStatusConst.CLOSED, CaseStatusConst.DECIDED]:
+                raise serializers.ValidationError(
+                    f"Cannot schedule hearings for a {case.get_status_display()} case."
+                )
             if case.status not in allowed_statuses:
                  raise serializers.ValidationError(
                     f"Hearings can only be scheduled for cases with status: {', '.join(allowed_statuses)}. "
