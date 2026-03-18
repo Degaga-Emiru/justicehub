@@ -122,7 +122,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         # Handle multipart/form-data (file uploads)
         if request.content_type and 'multipart/form-data' in request.content_type:
             # Create a mutable copy of request.data
-            data = request.data.copy()
+            data = request.data
             
             # Handle document files if they exist
             documents = request.FILES.getlist('documents')
@@ -174,7 +174,7 @@ class CaseViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             
             # Create a mutable copy of request.data
-            data = request.data.copy()
+            data = request.data
             
             serializer = self.get_serializer(instance, data=data, partial=partial)
             serializer.is_valid(raise_exception=True)
