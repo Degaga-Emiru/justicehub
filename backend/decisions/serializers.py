@@ -4,6 +4,7 @@ from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment
 from cases.serializers import CaseListSerializer
 from accounts.serializers import UserProfileSerializer
 from cases.models import JudgeAssignment
+from hearings.models import Hearing
 
 
 class DecisionVersionSerializer(serializers.ModelSerializer):
@@ -51,6 +52,7 @@ class DecisionSerializer(serializers.ModelSerializer):
             'id', 'decision_number', 'case', 'case_details', 'judge', 'judge_details', 'judge_name',
             'title', 'decision_type', 'status', 'version',
             'introduction', 'background', 'analysis', 'conclusion', 'order',
+            'immediate_reason', 'description', 'finalized',
             'laws_cited', 'cases_cited',
             'document', 'pdf_document', 'is_published', 'published_at', 'finalized_at',
             'created_at', 'updated_at', 'versions', 'comments', 'appeals', 'signature_details'
@@ -108,6 +110,33 @@ class DecisionSerializer(serializers.ModelSerializer):
             ).exists()
             if not is_assigned:
                 raise serializers.ValidationError("You are not assigned as the active judge for this case.")
+        
+        # Validate based on decision type
+        decision_type = attrs.get('decision_type') or (self.instance.decision_type if self.instance else None)
+        
+        if decision_type == Decision.DecisionType.IMMEDIATE:
+            if not attrs.get('immediate_reason') and not (self.instance and self.instance.immediate_reason):
+                raise serializers.ValidationError({"immediate_reason": "Reason is required for immediate decisions."})
+            if not attrs.get('description') and not (self.instance and self.instance.description):
+                raise serializers.ValidationError({"description": "Description is required for immediate decisions."})
+        else:
+            # For all other types, introduction, background, analysis, conclusion, order are mandatory
+            required_fields = ['introduction', 'background', 'analysis', 'conclusion', 'order']
+            errors = {}
+            for field in required_fields:
+                if not attrs.get(field) and not (self.instance and getattr(self.instance, field)):
+                    errors[field] = f"{field.capitalize()} is required for this decision type."
+            if errors:
+                raise serializers.ValidationError(errors)
+
+        # Check for at least one conducted (COMPLETED) hearing
+        conducted_hearing_exists = Hearing.objects.filter(
+            case=case,
+            status=Hearing.HearingStatus.COMPLETED
+        ).exists()
+        
+        if not conducted_hearing_exists:
+            raise serializers.ValidationError("A decision cannot be issued unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
         
         return attrs
     
@@ -167,3 +196,25 @@ class DecisionSignatureSerializer(serializers.Serializer):
     signed_at = serializers.DateTimeField(source='document.signed_at', read_only=True)
     document_hash = serializers.CharField(source='document.document_hash', read_only=True)
     signature_verified = serializers.BooleanField(source='document.signature_verified', read_only=True)
+
+
+class ImmediateDecisionSerializer(serializers.Serializer):
+    """Serializer for Immediate Decision feature"""
+    reason = serializers.ChoiceField(choices=Decision.ImmediateReason.choices)
+    description = serializers.CharField(style={'base_template': 'textarea.html'})
+
+    def validate(self, attrs):
+        case = self.context.get('case')
+        if not case:
+            raise serializers.ValidationError("Case context is missing.")
+            
+        # Check for conducted hearing
+        conducted_hearing_exists = Hearing.objects.filter(
+            case=case,
+            status=Hearing.HearingStatus.COMPLETED
+        ).exists()
+        
+        if not conducted_hearing_exists:
+            raise serializers.ValidationError("An immediate decision cannot be issued unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
+            
+        return attrs

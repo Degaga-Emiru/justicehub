@@ -213,27 +213,32 @@ class Case(SoftDeleteModel):
 
     def generate_file_number(self):
         """Generate unique file number in format: JH-YYYY-XXXX"""
-        from django.db.models import Max
         import datetime
+        import re
         
         current_year = datetime.datetime.now().year
         prefix = f"JH-{current_year}"
         
-        last_case = Case.objects.filter(
+        # Use all_objects to include soft-deleted cases to avoid unique constraint violations
+        # Fetch all file numbers for the current year to find the true numeric maximum
+        existing_numbers = Case.all_objects.filter(
             file_number__startswith=prefix
-        ).aggregate(Max('file_number'))
+        ).values_list('file_number', flat=True)
         
-        last_number = last_case['file_number__max']
+        max_sequence = 0
+        for number in existing_numbers:
+            # Extract the numeric part at the end of the string
+            match = re.search(r'-(\d+)$', number)
+            if match:
+                try:
+                    seq = int(match.group(1))
+                    if seq > max_sequence:
+                        max_sequence = seq
+                except ValueError:
+                    continue
         
-        if last_number:
-            try:
-                sequence = int(last_number.split('-')[-1]) + 1
-            except (ValueError, IndexError):
-                sequence = 1
-        else:
-            sequence = 1
-        
-        return f"{prefix}-{sequence:04d}"
+        new_sequence = max_sequence + 1
+        return f"{prefix}-{new_sequence:04d}"
 
     @property
     def is_pending(self):
@@ -377,7 +382,7 @@ class JudgeProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='judge_profile')
     specializations = models.ManyToManyField(CaseCategory, related_name='judges')
-    max_active_cases = models.IntegerField(default=3, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    max_active_cases = models.IntegerField(default=10, validators=[MinValueValidator(1), MaxValueValidator(10)])
     bar_certificate_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     years_of_experience = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)

@@ -15,7 +15,8 @@ from .serializers import (
     DecisionSerializer, DecisionDeliverySerializer,
     DecisionPublishSerializer, DecisionVersionSerializer,
     DecisionCommentSerializer, DecisionAppealSerializer,
-    DecisionDocumentUploadSerializer, DecisionSignatureSerializer
+    DecisionDocumentUploadSerializer, DecisionSignatureSerializer,
+    ImmediateDecisionSerializer
 )
 from .permissions import (
     IsDecisionJudge, CanPublishDecision, CanViewDecision,
@@ -373,6 +374,48 @@ class DecisionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(decisions, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='by-case/(?P<case_id>[^/.]+)/immediate')
+    def immediate(self, request, case_id=None):
+        """Create an immediate decision for a case"""
+        from cases.models import Case, JudgeAssignment
+        case = get_object_or_404(Case, id=case_id)
+        
+        # 1. Permission check: judge assigned to case
+        is_assigned = JudgeAssignment.objects.filter(
+            case=case,
+            judge=request.user,
+            is_active=True
+        ).exists()
+        
+        if not is_assigned and request.user.role != 'ADMIN':
+            return Response(
+                {"error": "You are not the active judge assigned to this case."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        # 2. Validation
+        serializer = ImmediateDecisionSerializer(data=request.data, context={'case': case})
+        serializer.is_valid(raise_exception=True)
+        
+        # 3. Decision Logic
+        decision = DecisionWorkflowService.create_immediate_decision(
+            case=case,
+            judge=request.user,
+            reason=serializer.validated_data['reason'],
+            description=serializer.validated_data['description']
+        )
+        
+        # Log Audit
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DECISION_CREATED, # Or IMMEDIATE_DECISION
+            obj=decision,
+            description=f"Immediate decision issued for case {case.file_number}. Reason: {decision.immediate_reason}",
+            entity_name=decision.decision_number
+        )
+        
+        return Response(DecisionSerializer(decision).data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'], url_path='by-case/(?P<case_id>[^/.]+)')
     def by_case(self, request, case_id=None):

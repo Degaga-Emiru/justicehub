@@ -56,6 +56,15 @@ class DecisionWorkflowService:
         if decision.status != Decision.DecisionStatus.DRAFT:
             raise BusinessLogicError("Only draft decisions can be finalized.")
 
+        # Check for conducted hearing
+        conducted_hearing_exists = Hearing.objects.filter(
+            case=decision.case,
+            status=Hearing.HearingStatus.COMPLETED
+        ).exists()
+        
+        if not conducted_hearing_exists:
+            raise BusinessLogicError("A decision cannot be finalized unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
+
         with transaction.atomic():
             decision.status = Decision.DecisionStatus.FINALIZED
             decision.finalized_at = timezone.now()
@@ -284,6 +293,59 @@ class DecisionWorkflowService:
             text=text
         )
         return comment
+
+    @staticmethod
+    def create_immediate_decision(case, judge, reason, description):
+        """
+        Creates an immediate decision, closes the case, and notifies parties.
+        """
+        # 1. Validation for conducted hearing (already done in serializer but double check)
+        conducted_hearing_exists = Hearing.objects.filter(
+            case=case,
+            status=Hearing.HearingStatus.COMPLETED
+        ).exists()
+        
+        if not conducted_hearing_exists:
+            raise BusinessLogicError("An immediate decision cannot be issued unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
+
+        with transaction.atomic():
+            # 2. Create Decision
+            decision = Decision.objects.create(
+                case=case,
+                judge=judge,
+                title=f"Immediate Decision - {case.file_number}",
+                decision_type=Decision.DecisionType.IMMEDIATE,
+                immediate_reason=reason,
+                description=description,
+                status=Decision.DecisionStatus.FINALIZED,
+                finalized=True,
+                finalized_at=timezone.now()
+            )
+            
+            # Generate decision number
+            decision.decision_number = decision.generate_decision_number()
+            decision.save()
+
+            # 3. Close Case
+            case.status = CaseStatus.CLOSED
+            case.save()
+
+            # 4. Notify parties
+            deliver_decision(decision)
+            
+            # Notify Registrar
+            registrars = User.objects.filter(role='REGISTRAR')
+            for reg in registrars:
+                create_notification(
+                    user=reg,
+                    type='DECISION_FINALIZED',
+                    title='Immediate Decision Issued',
+                    message=f'Judge {judge.get_full_name()} has issued an immediate decision for case {case.file_number}. Reason: {decision.get_immediate_reason_display()}',
+                    case=case,
+                    action_url=f"/decisions/{decision.id}"
+                )
+        
+        return decision
 
 
 def generate_decision_pdf(decision):
