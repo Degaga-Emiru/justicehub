@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .button {
+            background-color: #007bff;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Case Approved - Payment Required</h2>
+    <p>Dear {{ user.get_full_name }},</p>
+    <p>Your case <strong>"{{ case.title }}"</strong> (File No: {{ case.file_number }}) has been approved by the registrar.</p>
+    <p>To proceed with judge assignment and scheduling, please complete the payment of <strong>{{ amount }} ETB</strong>.</p>
+    
+    <div style="margin: 30px 0;">
+        <a href="{{ payment_url }}" class="button">Pay Now via Chapa</a>
+    </div>
+    
+    <p>If the button above doesn't work, copy and paste this link into your browser:</p>
+    <p>{{ payment_url }}</p>
+    
+    <p>Thank you,<br>JusticeHub Team</p>
+</body>
+</html>

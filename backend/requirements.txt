@@ -38,3 +38,4 @@ weasyprint==68.1
 webencodings==0.5.1
 zopfli==0.4.1
 cryptography==42.0.5
+requests==2.32.3

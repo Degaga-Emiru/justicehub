@@ -1,95 +1,15 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: #27ae60;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 5px 5px 0 0;
-        }
-
-        .content {
-            background: #f9f9f9;
-            padding: 20px;
-            border: 1px solid #ddd;
-        }
-
-        .confirmation-box {
-            background: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-            border: 1px solid #2ecc71;
-            text-align: center;
-        }
-
-        .button {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #3498db;
-            color: white !important;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 12px;
-        }
-
-        .success-icon {
-            font-size: 48px;
-            color: #2ecc71;
-            margin-bottom: 10px;
-        }
-    </style>
-</head>
-
 <body>
-    <div class="header">
-        <h1>Payment Verified</h1>
-    </div>
-
-    <div class="content">
-        <p>Dear {{ user.get_full_name }},</p>
-
-        <div class="confirmation-box">
-            <div class="success-icon">✓</div>
-            <p><strong>Payment Received & Verified</strong></p>
-            <p>Amount: {{ payment.amount }} ETB</p>
-            <p>Reference: {{ payment.transaction_reference }}</p>
-        </div>
-
-        <p>Your payment for Case <strong>{{ payment.case.file_number }}</strong> has been successfully verified. Your
-            case status has been updated to <strong>PAID</strong>.</p>
-
-        <p>A judge will now be assigned to your case, and the legal proceedings will commence. You will be notified of
-            any further updates regarding your case.</p>
-
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="{{ frontend_url }}/cases/{{ payment.case.id }}" class="button">View My Case</a>
-        </div>
-    </div>
-
-    <div class="footer">
-        <p>This is an automated message from Justice Hub. Please do not reply to this email.</p>
-    </div>
+    <h2>Payment Successful</h2>
+    <p>Dear {{ user.get_full_name }},</p>
+    <p>We have successfully received your payment for case <strong>"{{ case.title }}"</strong> (File No: {{ case.file_number }}).</p>
+    <p><strong>Transaction Reference:</strong> {{ payment.tx_ref }}</p>
+    <p><strong>Amount Paid:</strong> {{ payment.amount }} ETB</p>
+    <p><strong>Date:</strong> {{ payment.paid_at }}</p>
+    
+    <p>Your case has now been moved to the next stage, and a judge will be assigned shortly.</p>
+    
+    <p>Thank you for using JusticeHub.</p>
 </body>
-
 </html>

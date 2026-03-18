@@ -35,7 +35,6 @@ from audit_logs.models import AuditLog
 from notifications.services import create_notification
 from core.exceptions import BusinessLogicError
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -264,7 +263,7 @@ class CaseViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_200_OK)
                 
         except Exception as e:
-            logger.error(f"Error reviewing case {case.id}: {str(e)}")
+            logging.getLogger(__name__).error(f"Error reviewing case {case.id}: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
