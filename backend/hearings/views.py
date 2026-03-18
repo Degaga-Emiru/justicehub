@@ -14,7 +14,7 @@ from .serializers import (
     HearingSerializer, HearingCreateSerializer, HearingParticipantSerializer,
     HearingConfirmAttendanceSerializer, HearingRescheduleSerializer,
     HearingReminderSerializer, HearingCalendarSerializer,
-    BulkScheduleHearingSerializer
+    BulkScheduleHearingSerializer, HearingCompleteSerializer
 )
 from .permissions import (
     IsHearingJudge, IsHearingParticipant, CanScheduleHearings,
@@ -226,28 +226,69 @@ class HearingViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsHearingJudge])
     def complete(self, request, pk=None):
-        """Mark hearing as completed"""
+        """Mark hearing as completed with structured notes and optional next hearing"""
         hearing = self.get_object()
         
-        hearing.status = 'COMPLETED'
-        hearing.completed_at = timezone.now()
-        hearing.recording_url = request.data.get('recording_url')
-        hearing.transcript_url = request.data.get('transcript_url')
+        if hearing.status == 'CONDUCTED':
+            raise BusinessLogicError("This hearing has already been conducted.")
+            
+        serializer = HearingCompleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        data = serializer.validated_data
+        
+        # Update current hearing
+        hearing.status = 'CONDUCTED'
+        hearing.conducted_at = timezone.now()
+        hearing.recording_url = data.get('recording_url')
+        hearing.transcript_url = data.get('transcript_url')
+        hearing.minutes = data.get('minutes')
+        hearing.notes = data.get('notes')
         hearing.save()
         
+        # Handle next hearing creation if date is provided
+        next_hearing_created = False
+        next_date = data.get('next_hearing_date')
+        if next_date:
+            # Create new hearing
+            new_hearing = Hearing.objects.create(
+                case=hearing.case,
+                judge=hearing.judge,
+                title=f"Follow-up: {hearing.title}",
+                hearing_type=hearing.hearing_type, # Default to same type, or could be INITIAL/STATUS
+                scheduled_date=next_date,
+                duration_minutes=hearing.duration_minutes,
+                location=hearing.location,
+                hearing_format=hearing.hearing_format,
+                agenda=f"Follow-up from hearing on {hearing.conducted_at.strftime('%Y-%m-%d')}",
+                status='SCHEDULED'
+            )
+            
+            # Copy participants
+            for participant in hearing.participant_list.all():
+                HearingParticipant.objects.create(
+                    hearing=new_hearing,
+                    user=participant.user,
+                    role_in_hearing=participant.role_in_hearing
+                )
+            
+            # Schedule reminders for new hearing
+            self._schedule_reminders(new_hearing)
+            next_hearing_created = True
+
         # Log Completion
         create_audit_log(
             request=request,
             action_type=AuditLog.ActionType.HEARING_COMPLETED,
             obj=hearing,
-            description=f"Hearing for case {hearing.case.file_number} completed",
+            description=f"Hearing for case {hearing.case.file_number} conducted. Action: {data['notes']['action']}",
             entity_name=hearing.case.file_number
         )
 
         return Response({
-            "message": "Hearing marked as completed.",
-            "status": "COMPLETED",
-            "completed_at": hearing.completed_at
+            "message": "Hearing completed successfully",
+            "hearing_status": "CONDUCTED",
+            "next_hearing_created": next_hearing_created
         })
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsHearingJudge])

@@ -27,6 +27,7 @@ class Hearing(SoftDeleteModel):
         SCHEDULED = 'SCHEDULED', 'Scheduled'
         CONFIRMED = 'CONFIRMED', 'Confirmed'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        CONDUCTED = 'CONDUCTED', 'Conducted'
         COMPLETED = 'COMPLETED', 'Completed'
         POSTPONED = 'POSTPONED', 'Postponed'
         CANCELLED = 'CANCELLED', 'Cancelled'
@@ -56,7 +57,7 @@ class Hearing(SoftDeleteModel):
     
     # Details
     agenda = models.TextField()
-    notes = models.TextField(blank=True, null=True)
+    notes = models.JSONField(blank=True, null=True)
     cancellation_reason = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)
     
@@ -70,10 +71,12 @@ class Hearing(SoftDeleteModel):
     # Recording/Transcript
     recording_url = models.URLField(blank=True, null=True)
     transcript_url = models.URLField(blank=True, null=True)
+    minutes = models.TextField(blank=True, null=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    conducted_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
 
@@ -102,7 +105,9 @@ class Hearing(SoftDeleteModel):
             existing_count = Hearing.objects.filter(case=self.case).count()
             self.hearing_number = existing_count + 1
 
-        if self.status == self.HearingStatus.COMPLETED and not self.completed_at:
+        if self.status == self.HearingStatus.CONDUCTED and not self.conducted_at:
+            self.conducted_at = timezone.now()
+        elif self.status == self.HearingStatus.COMPLETED and not self.completed_at:
             self.completed_at = timezone.now()
         elif self.status == self.HearingStatus.CANCELLED and not self.cancelled_at:
             self.cancelled_at = timezone.now()

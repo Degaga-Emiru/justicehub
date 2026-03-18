@@ -43,7 +43,8 @@ class HearingSerializer(serializers.ModelSerializer):
             'title', 'hearing_type', 'hearing_format', 'status',
             'scheduled_date', 'duration_minutes', 'location', 'virtual_meeting_link',
             'agenda', 'notes', 'cancellation_reason', 'is_public',
-            'participants', 'created_at', 'completed_at', 'cancelled_at'
+            'participants', 'recording_url', 'transcript_url', 'minutes',
+            'created_at', 'conducted_at', 'completed_at', 'cancelled_at'
         ]
         read_only_fields = ['id', 'status', 'created_at', 'hearing_number']
     
@@ -58,72 +59,41 @@ class HearingSerializer(serializers.ModelSerializer):
         if value <= timezone.now():
             raise serializers.ValidationError("Scheduled date must be in the future.")
         return value
-    
-    def validate(self, data):
-        # Check for conflicts
-        if data.get('location'):
-            conflicting = Hearing.objects.filter(
-                location=data['location'],
-                scheduled_date__date=data['scheduled_date'].date(),
-                status__in=['SCHEDULED', 'CONFIRMED']
-            ).exclude(pk=self.instance.pk if self.instance else None)
+
+
+class HearingCompleteSerializer(serializers.Serializer):
+    recording_url = serializers.URLField(required=False, allow_null=True)
+    transcript_url = serializers.URLField(required=False, allow_null=True)
+    minutes = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    notes = serializers.JSONField()
+    next_hearing_date = serializers.DateTimeField(required=False, allow_null=True)
+
+    def validate_notes(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Notes must be a JSON object.")
+        
+        required_fields = ['summary', 'action']
+        for field in required_fields:
+            if field not in value or not value[field]:
+                raise serializers.ValidationError(f"'{field}' is required in notes.")
+        
+        valid_actions = ['postponed', 'continued', 'resolved']
+        if value['action'] not in valid_actions:
+            raise serializers.ValidationError(f"Invalid action. Must be one of: {', '.join(valid_actions)}")
             
-            if conflicting.exists():
-                raise serializers.ValidationError(
-                    "Courtroom already booked for this time."
-                )
-        
+        return value
+
+    def validate(self, data):
+        notes = data.get('notes', {})
+        action = notes.get('action')
+        next_date = data.get('next_hearing_date')
+
+        if action == 'postponed' and not next_date:
+            raise serializers.ValidationError({
+                "next_hearing_date": "Next hearing date is required when action is 'postponed'."
+            })
+            
         return data
-    
-    def create(self, validated_data):
-        request = self.context.get('request')
-        validated_data['judge'] = request.user
-        
-        hearing = super().create(validated_data)
-        
-        # Add judge as participant
-        HearingParticipant.objects.create(
-            hearing=hearing,
-            user=request.user,
-            role_in_hearing='Presiding Judge',
-            attendance_status='CONFIRMED'
-        )
-        
-        # Add case parties as participants
-        case = hearing.case
-        
-        # Plaintiff
-        if case.plaintiff:
-            HearingParticipant.objects.create(
-                hearing=hearing,
-                user=case.plaintiff,
-                role_in_hearing='Plaintiff'
-            )
-        
-        # Defendant
-        if case.defendant:
-            HearingParticipant.objects.create(
-                hearing=hearing,
-                user=case.defendant,
-                role_in_hearing='Defendant'
-            )
-        
-        # Lawyers
-        if case.plaintiff_lawyer:
-            HearingParticipant.objects.create(
-                hearing=hearing,
-                user=case.plaintiff_lawyer,
-                role_in_hearing="Plaintiff's Lawyer"
-            )
-        
-        if case.defendant_lawyer:
-            HearingParticipant.objects.create(
-                hearing=hearing,
-                user=case.defendant_lawyer,
-                role_in_hearing="Defendant's Lawyer"
-            )
-        
-        return hearing
 
 
 class HearingCreateSerializer(serializers.ModelSerializer):
