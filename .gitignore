@@ -80,3 +80,14 @@ venv/
 
 debug_*.py
 verify_*.py
+
+# Ignore text/debug/output files
+*.txt
+
+# Optional: ignore test outputs specifically
+test_*.txt
+*_output*.txt
+*_results*.txt
+tree.txt
+all_py_files.txt
+check_output.txt
