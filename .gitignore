@@ -83,6 +83,7 @@ verify_*.py
 
 # Ignore text/debug/output files
 *.txt
+!requirements.txt
 
 # Optional: ignore test outputs specifically
 test_*.txt
