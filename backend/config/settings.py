@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'decisions',
     'payments',
     'audit_logs',
+    'reports',
 ]
 
 

@@ -1,0 +1,1746 @@
+﻿python : Creating test database for alias 
+'default'...
+At line:1 char:1
++ python manage.py test cases > 
+test_output_cases.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpec    
+ified: (Creating test d...as 'def    
+ault'...:String) [], RemoteExcept    ion
+    + FullyQualifiedErrorId : NativeC    
+ommandError
+ 
+
+
+(process:8304): GLib-GIO-WARNING **: 
+10:39:17.640: Unexpectedly, UWP app `Micro
+soft.OutlookForWindows_1.2025.1121.100_x64
+__8wekyb3d8bbwe' (AUMId `Microsoft.Outlook
+ForWindows_8wekyb3d8bbwe!Microsoft.Outlook
+forWindows') supports 4 extensions but 
+has no verbs
+
+(process:8304): GLib-GIO-WARNING **: 
+10:39:17.985: Unexpectedly, UWP app `Micro
+soft.ScreenSketch_11.2511.47.0_x64__8wekyb
+3d8bbwe' (AUMId `Microsoft.ScreenSketch_8w
+ekyb3d8bbwe!App') supports 29 extensions 
+but has no verbs
+
+(process:8304): GLib-GIO-WARNING **: 
+10:39:18.114: Unexpectedly, UWP app `Clipc
+hamp.Clipchamp_4.5.10220.0_x64__yxz26nhyzh
+srt' (AUMId 
+`Clipchamp.Clipchamp_yxz26nhyzhsrt!App') 
+supports 41 extensions but has no verbs
+EEEEEEEEEEEEEE
+==========================================
+============================
+ERROR: test_case_detail (cases.tests.CaseA
+PITests.test_case_detail)
+Test getting case details
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_case_timeline (cases.tests.Cas
+eAPITests.test_case_timeline)
+Test getting case timeline
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: 
+test_citizen_cannot_access_pending_review 
+(cases.tests.CaseAPITests.test_citizen_can
+not_access_pending_review)
+Test citizen cannot access pending cases
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_create_case_authenticated (cas
+es.tests.CaseAPITests.test_create_case_aut
+henticated)
+Test case creation with authentication
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_create_case_unauthenticated (c
+ases.tests.CaseAPITests.test_create_case_u
+nauthenticated)
+Test case creation without authentication
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_list_my_cases (cases.tests.Cas
+eAPITests.test_list_my_cases)
+Test listing user's cases
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_pending_review_cases (cases.te
+sts.CaseAPITests.test_pending_review_cases
+)
+Test listing pending cases (registrar 
+only)
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_review_case_accept (cases.test
+s.CaseAPITests.test_review_case_accept)
+Test accepting a case
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_review_case_reject (cases.test
+s.CaseAPITests.test_review_case_reject)
+Test rejecting a case
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 119, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_case_str_representation (cases
+.tests.CaseModelTests.test_case_str_repres
+entation)
+Test string representation
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint 
+"accounts_user_phone_number_key"
+DETAIL:  Key (phone_number)=(+1234567890) 
+already exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 17, in setUp
+    self.user = User.objects.create_user(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\justicehub\backend\acc
+ounts\managers.py", line 20, in 
+create_user
+    return self._create_user(email, 
+password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\justicehub\backend\acc
+ounts\managers.py", line 14, in 
+_create_user
+    user.save(using=self._db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\contrib\au
+th\base_user.py", line 62, in save
+    super().save(**kwargs)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"accounts_user_phone_number_key"
+DETAIL:  Key (phone_number)=(+1234567890) 
+already exists.
+
+
+==========================================
+============================
+ERROR: test_create_case (cases.tests.CaseM
+odelTests.test_create_case)
+Test creating a case
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint 
+"accounts_user_phone_number_key"
+DETAIL:  Key (phone_number)=(+1234567890) 
+already exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 17, in setUp
+    self.user = User.objects.create_user(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\justicehub\backend\acc
+ounts\managers.py", line 20, in 
+create_user
+    return self._create_user(email, 
+password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\justicehub\backend\acc
+ounts\managers.py", line 14, in 
+_create_user
+    user.save(using=self._db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\contrib\au
+th\base_user.py", line 62, in save
+    super().save(**kwargs)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"accounts_user_phone_number_key"
+DETAIL:  Key (phone_number)=(+1234567890) 
+already exists.
+
+
+==========================================
+============================
+ERROR: test_generate_file_number (cases.te
+sts.CaseModelTests.test_generate_file_numb
+er)
+Test file number generation
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint 
+"accounts_user_phone_number_key"
+DETAIL:  Key (phone_number)=(+1234567890) 
+already exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 17, in setUp
+    self.user = User.objects.create_user(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\justicehub\backend\acc
+ounts\managers.py", line 20, in 
+create_user
+    return self._create_user(email, 
+password, **extra_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\justicehub\backend\acc
+ounts\managers.py", line 14, in 
+_create_user
+    user.save(using=self._db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\contrib\au
+th\base_user.py", line 62, in save
+    super().save(**kwargs)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"accounts_user_phone_number_key"
+DETAIL:  Key (phone_number)=(+1234567890) 
+already exists.
+
+
+==========================================
+============================
+ERROR: test_find_available_judges (cases.t
+ests.JudgeAssignmentServiceTests.test_find
+_available_judges)
+Test finding available judges
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 256, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+==========================================
+============================
+ERROR: test_judge_workload_limit (cases.te
+sts.JudgeAssignmentServiceTests.test_judge
+_workload_limit)
+Test judge workload limit
+------------------------------------------
+----------------------------
+Traceback (most recent call last):
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UniqueViolation: 
+duplicate key value violates unique 
+constraint "cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+The above exception was the direct cause 
+of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\HP\justicehub\backend\cas
+es\tests.py", line 256, in setUp
+    self.category = 
+CaseCategory.objects.create(
+                    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 669, in create
+    obj.save(force_insert=True, 
+using=self.db)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), 
+name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+query.py", line 1918, in _insert
+    return query.get_compiler(using=using)
+.execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\models\
+sql\compiler.py", line 1925, in 
+execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 92, in 
+_execute_with_wrappers
+    return executor(sql, params, many, 
+context)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\utils.p
+y", line 94, in __exit__
+    raise 
+dj_exc_value.with_traceback(traceback) 
+from exc_value
+  File "C:\Users\HP\AppData\Roaming\Python
+\Python312\site-packages\django\db\backend
+s\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, 
+params)
+           
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: duplicate 
+key value violates unique constraint 
+"cases_casecategory_code_key"
+DETAIL:  Key (code)=(CIV-001) already 
+exists.
+
+
+------------------------------------------
+----------------------------
+Ran 14 tests in 92.751s
+
+FAILED (errors=14)
+Destroying test database for alias 
+'default'...
+
+Found 14 test(s).
+Successfully created admin user: admin@justicehub.com
+Created default case statuses
+Created default case categories
+System check identified no issues (0 silenced).
