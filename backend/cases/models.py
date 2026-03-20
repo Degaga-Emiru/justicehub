@@ -219,6 +219,11 @@ class Case(SoftDeleteModel):
         # Auto-generate file number if status changes to APPROVED
         if self.status == CaseStatus.StatusChoices.APPROVED and not self.file_number:
             self.file_number = self.generate_file_number()
+            
+        # Requirement 3: Set closed_date when case is resolved/closed
+        if self.status == CaseStatus.StatusChoices.CLOSED and not self.closed_date:
+            self.closed_date = timezone.now()
+            
         super().save(*args, **kwargs)
 
 

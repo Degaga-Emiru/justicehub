@@ -20,7 +20,6 @@ class Case(models.Model):
     payment_status = models.CharField(max_length=20)
     priority = models.CharField(max_length=20)
     category = models.ForeignKey(CaseCategory, on_delete=models.DO_NOTHING, related_name='+')
-    main_issue = models.CharField(max_length=255, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField()
     closed_date = models.DateTimeField(null=True, blank=True)

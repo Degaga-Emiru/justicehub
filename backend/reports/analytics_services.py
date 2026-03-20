@@ -32,9 +32,9 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def get_dispute_analysis():
+    def get_dispute_analysis(self):
         active_cases = ReportService.get_active_cases()
-        analysis = active_cases.exclude(main_issue__isnull=True).values('main_issue').annotate(
+        analysis = active_cases.values('category__name').annotate(
             total=Count('id')
         ).order_by('-total')
         
@@ -44,7 +44,7 @@ class AnalyticsService:
         for item in analysis:
             percentage = (item['total'] / total_with_issue * 100) if total_with_issue > 0 else 0
             results.append({
-                "issue": item['main_issue'],
+                "issue": item['category__name'],
                 "count": item['total'],
                 "percentage": f"{percentage:.1f}%"
             })
@@ -57,8 +57,8 @@ class AnalyticsService:
     @staticmethod
     def get_court_problems():
         active_cases = ReportService.get_active_cases()
-        # 1. Most common issue
-        most_common = active_cases.values('main_issue').annotate(count=Count('id')).order_by('-count').first()
+        # 1. Most common issue (Fallback to category)
+        most_common = active_cases.values('category__name').annotate(count=Count('id')).order_by('-count').first()
         
         # 2. Longest pending cases (not resolved)
         backlog_count = active_cases.exclude(status='CLOSED').count()
@@ -73,7 +73,7 @@ class AnalyticsService:
         
         return {
             "problem_indicators": [
-                {"problem": "Most common issue", "measurement": most_common['main_issue'] if most_common else "N/A"},
+                {"problem": "Most common issue", "measurement": most_common['category__name'] if most_common else "N/A"},
                 {"problem": "Longest pending cases", "measurement": f"{backlog_count} cases"},
                 {"problem": "Longest resolution", "measurement": f"{avg_days} days (average)"}
             ]
@@ -159,9 +159,9 @@ class AnalyticsService:
         active_cases = ReportService.get_active_cases()
         total_cases = active_cases.count()
         
-        # 1. Most common issue
-        most_common = active_cases.exclude(main_issue__isnull=True).values('main_issue').annotate(count=Count('id')).order_by('-count').first()
-        common_txt = most_common['main_issue'] if most_common else "N/A"
+        # 1. Most common issue (Retrieving most registered case type)
+        most_common = active_cases.values('category__name').annotate(count=Count('id')).order_by('-count').first()
+        common_txt = most_common['category__name'] if most_common else "N/A"
 
         # 2. Least reported case type
         case_types = active_cases.values('category__name').annotate(total=Count('id')).order_by('total')

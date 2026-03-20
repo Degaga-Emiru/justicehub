@@ -124,26 +124,21 @@ class ExportReportView(ReportBaseView):
             content = ExportGenerator.to_pdf(data, title, report_type=report_name.capitalize())
 
         # Dynamic extension and content-type detection
+        filename = f"justicehub_{report_name}_report.{export_format}"
         if content.startswith(b'%PDF'):
             content_type = 'application/pdf'
-            ext = 'pdf'
+            if not filename.endswith('.pdf'): filename += '.pdf'
         elif content.startswith(b'PK\x03\x04'):
             content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            ext = 'xlsx'
-        elif content.startswith(b'\xef\xbb\xbf'):
+            if not filename.endswith('.xlsx'): filename += '.xlsx'
+        elif content.startswith(b'\xef\xbb\xbf') or export_format == 'csv':
             content_type = 'text/csv'
-            ext = 'csv'
+            if not filename.endswith('.csv'): filename += '.csv'
         else:
-            # Default fallback
             content_type = 'application/octet-stream'
-            ext = export_format
 
-        response = FileResponse(
-            io.BytesIO(content),
-            content_type=content_type,
-            as_attachment=True,
-            filename=f"justicehub_{report_name}_report.{ext}"
-        )
+        response = HttpResponse(content, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
 
 class ReportViewSet(viewsets.ModelViewSet):
