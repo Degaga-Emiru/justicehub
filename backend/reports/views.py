@@ -4,8 +4,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .services import ReportService
 from .analytics_services import AnalyticsService
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.utils import timezone
+import io
 from .utils import ExportGenerator
 from .permissions import IsJudge, IsAdminUserRole
 from .models import Report
@@ -14,154 +15,136 @@ from .serializers import ReportModelSerializer
 class ReportBaseView(APIView):
     permission_classes = [IsAuthenticated]
 
-class JudgePersonalReportView(ReportBaseView):
+class JudgeReportView(ReportBaseView):
     permission_classes = [IsJudge]
     def get(self, request):
+        category = request.query_params.get('category', 'performance') # performance or financial
         days = request.query_params.get('days')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
-        report_data = ReportService.get_judge_report(request.user, days, start_date, end_date)
-        return Response(report_data)
-
-class JudgeFinancialReportView(ReportBaseView):
-    permission_classes = [IsJudge]
-    def get(self, request):
-        days = request.query_params.get('days')
-        report_data = ReportService.get_financial_report(judge=request.user, days=days)
-        return Response(report_data)
-
-class SystemOverviewReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        days = request.query_params.get('days')
-        report_data = ReportService.get_system_overview(days=days)
-        return Response(report_data)
-
-class SystemDailyReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        date = request.query_params.get('date')
-        report_data = ReportService.get_time_report(type='DAILY', date=date)
-        return Response(report_data)
-
-class SystemWeeklyReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        week = request.query_params.get('week')
-        year = request.query_params.get('year')
-        report_data = ReportService.get_time_report(type='WEEKLY', week=week, year=year)
-        return Response(report_data)
-
-class SystemMonthlyReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        month = request.query_params.get('month')
-        year = request.query_params.get('year')
-        report_data = ReportService.get_time_report(type='MONTHLY', month=month, year=year)
-        return Response(report_data)
-
-class SystemYearlyReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        year = request.query_params.get('year')
-        report_data = ReportService.get_time_report(type='YEARLY', year=year)
-        return Response(report_data)
-
-class SystemFinancialReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        days = request.query_params.get('days')
-        report_data = ReportService.get_financial_report(days=days)
-        return Response(report_data)
-
-class SystemStatusReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        report_data = ReportService.get_status_report(by_judge=False)
-        return Response(report_data)
-
-class SystemStatusByJudgeReportView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        report_data = ReportService.get_status_report(by_judge=True)
-        return Response(report_data)
-
-class ExportReportView(ReportBaseView):
-    def get(self, request):
-        report_type = request.query_params.get('report_type', 'system')
-        format = request.query_params.get('format', 'json')
-        days = request.query_params.get('days')
         
-        # Internal permission check
-        if report_type in ['system', 'financial', 'status'] and request.user.role != 'ADMIN':
-            return Response({"detail": "Only Admins can access system-wide reports."}, status=status.HTTP_403_FORBIDDEN)
+        if category == 'financial':
+            data = ReportService.get_financial_report(judge=request.user, days=days, start_date=start_date, end_date=end_date)
+        else:
+            data = ReportService.get_judge_report(request.user, days=days, start_date=start_date, end_date=end_date)
+        return Response(data)
+
+class AdminJudgeReportView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request, judge_id):
+        try:
+            from accounts.models import User as AccountUser
+            judge = AccountUser.objects.get(id=judge_id, role='JUDGE')
+        except (AccountUser.DoesNotExist, ValueError):
+            return Response({"detail": "Judge not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        days = request.query_params.get('days')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
         
-        # Determine which report to generate based on type
-        if report_type == 'judge':
-            data = ReportService.get_judge_report(request.user, days=days)
-            title = "Judge Personal Performance Report"
+        data = ReportService.get_judge_report(judge, days=days, start_date=start_date, end_date=end_date)
+        return Response(data)
+
+class SystemReportView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        report_type = request.query_params.get('type', 'overview')
+        days = request.query_params.get('days')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        if report_type == 'overview':
+            data = ReportService.get_system_overview(days=days, start_date=start_date, end_date=end_date)
+            # Inject analytics into overview for comprehensive data
+            data['demographics'] = AnalyticsService.get_demographics()
+            data['intelligence_insights'] = AnalyticsService.get_intelligence_insights()
+        elif report_type in ['daily', 'weekly', 'monthly', 'yearly']:
+            data = ReportService.get_time_report(type=report_type.upper())
         elif report_type == 'financial':
             data = ReportService.get_financial_report(days=days)
-            title = "System Financial Report"
         elif report_type == 'status':
-            data = ReportService.get_status_report()
-            title = "Cases Status Breakdown Report"
-        elif report_type == 'analytics':
-            data = AnalyticsService.get_master_analytics()
-            title = "Advanced Case Intelligence & Analytics Report"
+            by_judge = request.query_params.get('by_judge') == 'true'
+            data = ReportService.get_status_report(by_judge=by_judge)
         else:
-            data = ReportService.get_system_overview(days=days)
-            title = "System Overview Report"
+            return Response({"detail": "Invalid report type"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data)
 
-        if format == 'csv':
-            content = ExportGenerator.to_csv(data, 'report.csv')
-            response = HttpResponse(content, content_type='text/csv')
-            response['Content-Disposition'] = f'attachment; filename="justicehub_{report_type}_report.csv"'
-            return response
-        elif format == 'pdf':
-            content = ExportGenerator.to_pdf(data, title)
-            response = HttpResponse(content, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="justicehub_{report_type}_report.pdf"'
-            return response
+class AnalyticsReportView(ReportBaseView):
+    permission_classes = [IsAdminUserRole]
+    def get(self, request):
+        analytics_type = request.query_params.get('type', 'master')
+        if analytics_type == 'case-type':
+            data = AnalyticsService.get_case_type_analysis()
+        elif analytics_type == 'disputes':
+            data = AnalyticsService.get_dispute_analysis()
+        elif analytics_type == 'problem':
+            data = AnalyticsService.get_court_problems()
+        elif analytics_type == 'resolution':
+            data = AnalyticsService.get_resolution_time_metrics()
+        elif analytics_type == 'demographic':
+            data = AnalyticsService.get_demographics()
+        elif analytics_type == 'intelligence':
+            data = AnalyticsService.get_intelligence_insights()
+        else:
+            data = AnalyticsService.get_master_analytics()
+        return Response(data)
+
+class ExportReportView(ReportBaseView):
+    def get(self, request, export_format=None):
+        export_format = export_format or request.query_params.get('format', 'pdf')
+        report_scope = request.query_params.get('type', 'system') # system, judge, analytics
+        days = request.query_params.get('days')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
         
-        return Response(data)
+        # Admin check for system reports
+        if report_scope != 'judge' and (not hasattr(request.user, 'role') or request.user.role != 'ADMIN'):
+             return Response({"detail": "Only Admins can export system-wide reports."}, status=status.HTTP_403_FORBIDDEN)
 
-# Phase 2: Analytics Views
-class AnalyticsCaseTypeView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        data = AnalyticsService.get_case_type_analysis()
-        return Response(data)
+        if report_scope == 'judge':
+            data = ReportService.get_judge_report(request.user, days=days, start_date=start_date, end_date=end_date)
+            title = "Judge Performance & Revenue Report"
+            report_name = "judge"
+        elif report_scope == 'analytics':
+            data = AnalyticsService.get_master_analytics()
+            title = "Advanced Case Intelligence Report"
+            report_name = "analytics"
+        else:
+            data = ReportService.get_system_overview(days=days, start_date=start_date, end_date=end_date)
+            data['demographics'] = AnalyticsService.get_demographics()
+            data['intelligence_insights'] = AnalyticsService.get_intelligence_insights()
+            title = "General System Judicial Report"
+            report_name = "system"
 
-class AnalyticsDisputeView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        data = AnalyticsService.get_dispute_analysis()
-        return Response(data)
+        if export_format == 'csv':
+            content = ExportGenerator.to_csv(data, f"{report_name}_report.csv")
+        elif export_format == 'excel':
+            content = ExportGenerator.to_excel(data, title)
+        else: # pdf
+            content = ExportGenerator.to_pdf(data, title, report_type=report_name.capitalize())
 
-class AnalyticsProblemView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        data = AnalyticsService.get_court_problems()
-        return Response(data)
+        # Dynamic extension and content-type detection
+        if content.startswith(b'%PDF'):
+            content_type = 'application/pdf'
+            ext = 'pdf'
+        elif content.startswith(b'PK\x03\x04'):
+            content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ext = 'xlsx'
+        elif content.startswith(b'\xef\xbb\xbf'):
+            content_type = 'text/csv'
+            ext = 'csv'
+        else:
+            # Default fallback
+            content_type = 'application/octet-stream'
+            ext = export_format
 
-class AnalyticsResolutionTimeView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        data = AnalyticsService.get_resolution_time_metrics()
-        return Response(data)
-
-class AnalyticsDemographicsView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        data = AnalyticsService.get_demographics()
-        return Response(data)
-
-class AnalyticsIntelligenceView(ReportBaseView):
-    permission_classes = [IsAdminUserRole]
-    def get(self, request):
-        data = AnalyticsService.get_intelligence_insights()
-        return Response(data)
+        response = FileResponse(
+            io.BytesIO(content),
+            content_type=content_type,
+            as_attachment=True,
+            filename=f"justicehub_{report_name}_report.{ext}"
+        )
+        return response
 
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()

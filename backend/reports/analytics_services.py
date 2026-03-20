@@ -1,13 +1,15 @@
 from django.db.models import Count, Avg, F, ExpressionWrapper, fields, Max, Min
 from django.utils import timezone
-from .db_models import Case, User, CaseCategory
 from datetime import timedelta
+from .db_models import Case, User, CaseCategory
+from .services import ReportService
 
 class AnalyticsService:
     @staticmethod
     def get_case_type_analysis():
-        total_cases = Case.objects.count()
-        analysis = Case.objects.values('category__name').annotate(
+        active_cases = ReportService.get_active_cases()
+        total_cases = active_cases.count()
+        analysis = active_cases.values('category__name').annotate(
             total=Count('id')
         ).order_by('-total')
         
@@ -21,15 +23,18 @@ class AnalyticsService:
             })
         
         most_frequent = results[0]['case_type'] if results else "N/A"
+        least_frequent = results[-1]['case_type'] if results else "N/A"
         
         return {
             "distribution": results,
-            "most_frequent": most_frequent
+            "most_frequent": most_frequent,
+            "least_frequent": least_frequent
         }
 
     @staticmethod
     def get_dispute_analysis():
-        analysis = Case.objects.exclude(main_issue__isnull=True).values('main_issue').annotate(
+        active_cases = ReportService.get_active_cases()
+        analysis = active_cases.exclude(main_issue__isnull=True).values('main_issue').annotate(
             total=Count('id')
         ).order_by('-total')
         
@@ -51,15 +56,16 @@ class AnalyticsService:
 
     @staticmethod
     def get_court_problems():
+        active_cases = ReportService.get_active_cases()
         # 1. Most common issue
-        most_common = Case.objects.values('main_issue').annotate(count=Count('id')).order_by('-count').first()
+        most_common = active_cases.values('main_issue').annotate(count=Count('id')).order_by('-count').first()
         
         # 2. Longest pending cases (not resolved)
-        backlog_count = Case.objects.exclude(status='CLOSED').count()
+        backlog_count = active_cases.exclude(status='CLOSED').count()
         
         # 3. Longest resolution time
         # We need a duration calculation
-        resolved_cases = Case.objects.filter(status='CLOSED', closed_date__isnull=False)
+        resolved_cases = active_cases.filter(status='CLOSED', closed_date__isnull=False)
         duration_expr = ExpressionWrapper(F('closed_date') - F('created_at'), output_field=fields.DurationField())
         avg_res = resolved_cases.annotate(duration=duration_expr).aggregate(avg_days=Avg('duration'))
         
@@ -75,7 +81,8 @@ class AnalyticsService:
 
     @staticmethod
     def get_resolution_time_metrics():
-        resolved_cases = Case.objects.filter(status='CLOSED', closed_date__isnull=False)
+        active_cases = ReportService.get_active_cases()
+        resolved_cases = active_cases.filter(status='CLOSED', closed_date__isnull=False)
         if not resolved_cases.exists():
             return {"average": 0, "fastest": 0, "slowest": 0}
             
@@ -124,18 +131,67 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def get_intelligence_insights():
-        # Sample insight: Which education level files most cases?
-        insight1 = Case.objects.values('created_by__education_level').annotate(count=Count('id')).order_by('-count').first()
+    def get_decision_type_analysis():
+        """Requirement 5: Mediation and Immediate Decisions."""
+        from .db_models import Decision
+        all_decisions = Decision.objects.all()
+        total = all_decisions.count()
         
-        # Which age group has most land disputes?
-        land_disputes = Case.objects.filter(main_issue__icontains='land').values('created_by__age').annotate(count=Count('id')).order_by('-count').first()
+        # Track mediation (IMMEDIATE + MEDIATED or SETTLEMENT)
+        mediation_count = all_decisions.filter(
+            Q(decision_type='SETTLEMENT') | 
+            Q(decision_type='IMMEDIATE', immediate_reason='MEDIATED')
+        ).count()
+        
+        immediate_count = all_decisions.filter(decision_type='IMMEDIATE').count()
+        
+        distribution = all_decisions.values('decision_type').annotate(count=Count('id'))
+        
+        return {
+            "total_decisions": total,
+            "mediation_resolved": mediation_count,
+            "immediate_decisions": immediate_count,
+            "distribution": {item['decision_type']: item['count'] for item in distribution}
+        }
+
+    @staticmethod
+    def get_intelligence_insights():
+        active_cases = ReportService.get_active_cases()
+        total_cases = active_cases.count()
+        
+        # 1. Most common issue
+        most_common = active_cases.exclude(main_issue__isnull=True).values('main_issue').annotate(count=Count('id')).order_by('-count').first()
+        common_txt = most_common['main_issue'] if most_common else "N/A"
+
+        # 2. Least reported case type
+        case_types = active_cases.values('category__name').annotate(total=Count('id')).order_by('total')
+        least_txt = case_types.first()['category__name'] if case_types.exists() else "N/A"
+
+        # 3. Most active judge (Highest resolved count)
+        from .db_models import Decision
+        active_judge = Decision.objects.filter(status='FINALIZED')\
+            .values('judge__first_name', 'judge__last_name')\
+            .annotate(resolved_count=Count('id'))\
+            .order_by('-resolved_count').first()
+        judge_txt = f"{active_judge['judge__first_name']} {active_judge['judge__last_name']}" if active_judge else "N/A"
+
+        # 4. Biggest backlog (Category with most non-closed cases)
+        backlog = active_cases.exclude(status='CLOSED').values('category__name').annotate(count=Count('id')).order_by('-count').first()
+        backlog_txt = backlog['category__name'] if backlog else "N/A"
         
         return {
             "insights": [
-                f"Most cases are filed by users with {insight1['created_by__education_level'] or 'unspecified'} education level." if insight1 else "No data.",
-                f"Users in age group {land_disputes['created_by__age'] if land_disputes else 'N/A'} are involved in most land disputes."
-            ]
+                f"Most Common Issue: {common_txt}",
+                f"Least Reported Case Type: {least_txt}",
+                f"Most Active Judge: {judge_txt}",
+                f"Biggest Backlog: {backlog_txt} cases"
+            ],
+            "stats": {
+                "common_issue": common_txt,
+                "least_reported_type": least_txt,
+                "active_judge": judge_txt,
+                "backlog_category": backlog_txt
+            }
         }
 
     @classmethod
@@ -146,6 +202,7 @@ class AnalyticsService:
             "court_problems": cls.get_court_problems(),
             "resolution_time_metrics": cls.get_resolution_time_metrics(),
             "demographics": cls.get_demographics(),
+            "decision_analysis": cls.get_decision_type_analysis(),
             "intelligence_insights": cls.get_intelligence_insights(),
             "generated_at": timezone.now()
         }

@@ -7,6 +7,7 @@ class CaseCategory(models.Model):
     id = models.UUIDField(primary_key=True)
     name = models.CharField(max_length=100)
     fee = models.DecimalField(max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         managed = False
@@ -16,9 +17,11 @@ class Case(models.Model):
     id = models.UUIDField(primary_key=True)
     title = models.CharField(max_length=200)
     status = models.CharField(max_length=20)
+    payment_status = models.CharField(max_length=20)
     priority = models.CharField(max_length=20)
     category = models.ForeignKey(CaseCategory, on_delete=models.DO_NOTHING, related_name='+')
     main_issue = models.CharField(max_length=255, null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField()
     closed_date = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='+')
@@ -44,7 +47,7 @@ class Payment(models.Model):
     status = models.CharField(max_length=20)
     case = models.ForeignKey(Case, on_delete=models.DO_NOTHING, related_name='+')
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='+')
-    transaction_date = models.DateField()
+    paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField()
 
     class Meta:
@@ -57,17 +60,31 @@ class Hearing(models.Model):
     judge = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='+')
     status = models.CharField(max_length=20)
     scheduled_date = models.DateTimeField()
+    duration_minutes = models.IntegerField()
 
     class Meta:
         managed = False
         db_table = 'hearings_hearing'
+
+class HearingParticipant(models.Model):
+    id = models.UUIDField(primary_key=True)
+    hearing = models.ForeignKey(Hearing, on_delete=models.DO_NOTHING, related_name='+')
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='+')
+    attendance_status = models.CharField(max_length=20)
+
+    class Meta:
+        managed = False
+        db_table = 'hearings_hearingparticipant'
 
 class Decision(models.Model):
     id = models.UUIDField(primary_key=True)
     case = models.ForeignKey(Case, on_delete=models.DO_NOTHING, related_name='+')
     judge = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='+')
     status = models.CharField(max_length=20)
+    decision_type = models.CharField(max_length=20)
+    immediate_reason = models.CharField(max_length=20, null=True, blank=True)
     finalized_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField()
 
     class Meta:
         managed = False

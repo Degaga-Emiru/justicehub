@@ -171,9 +171,10 @@ class PaymentService:
         payment.paid_at = timezone.now()
         payment.save()
 
-        # Update Case Status
+        # Update Case Status and Payment Status
         case = payment.case
         case.status = CaseStatus.PAID
+        case.payment_status = 'PAID'
         case.save()
 
         # Audit/Transaction Record

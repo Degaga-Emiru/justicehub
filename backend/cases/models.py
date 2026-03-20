@@ -77,6 +77,10 @@ class Case(SoftDeleteModel):
         HIGH = 'HIGH', 'High'
         URGENT = 'URGENT', 'Urgent'
 
+    class PaymentStatus(models.TextChoices):
+        PAID = 'PAID', 'Paid'
+        NOT_PAID = 'NOT_PAID', 'Not Paid'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Basic Information
@@ -96,6 +100,12 @@ class Case(SoftDeleteModel):
         max_length=20,
         choices=Priority.choices,
         default=Priority.MEDIUM
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.NOT_PAID,
+        db_index=True
     )
     
     # Parties
@@ -167,6 +177,7 @@ class Case(SoftDeleteModel):
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['created_by', 'status']),
             models.Index(fields=['priority']),
+            models.Index(fields=['payment_status']),
             models.Index(fields=['plaintiff', 'defendant']),
         ]
         permissions = [
