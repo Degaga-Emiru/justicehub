@@ -13,7 +13,12 @@ class Decision(models.Model):
         FINAL = 'FINAL', 'Final Judgment'
         DISMISSAL = 'DISMISSAL', 'Dismissal'
         SETTLEMENT = 'SETTLEMENT', 'Settlement Approval'
+        IMMEDIATE = 'IMMEDIATE', 'Immediate Decision'
         OTHER = 'OTHER', 'Other'
+
+    class ImmediateReason(models.TextChoices):
+        MEDIATED = 'MEDIATED', 'Solved by mediated'
+        WITHDRAWN = 'WITHDRAWN', 'Withdrawn by the plaintiff'
 
     class DecisionStatus(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
@@ -38,17 +43,35 @@ class Decision(models.Model):
     version = models.PositiveIntegerField(default=1)
     
     # Content
-    introduction = models.TextField()
-    background = models.TextField()
-    analysis = models.TextField()
-    conclusion = models.TextField()
-    order = models.TextField(help_text="The final order/ruling")
+    introduction = models.TextField(null=True, blank=True)
+    background = models.TextField(null=True, blank=True)
+    analysis = models.TextField(null=True, blank=True)
+    conclusion = models.TextField(null=True, blank=True)
+    order = models.TextField(null=True, blank=True, help_text="The final order/ruling")
+    
+    # Immediate Decision fields
+    immediate_reason = models.CharField(
+        max_length=20, 
+        choices=ImmediateReason.choices,
+        null=True,
+        blank=True
+    )
+    description = models.TextField(null=True, blank=True)
+    finalized = models.BooleanField(default=False)
     
     # Legal references
     laws_cited = models.TextField(blank=True, null=True)
     cases_cited = models.TextField(blank=True, null=True)
     
     # Documents
+    document = models.ForeignKey(
+        'cases.CaseDocument',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='decisions_uploaded'
+    )
+    
     pdf_document = models.FileField(
         upload_to='decisions/%Y/%m/%d/',
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
@@ -81,7 +104,33 @@ class Decision(models.Model):
     def __str__(self):
         return f"{self.decision_number or 'DRAFT'} - {self.case.file_number}"
 
+    def clean(self):
+        super().clean()
+        from django.core.exceptions import ValidationError
+        
+        if self.decision_type == self.DecisionType.IMMEDIATE:
+            if not self.immediate_reason:
+                raise ValidationError({'immediate_reason': "Reason is required for immediate decisions."})
+            if not self.description:
+                raise ValidationError({'description': "Description is required for immediate decisions."})
+        else:
+            errors = {}
+            if not self.introduction:
+                errors['introduction'] = "Introduction is required."
+            if not self.background:
+                errors['background'] = "Background is required."
+            if not self.analysis:
+                errors['analysis'] = "Analysis is required."
+            if not self.conclusion:
+                errors['conclusion'] = "Conclusion is required."
+            if not self.order:
+                errors['order'] = "Order is required."
+            
+            if errors:
+                raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
+        self.full_clean()
         if not self.decision_number and self.status != self.DecisionStatus.DRAFT:
             self.decision_number = self.generate_decision_number()
         super().save(*args, **kwargs)

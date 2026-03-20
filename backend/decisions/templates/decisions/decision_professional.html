@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Decision - {{ case.file_number }}</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            margin: 40px;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }
+        .court-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .case-info {
+            margin-bottom: 20px;
+        }
+        .info-row {
+            margin-bottom: 5px;
+        }
+        .label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .content {
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        .footer {
+            margin-top: 50px;
+            page-break-inside: avoid;
+        }
+        .signature-section {
+            float: right;
+            width: 300px;
+            text-align: center;
+        }
+        .signature-line {
+            margin-top: 10px;
+            border-top: 1px solid #333;
+            padding-top: 5px;
+        }
+        .date-section {
+            margin-top: 20px;
+        }
+        .hearing-list, .evidence-list {
+            margin-left: 20px;
+        }
+        .hearing-item, .evidence-item {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="court-name">{{ court_name }}</div>
+    </div>
+
+    <div class="case-info">
+        <div class="info-row"><span class="label">Case Number:</span> {{ case.file_number|default:case.id }}</div>
+        <div class="info-row"><span class="label">Decision No:</span> {{ decision.decision_number }}</div>
+        <br>
+        <div class="info-row"><span class="label">Plaintiff:</span> {{ case.plaintiff.get_full_name|default:"N/A" }}</div>
+        <div class="info-row"><span class="label">Defendant:</span> {{ case.defendant.get_full_name|default:"N/A" }}</div>
+    </div>
+
+    <div class="section-title">Case Summary</div>
+    <div class="content">
+        {{ decision.introduction|linebreaks }}
+        <p>{{ case.description }}</p>
+    </div>
+
+    <div class="section-title">Hearing Summary</div>
+    <div class="content">
+        <p>The court conducted hearings on the following dates:</p>
+        <ul class="hearing-list">
+            {% for hearing in hearings %}
+            <li class="hearing-item">- {{ hearing.title }} on {{ hearing.scheduled_date|date:"F d, Y" }}</li>
+            {% empty %}
+            <li>No recorded hearings found.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section-title">Evidence Reviewed</div>
+    <div class="content">
+        <p>The court reviewed submitted documents and witness statements including:</p>
+        <ul class="evidence-list">
+            {% for doc in evidence %}
+            <li class="evidence-item">- {{ doc.file_name }} ({{ doc.get_document_type_display }})</li>
+            {% empty %}
+            <li>No evidence documents recorded.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="section-title">Court Analysis</div>
+    <div class="content">
+        {{ decision.analysis|linebreaks }}
+    </div>
+
+    <div class="section-title">Court Decision</div>
+    <div class="content">
+        {{ decision.conclusion|linebreaks }}
+    </div>
+
+    <div class="section-title">Final Judgment</div>
+    <div class="content">
+        {{ decision.order|linebreaks }}
+    </div>
+
+    <div class="footer">
+        <div class="date-section">
+            <span class="label">Date:</span> {{ date }}
+        </div>
+        
+        <div class="signature-section">
+            <div class="judge-name">{{ judge.get_full_name }}</div>
+            <div class="signature-line">Judge Signature</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -3,92 +3,526 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* Main container with card effect */
+        .email-container {
             max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: #27ae60;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 5px 5px 0 0;
-        }
-
-        .content {
-            background: #f9f9f9;
-            padding: 20px;
-            border: 1px solid #ddd;
-        }
-
-        .confirmation-box {
+            width: 100%;
             background: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-            border: 1px solid #2ecc71;
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+            transition: transform 0.3s ease;
+        }
+
+        .email-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Header with green gradient */
+        .email-header {
+            background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+            padding: 40px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
 
-        .button {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #3498db;
-            color: white !important;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
+        .email-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: shimmer 3s infinite;
         }
 
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 12px;
+        .header-icon {
+            background: rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            animation: pulse 2s infinite;
         }
 
-        .success-icon {
-            font-size: 48px;
-            color: #2ecc71;
+        .header-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        h2 {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
             margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            letter-spacing: 1px;
+        }
+
+        /* Content area */
+        .email-content {
+            padding: 40px;
+            background: white;
+        }
+
+        /* Greeting */
+        .greeting {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+            border-left: 4px solid #43a047;
+            padding-left: 20px;
+            background: linear-gradient(to right, rgba(67, 160, 71, 0.05), transparent);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .greeting span {
+            color: #43a047;
+        }
+
+        /* Case info card */
+        .case-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 5px solid #43a047;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .case-card:hover {
+            box-shadow: 0 8px 25px rgba(67, 160, 71, 0.2);
+            transform: scale(1.02);
+        }
+
+        .case-title {
+            font-size: 22px;
+            color: #2e7d32;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .case-title svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            fill: #43a047;
+        }
+
+        .file-number {
+            display: inline-block;
+            background: #43a047;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+
+        /* Payment details grid */
+        .payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 25px 0;
+            animation: fadeIn 0.9s ease-out;
+        }
+
+        .payment-item {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .payment-item:hover {
+            border-color: #43a047;
+            box-shadow: 0 5px 20px rgba(67, 160, 71, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .payment-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .payment-label svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            fill: #43a047;
+        }
+
+        .payment-value {
+            font-size: 18px;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .payment-value.highlight {
+            color: #43a047;
+            font-size: 24px;
+        }
+
+        /* Status message */
+        .status-message {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            border: 2px dashed #43a047;
+            position: relative;
+            overflow: hidden;
+            animation: pulse 2s infinite;
+        }
+
+        .status-message p {
+            color: #2e7d32;
+            font-size: 18px;
+            line-height: 1.6;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-message::after {
+            content: '⚖️';
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            font-size: 60px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        /* Thank you section */
+        .thank-you {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 100%);
+            border-radius: 20px;
+            margin-top: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .thank-you p {
+            color: #2e7d32;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .thank-you .small {
+            font-size: 16px;
+            color: #558b2f;
+            font-weight: 400;
+        }
+
+        /* Button */
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 18px;
+            margin-top: 25px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(67, 160, 71, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(67, 160, 71, 0.4);
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Footer */
+        .email-footer {
+            background: #f5f5f5;
+            padding: 20px 40px;
+            text-align: center;
+            border-top: 2px solid #43a047;
+        }
+
+        .footer-text {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .social-links {
+            margin: 15px 0;
+        }
+
+        .social-link {
+            display: inline-block;
+            width: 35px;
+            height: 35px;
+            background: #43a047;
+            border-radius: 50%;
+            margin: 0 5px;
+            line-height: 35px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px);
+            background: #2e7d32;
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(67, 160, 71, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(67, 160, 71, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(67, 160, 71, 0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) rotate(45deg);
+            }
+
+            100% {
+                transform: translateX(100%) rotate(45deg);
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 480px) {
+            .email-content {
+                padding: 20px;
+            }
+
+            .payment-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+
+            .greeting {
+                font-size: 20px;
+            }
+
+            .header-icon {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .email-container {
+                box-shadow: none;
+            }
+
+            .btn,
+            .social-links {
+                display: none;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <h1>Payment Verified</h1>
-    </div>
-
-    <div class="content">
-        <p>Dear {{ user.get_full_name }},</p>
-
-        <div class="confirmation-box">
-            <div class="success-icon">✓</div>
-            <p><strong>Payment Received & Verified</strong></p>
-            <p>Amount: {{ payment.amount }} ETB</p>
-            <p>Reference: {{ payment.transaction_reference }}</p>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="header-icon">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+            </div>
+            <h2>Payment Successful! 🎉</h2>
         </div>
 
-        <p>Your payment for Case <strong>{{ payment.case.file_number }}</strong> has been successfully verified. Your
-            case status has been updated to <strong>PAID</strong>.</p>
+        <div class="email-content">
+            <div class="greeting">
+                Dear <span>{{ user.get_full_name }}</span>,
+            </div>
 
-        <p>A judge will now be assigned to your case, and the legal proceedings will commence. You will be notified of
-            any further updates regarding your case.</p>
+            <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                We have successfully received your payment. Your transaction has been processed and confirmed.
+            </p>
 
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="{{ frontend_url }}/cases/{{ payment.case.id }}" class="button">View My Case</a>
+            <div class="case-card">
+                <div class="case-title">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4z" />
+                    </svg>
+                    Case: "{{ case.title }}"
+                </div>
+                <span class="file-number">File No: {{ case.file_number }}</span>
+            </div>
+
+            <div class="payment-grid">
+                <div class="payment-item">
+                    <div class="payment-label">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                        </svg>
+                        Transaction Reference
+                    </div>
+                    <div class="payment-value">{{ payment.tx_ref }}</div>
+                </div>
+
+                <div class="payment-item">
+                    <div class="payment-label">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M11.5 1L8 7h7L11.5 1zM12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm6 8h-2v-2c0-2.21-1.79-4-4-4s-4 1.79-4 4v2H6v-6h12v6z" />
+                        </svg>
+                        Date
+                    </div>
+                    <div class="payment-value">{{ payment.paid_at }}</div>
+                </div>
+
+                <div class="payment-item"
+                    style="grid-column: span 2; background: linear-gradient(135deg, #e8f5e9, #c8e6c9);">
+                    <div class="payment-label">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z" />
+                        </svg>
+                        Amount Paid
+                    </div>
+                    <div class="payment-value highlight">{{ payment.amount }} ETB</div>
+                </div>
+            </div>
+
+            <div class="status-message">
+                <p>✨ Your case has now been moved to the next stage, and a judge will be assigned shortly. We'll notify
+                    you once the judge has been assigned.</p>
+            </div>
+
+            <div class="thank-you">
+                <p>Thank you for choosing JusticeHub! 🙏</p>
+                <p class="small">We're committed to providing you with the best legal services.</p>
+
+                <a href="#" class="btn">Track Your Case</a>
+            </div>
         </div>
-    </div>
 
-    <div class="footer">
-        <p>This is an automated message from Justice Hub. Please do not reply to this email.</p>
+        <div class="email-footer">
+            <div class="social-links">
+                <a href="#" class="social-link">f</a>
+                <a href="#" class="social-link">t</a>
+                <a href="#" class="social-link">in</a>
+                <a href="#" class="social-link">ig</a>
+            </div>
+            <p class="footer-text">© 2024 JusticeHub. All rights reserved.</p>
+            <p class="footer-text">123 Legal Avenue, Justice City, JC 12345</p>
+            <p class="footer-text">
+                <a href="#" style="color: #43a047; text-decoration: none;">Privacy Policy</a> •
+                <a href="#" style="color: #43a047; text-decoration: none;">Terms of Service</a> •
+                <a href="#" style="color: #43a047; text-decoration: none;">Contact Us</a>
+            </p>
+        </div>
     </div>
 </body>
 

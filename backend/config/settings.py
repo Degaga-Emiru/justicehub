@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+     'drf_spectacular',
 
     # Third party apps
     'rest_framework',
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
     'decisions',
     'payments',
     'audit_logs',
+    'reports',
 ]
 
 
@@ -267,6 +269,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'hearings': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 
@@ -283,8 +290,27 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    
+    'EXCEPTION_HANDLER': 'core.exceptions.custom_exception_handler',
+
+     # 👇 Add this line for Swagger
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
-FRONTEND_URL = "http://localhost:3000"
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Justice Hub API',
+    'DESCRIPTION': 'Digital Legal Case Management System API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+# Chapa Settings
+CHAPA_SECRET_KEY = os.getenv("CHAPA_SECRET_KEY")
+CHAPA_PUBLIC_KEY = os.getenv("CHAPA_PUBLIC_KEY")
+
 AUTH_USER_MODEL = 'accounts.User'
 
 

@@ -27,7 +27,10 @@ class CanPublishDecision(permissions.BasePermission):
         if not request.user.is_authenticated:
             return False
         
-        return request.user.role in ['ADMIN', 'REGISTRAR']
+        if request.user.role in ['ADMIN', 'REGISTRAR']:
+            return True
+        
+        return request.user.role == 'JUDGE' and obj.judge == request.user
 
 
 class CanViewDecision(permissions.BasePermission):
@@ -37,18 +40,31 @@ class CanViewDecision(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if not request.user.is_authenticated:
             return False
-        
-        # Published decisions are public (or visible to all authenticated users)
-        if obj.status == Decision.DecisionStatus.PUBLISHED or obj.is_published:
-            return True
-        
-        # Admin, Registrar and the issuing judge can view unpublished/drafts
+            
+        # Admin and Registrar can view any decision
         if request.user.role in ['ADMIN', 'REGISTRAR']:
             return True
-            
-        if request.user.role == 'JUDGE' and obj.judge == request.user:
-            return True
         
+        # Judges can view ONLY decisions for cases they are actively assigned to
+        if request.user.role == 'JUDGE':
+            from cases.models import JudgeAssignment
+            return JudgeAssignment.objects.filter(
+                judge=request.user, 
+                case=obj.case, 
+                is_active=True
+            ).exists()
+            
+        # Clients/Parties can ONLY view published decisions for their cases
+        if obj.status == Decision.DecisionStatus.PUBLISHED or obj.is_published:
+            case = obj.case
+            return (
+                case.created_by == request.user or
+                case.plaintiff == request.user or
+                case.defendant == request.user or
+                case.plaintiff_lawyer == request.user or
+                case.defendant_lawyer == request.user
+            )
+            
         return False
 
 

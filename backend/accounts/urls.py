@@ -1,8 +1,16 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
+router = DefaultRouter()
+router.register(r'admin/users', views.AdminUserViewSet, basename='admin-users')
+router.register(r'admin/roles', views.AdminRoleViewSet, basename='admin-roles')
+
 urlpatterns = [
+    # Router-based admin endpoints
+    path('', include(router.urls)),
+    
     # Authentication endpoints
     path('auth/citizen-register/', views.CitizenRegistrationView.as_view(), name='citizen-register'),
     path('auth/admin-create-user/', views.AdminCreateUserView.as_view(), name='admin-create-user'),
@@ -18,7 +26,7 @@ urlpatterns = [
     # User profile
     path('profile/', views.UserProfileView.as_view(), name='user-profile'),
     
-    # Admin user management
+    # Admin user management (legacy/individual paths)
     path('users/', views.UserListView.as_view(), name='user-list'),
     path('users/<uuid:id>/', views.UserDetailView.as_view(), name='user-detail'),
 ]

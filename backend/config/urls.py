@@ -22,6 +22,11 @@ from drf_yasg import openapi
 from rest_framework import permissions
 from django.conf import settings
 from django.conf.urls.static import static  # ✅ REQUIRED
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+)
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -38,7 +43,8 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('accounts.urls')), # Include accounts app URLs
+    path('api/', include('accounts.urls')),
+    path('api/', include('core.urls')),
 
     path('api/cases/', include('cases.urls')),
     path('api/hearings/', include('hearings.urls')),
@@ -46,6 +52,16 @@ urlpatterns = [
     path('api/notifications/', include('notifications.urls')),
     path('api/audit/', include('audit_logs.urls')),
     path('api/payments/', include('payments.urls')),
+    path('api/reports/', include('reports.urls')),
+    path('api/judge/hearings/', include('hearings.urls_judge')),
+    path('api/citizen/hearings/', include('hearings.urls_citizen')),
+    path('api/judge/', include('cases.urls_judge')),
+    # Schema
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    # Swagger UI
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    # Optional: Redoc
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
 

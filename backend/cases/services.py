@@ -38,7 +38,7 @@ class AuditService:
                 entity_name=getattr(entity, 'title', str(entity))
             )
         except Exception as e:
-            logger.error(f"Failed to log action '{action}': {str(e)}")
+            logging.getLogger(__name__).error(f"Failed to log action '{action}': {str(e)}")
 
 
 class JudgeAssignmentService:
@@ -121,7 +121,7 @@ class JudgeAssignmentService:
     @classmethod
     def _handle_no_judges_available(cls, case):
         """Handle case when no judges are available"""
-        logger.warning(f"No judges available for case {case.id} in category {case.category.name}")
+        logging.getLogger(__name__).warning(f"No judges available for case {case.id} in category {case.category.name}")
         
         # Notify all registrars
         registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'])
@@ -226,16 +226,9 @@ class CaseReviewService:
         )
         
         # Trigger registrar notification
-        # Log action
-        AuditService.log_action(
-            user=reviewer,
-            action='CASE_APPROVED',
-            entity=case,
-            details={'court_name': court_name, 'file_number': case.file_number}
-        )
-
-        # Send payment instruction email
-        cls._send_payment_instruction_email(case)
+        # Trigger payment initialization (Sends email automatically)
+        from payments.services import PaymentService
+        PaymentService.initiate_payment(case.id, case.created_by)
         
         return case
     

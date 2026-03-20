@@ -3,9 +3,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils import timezone
 from django.core.validators import RegexValidator
+from core.models import SoftDeleteModel
 from .managers import CustomUserManager
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # Personal Information
@@ -26,6 +27,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         LAWYER = 'LAWYER', 'Lawyer'
         JUDGE = 'JUDGE', 'Judge'
         CLERK = 'CLERK', 'Court Clerk'
+        REGISTRAR = 'REGISTRAR', 'Registrar'
         DEFENDANT = 'DEFENDANT', 'Defendant'
         CITIZEN = 'CITIZEN', 'Citizen'
         
@@ -35,6 +37,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=Role.CITIZEN,
         db_index=True
     )
+
+    # Demographic Information
+    education_level = models.CharField(max_length=50, null=True, blank=True)
+    age = models.PositiveIntegerField(null=True, blank=True)
+    gender = models.CharField(max_length=20, null=True, blank=True)
+    occupation = models.CharField(max_length=100, null=True, blank=True)
     
     # Status flags
     is_active = models.BooleanField(default=False)
@@ -42,8 +50,20 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
     
+    # Admin tracking
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    login_count = models.PositiveIntegerField(default=0)
+    status_reason = models.TextField(null=True, blank=True)
+    
     # For users created by admin (Lawyer, Judge, Clerk, Defendant)
     is_password_set = models.BooleanField(default=False)
+    
+    # Audit and Status Fields (Missing in model but present in DB)
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    login_count = models.PositiveIntegerField(default=0)
+    status_reason = models.TextField(null=True, blank=True)
     
     objects = CustomUserManager()
     
