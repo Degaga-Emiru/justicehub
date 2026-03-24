@@ -2,10 +2,12 @@ from django.urls import path
 from .views import (
     PaymentInitiateView, PaymentCallbackView, 
     PaymentVerifyView, PaymentByCaseView, 
-    PaymentRetryView, PaymentListView
+    PaymentRetryView, PaymentListView,
+    ManualPaymentConfirmationView
 )
 
 urlpatterns = [
+    path('manual-confirm/', ManualPaymentConfirmationView.as_view(), name='payment-manual-confirm'),
     path('initiate/<uuid:case_id>/', PaymentInitiateView.as_view(), name='payment-initiate'),
     path('callback/', PaymentCallbackView.as_view(), name='payment-callback'),
     path('verify/<str:tx_ref>/', PaymentVerifyView.as_view(), name='payment-verify'),

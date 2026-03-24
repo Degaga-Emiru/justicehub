@@ -199,8 +199,83 @@ class PaymentService:
         # Email Confirmation
         PaymentService._send_confirmation_email(payment)
 
-        # Auto Assign Judge
-        JudgeAssignmentService.assign_judge(case)
+    @staticmethod
+    @transaction.atomic
+    def manual_confirm_payment(case_id, amount, reference_number, transaction_id, registrar, notes=None):
+        """Manually confirms payment by a registrar for bank transfers"""
+        try:
+            case = Case.objects.get(id=case_id)
+        except Case.DoesNotExist:
+            raise ValidationError("Case not found.")
+
+        if case.status != CaseStatus.APPROVED:
+            raise ValidationError(f"Manual payment can only be confirmed for APPROVED cases. Current: {case.status}")
+
+        # Requirement: Validate that the amount exactly matches the category fee
+        expected_fee = case.category.fee
+        if Decimal(str(amount)) != expected_fee:
+            raise ValidationError(
+                f"Incorrect payment amount. The required fee for category '{case.category.name}' "
+                f"is {expected_fee} ETB. You provided {amount} ETB."
+            )
+
+        # 1. Create/Update Payment record
+        payment, created = Payment.objects.update_or_create(
+            case=case,
+            defaults={
+                'user': case.created_by,
+                'amount': amount,
+                'tx_ref': reference_number,
+                'status': Payment.Status.SUCCESS,
+                'payment_method': 'MANUAL',
+                'paid_at': timezone.now(),
+                'notes': f"Manual confirmation by Registrar {registrar.get_full_name()} ({registrar.email}). {notes or ''}"
+            }
+        )
+
+        # 2. Update Case Status
+        case.status = CaseStatus.PAID
+        case.payment_status = 'PAID'
+        case.save()
+
+        # 3. Audit/Transaction Record
+        Transaction.objects.update_or_create(
+            payment=payment,
+            defaults={
+                'amount': amount,
+                'transaction_id': transaction_id,
+                'details': {
+                    'confirmed_by': registrar.email,
+                    'reference': reference_number,
+                    'method': 'MANUAL'
+                }
+            }
+        )
+
+        # 4. Audit Log
+        from cases.services import AuditService
+        AuditService.log_action(
+            user=registrar,
+            action='PAYMENT_VERIFIED',
+            entity=case,
+            details={
+                'method': 'MANUAL',
+                'amount': str(amount),
+                'txn_id': transaction_id
+            }
+        )
+
+        # 5. Notifications
+        create_notification(
+            user=case.created_by,
+            type='PAYMENT_RECEIVED',
+            title='Payment Confirmed (Manual)',
+            message=f"Your manual payment for case {case.file_number} has been confirmed by the registrar.",
+            case=case
+        )
+
+        # 6. Auto Assign Judge
+        JudgeAssignmentService.assign_judge(case, assigned_by=registrar)
 
         return payment
 
