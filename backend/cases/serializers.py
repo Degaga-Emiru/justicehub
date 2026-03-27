@@ -4,7 +4,7 @@ from django.db import transaction
 from .models import (
     CaseCategory, Case, CaseDocument, CaseDocumentVersion,
     JudgeAssignment, CaseNotes, JudgeProfile,
-    CaseStatus
+    CaseStatus, CaseActionRequest
 )
 from accounts.models import User
 from accounts.serializers import UserProfileSerializer
@@ -399,6 +399,36 @@ class CaseDetailSerializer(serializers.ModelSerializer):
         return (timezone.now() - obj.filing_date).days
 
 
+class DefendantCaseListSerializer(CaseListSerializer):
+    """Serializer for defendant case list view"""
+    class Meta(CaseListSerializer.Meta):
+        fields = CaseListSerializer.Meta.fields + ['is_defendant_acknowledged', 'acknowledged_at']
+
+
+class DefendantCaseDetailSerializer(CaseDetailSerializer):
+    """Serializer for defendant case detail view"""
+    class Meta(CaseDetailSerializer.Meta):
+        fields = CaseDetailSerializer.Meta.fields + ['is_defendant_acknowledged', 'acknowledged_at']
+
+
+class DefendantResponseUploadSerializer(serializers.Serializer):
+    """Serializer for uploading defendant response"""
+    description = serializers.CharField(required=True)
+    file = serializers.FileField(required=True)
+    document_type = serializers.ChoiceField(
+        choices=['EVIDENCE', 'AFFIDAVIT', 'OTHER'],
+        default='EVIDENCE'
+    )
+
+    def validate_file(self, value):
+        from .models import CaseDocumentVersion
+        if value.size > CaseDocumentVersion.MAX_FILE_SIZE:
+            raise serializers.ValidationError(
+                f"File size cannot exceed {CaseDocumentVersion.MAX_FILE_SIZE // (1024 * 1024)}MB"
+            )
+        return value
+
+
 class CaseReviewSerializer(serializers.Serializer):
     """Serializer for case review (accept/reject)"""
     action = serializers.ChoiceField(choices=['accept', 'reject'])
@@ -490,3 +520,18 @@ class JudgeCaseSerializer(serializers.ModelSerializer):
             'status', 'status_display', 'priority', 'priority_display',
             'created_at'
         ]
+
+class CaseActionRequestSerializer(serializers.ModelSerializer):
+    """Serializer for CaseActionRequest"""
+    requester_name = serializers.CharField(source='requester.get_full_name', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = CaseActionRequest
+        fields = [
+            'id', 'case', 'requester', 'requester_name', 
+            'action_description', 'due_date', 'status', 
+            'status_display', 'response_text', 'response_at', 
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'requester', 'created_at', 'updated_at', 'response_at']

@@ -1,6 +1,7 @@
 from django.utils import timezone
 from django.conf import settings
 from .models import Notification, NotificationPreference
+from core.utils.email import send_email_template
 import logging
 
 logger = logging.getLogger(__name__)
@@ -44,17 +45,29 @@ def send_notification_email(notification):
     """
     Send notification email
     """
-    from core.utils.email import send_email_template
+    # Map notification types to specialized templates
+    TEMPLATE_MAP = {
+        'ACTION_REQUIRED': 'emails/defendant_action_required.html',
+        'JUDGE_ASSIGNED': 'emails/case_assigned_defendant.html' if notification.user.role == 'CITIZEN' else 'emails/case_assigned.html',
+        'CASE_ACCEPTED': 'emails/case_opened_defendant.html' if notification.user.role == 'CITIZEN' else 'emails/case_accepted.html',
+        'HEARING_SCHEDULED': 'emails/hearing_scheduled.html',
+        'DECISION_ISSUED': 'emails/decision_issued.html',
+    }
+    
+    template_name = TEMPLATE_MAP.get(notification.type, 'emails/notification.html')
     
     context = {
         'notification': notification,
         'user': notification.user,
+        'defendant': notification.user,  # Alias for templates that use 'defendant'
+        'case': notification.case,
+        'action_description': notification.message, # Alias for action requests
         'frontend_url': settings.FRONTEND_URL
     }
     
     success = send_email_template(
         subject=f"Justice Hub: {notification.title}",
-        template_name='emails/notification.html',
+        template_name=template_name,
         context=context,
         recipient_list=[notification.user.email]
     )

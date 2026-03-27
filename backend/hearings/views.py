@@ -672,3 +672,17 @@ class JudgeCaseHearingListView(generics.ListAPIView):
             return Hearing.objects.none()
             
         return Hearing.objects.filter(case_id=case_id)
+
+class DefendantHearingView(generics.ListAPIView):
+    """
+    View for defendants to list their hearings.
+    """
+    serializer_class = HearingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Hearing.objects.filter(
+            Q(case__defendant=user) |
+            Q(participant_list__user=user)
+        ).distinct().order_by('scheduled_date')

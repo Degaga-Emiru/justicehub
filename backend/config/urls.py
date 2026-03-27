@@ -14,9 +14,8 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from xml.etree.ElementInclude import include
 from django.contrib import admin
-from django.urls import path, include  # ✅ include must come from django.urls
+from django.urls import path, include
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
@@ -56,6 +55,7 @@ urlpatterns = [
     path('api/judge/hearings/', include('hearings.urls_judge')),
     path('api/citizen/hearings/', include('hearings.urls_citizen')),
     path('api/judge/', include('cases.urls_judge')),
+    path('api/defendant/', include('cases.defendant_urls')),
     # Schema
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     # Swagger UI

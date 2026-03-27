@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #3498db; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+        .case-details { background: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .button { display: inline-block; padding: 10px 20px; background: #2ecc71; color: white; text-decoration: none; border-radius: 5px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>Judge Assigned</h1></div>
+    <div class="content">
+        <p>Dear {{ recipient.get_full_name }},</p>
+        <p>A judge has been assigned to the legal case involving you.</p>
+        <div class="case-details">
+            <h3>Case & Judge Info:</h3>
+            <p><strong>File Number:</strong> {{ case.file_number }}</p>
+            <p><strong>Title:</strong> {{ case.title }}</p>
+            <p><strong>Assigned Judge:</strong> {{ judge_name }}</p>
+        </div>
+        <p>You can now track hearing schedules and receive court orders via the Defendant Portal.</p>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ frontend_url }}/defendant/cases/{{ case.id }}" class="button">View Case Details</a>
+        </div>
+    </div>
+    <div class="footer"><p>&copy; Justice Hub Judicial Service Platform. This is an automated message.</p></div>
+</body>
+</html>

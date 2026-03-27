@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from accounts.models import User
-from .models import Case, JudgeAssignment, CaseCategory
+from .models import Case, JudgeAssignment, CaseCategory, CaseActionRequest
 from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
 from notifications.services import create_notification
@@ -155,9 +155,6 @@ class JudgeAssignmentService:
             priority='HIGH'
         )
         
-        # Send email to judge
-        cls._send_assignment_email(assignment)
-        
         # Notify case creator
         create_notification(
             user=assignment.case.created_by,
@@ -169,24 +166,40 @@ class JudgeAssignmentService:
             ),
             case=assignment.case
         )
+        
+        # Notify defendant
+        if assignment.case.defendant:
+            create_notification(
+                user=assignment.case.defendant,
+                type='JUDGE_ASSIGNED',
+                title='Judge Assigned to Case',
+                message=(
+                    f"Judge {assignment.judge.get_full_name()} has been assigned "
+                    f"to case: {assignment.case.title} (File No: {assignment.case.file_number})"
+                ),
+                case=assignment.case
+            )
     
     @classmethod
-    def _send_assignment_email(cls, assignment):
-        """Send assignment email to judge"""
-        context = {
-            'judge': assignment.judge,
-            'case': assignment.case,
-            'frontend_url': settings.FRONTEND_URL
-        }
+    def _handle_no_judges_available(cls, case):
+        """Handle case when no judges are available"""
+        logging.getLogger(__name__).warning(f"No judges available for case {case.id} in category {case.category.name}")
         
-        send_email_template(
-            subject=f"New Case Assignment - {assignment.case.file_number}",
-            template_name='emails/case_assigned.html',
-            context=context,
-            recipient_list=[assignment.judge.email]
-        )
-
-
+        # Notify all registrars
+        registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'])
+        for registrar in registrars:
+            create_notification(
+                user=registrar,
+                type='SYSTEM_ALERT',
+                title='Judge Assignment Failed',
+                message=(
+                    f"No judges available for case '{case.title}' "
+                    f"in category {case.category.name}. Manual intervention required."
+                ),
+                case=case,
+                priority='HIGH'
+            )
+    
 class CaseReviewService:
     """Service for case review operations"""
     
@@ -224,6 +237,21 @@ class CaseReviewService:
             ),
             case=case
         )
+        
+        # Notify defendant
+        if case.defendant:
+            create_notification(
+                user=case.defendant,
+                type='CASE_ACCEPTED',
+                title='Legal Case Opened Against You',
+                message=(
+                    f"A legal case '{case.title}' has been officially opened against you. "
+                    f"File Number: {case.file_number}. "
+                    "You will be notified of further actions required."
+                ),
+                case=case
+            )
+            cls._send_case_opened_email_to_defendant(case)
         
         # Trigger registrar notification
         # Trigger payment initialization (Sends email automatically)
@@ -289,6 +317,22 @@ class CaseReviewService:
         cls._send_rejection_email(case)
         
         return case
+
+    @classmethod
+    def _send_case_opened_email_to_defendant(cls, case):
+        """Send case opened email to defendant"""
+        context = {
+            'defendant': case.defendant,
+            'case': case,
+            'frontend_url': settings.FRONTEND_URL
+        }
+        
+        send_email_template(
+            subject=f"Notice of Legal Case - {case.file_number}",
+            template_name='emails/case_opened_defendant.html',
+            context=context,
+            recipient_list=[case.defendant.email]
+        )
     
     @classmethod
     def _send_acceptance_email(cls, case):
@@ -359,4 +403,27 @@ class CaseNotificationService:
             template_name='emails/registrar_new_case.html',
             context=context,
             recipient_list=[registrar.email]
+        )
+
+    @classmethod
+    def notify_defendant_action_required(cls, case, action_description):
+        """Notify defendant that a specific action is required by the judge"""
+        if not case.defendant:
+            return
+            
+        create_notification(
+            user=case.defendant,
+            type='ACTION_REQUIRED',
+            title='Court Action Required',
+            message=f"The judge has requested a specific action for case {case.file_number}: {action_description}",
+            case=case,
+            priority='HIGH'
+        )
+        
+        # Create CaseActionRequest record
+        CaseActionRequest.objects.create(
+            case=case,
+            requester=case.reviewed_by or case.judge_assignments.filter(is_active=True).first().judge,
+            action_description=action_description,
+            status='PENDING'
         )

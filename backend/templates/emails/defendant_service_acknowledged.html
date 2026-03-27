@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #27ae60; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>Service Acknowledged</h1></div>
+    <div class="content">
+        <p>Dear {{ defendant.get_full_name }},</p>
+        <p>Thank you for acknowledging the service of process for case <strong>{{ case.file_number }}</strong>.</p>
+        <p>Your acknowledgement has been recorded on <strong>{{ case.acknowledged_at|date:"F j, Y, g:i a" }}</strong>.</p>
+        <p>You can now proceed to view the plaintiff's evidence and submit your formal defense response through the portal.</p>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ frontend_url }}/defendant/cases/{{ case.id }}" style="display: inline-block; padding: 10px 20px; background: #34495e; color: white; text-decoration: none; border-radius: 5px;">Go to Case Details</a>
+        </div>
+    </div>
+    <div class="footer"><p>&copy; Justice Hub Judicial Service Platform. This is an automated message.</p></div>
+</body>
+</html>
