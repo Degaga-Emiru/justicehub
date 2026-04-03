@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from accounts.models import User
-from .models import Case, JudgeAssignment, CaseCategory
+from .models import Case, JudgeAssignment, CaseCategory, CaseActionRequest
 from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
 from notifications.services import create_notification
@@ -46,10 +46,10 @@ class JudgeAssignmentService:
     
     @classmethod
     def find_available_judges(cls, category):
-        """Find available judges for a case category"""
+        """Find available judges for a case category with fallback"""
         from accounts.models import User
         
-        # Get all judges with the required specialization
+        # 1. Try to find judges with the required specialization
         judges = User.objects.filter(
             role='JUDGE',
             judge_profile__specializations=category,
@@ -57,6 +57,15 @@ class JudgeAssignmentService:
             is_active=True
         ).select_related('judge_profile')
         
+        # 2. Fallback: If no specialized judges, find ANY active judge with a profile
+        if not judges.exists():
+            logging.getLogger(__name__).info(f"No specialized judges for category {category.name}. Falling back to any active judge.")
+            judges = User.objects.filter(
+                role='JUDGE',
+                judge_profile__is_active=True,
+                is_active=True
+            ).select_related('judge_profile')
+            
         available_judges = []
         for judge in judges:
             active_count = JudgeAssignment.objects.filter(
@@ -116,6 +125,77 @@ class JudgeAssignmentService:
         cls._send_assignment_notifications(assignment)
         
         return assignment
+    
+    @classmethod
+    @transaction.atomic
+    def assign_judge_manually(cls, case, judge_id, assigned_by, notes=None):
+        """
+        Manually assign a judge to a case (Registrar/Admin only)
+        """
+        from accounts.models import User
+        
+        # 1. Validation
+        # Relaxed: Allow assignment even if not paid yet, but record status
+        
+        try:
+            selected_judge = User.objects.get(id=judge_id, role='JUDGE', is_active=True)
+        except User.DoesNotExist:
+            raise ValidationError("Selected user is not an active judge.")
+            
+        # 2. Check for existing active assignment
+        previous_assignment = JudgeAssignment.objects.filter(case=case, is_active=True).first()
+        previous_judge_name = previous_assignment.judge.get_full_name() if previous_assignment else "None"
+        
+        if previous_assignment:
+            if previous_assignment.judge == selected_judge:
+                return previous_assignment # Already assigned to this judge
+            
+            # Deactivate previous assignment
+            previous_assignment.is_active = False
+            previous_assignment.ended_at = timezone.now()
+            previous_assignment.save()
+            
+        # 3. Create new assignment
+        assignment = JudgeAssignment.objects.create(
+            case=case,
+            judge=selected_judge,
+            assigned_by=assigned_by,
+            is_active=True,
+            assignment_notes=notes
+        )
+        
+        # 4. Update case status if not already assigned
+        if case.status != CaseStatus.ASSIGNED:
+            case.status = CaseStatus.ASSIGNED
+            case.save()
+            
+        # 5. Log Assignment / Manul Override
+        action_desc = f"Judge {selected_judge.get_full_name()} manually assigned "
+        if previous_assignment:
+            action_desc += f"(Replaced {previous_judge_name})"
+        else:
+            action_desc += "to case."
+            
+        create_audit_log(
+            action_type=AuditLog.ActionType.CASE_ASSIGNED,
+            obj=case,
+            description=action_desc,
+            user=assigned_by,
+            changes={
+                'judge': {
+                    'old': previous_judge_name, 
+                    'new': selected_judge.get_full_name(),
+                    'override': True,
+                    'reason': notes
+                }
+            },
+            entity_name=case.file_number or case.title
+        )
+
+        # 6. Create notifications
+        cls._send_assignment_notifications(assignment)
+        
+        return assignment
      
      
     @classmethod
@@ -155,9 +235,6 @@ class JudgeAssignmentService:
             priority='HIGH'
         )
         
-        # Send email to judge
-        cls._send_assignment_email(assignment)
-        
         # Notify case creator
         create_notification(
             user=assignment.case.created_by,
@@ -169,24 +246,40 @@ class JudgeAssignmentService:
             ),
             case=assignment.case
         )
+        
+        # Notify defendant
+        if assignment.case.defendant:
+            create_notification(
+                user=assignment.case.defendant,
+                type='JUDGE_ASSIGNED',
+                title='Judge Assigned to Case',
+                message=(
+                    f"Judge {assignment.judge.get_full_name()} has been assigned "
+                    f"to case: {assignment.case.title} (File No: {assignment.case.file_number})"
+                ),
+                case=assignment.case
+            )
     
     @classmethod
-    def _send_assignment_email(cls, assignment):
-        """Send assignment email to judge"""
-        context = {
-            'judge': assignment.judge,
-            'case': assignment.case,
-            'frontend_url': settings.FRONTEND_URL
-        }
+    def _handle_no_judges_available(cls, case):
+        """Handle case when no judges are available"""
+        logging.getLogger(__name__).warning(f"No judges available for case {case.id} in category {case.category.name}")
         
-        send_email_template(
-            subject=f"New Case Assignment - {assignment.case.file_number}",
-            template_name='emails/case_assigned.html',
-            context=context,
-            recipient_list=[assignment.judge.email]
-        )
-
-
+        # Notify all registrars
+        registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'])
+        for registrar in registrars:
+            create_notification(
+                user=registrar,
+                type='SYSTEM_ALERT',
+                title='Judge Assignment Failed',
+                message=(
+                    f"No judges available for case '{case.title}' "
+                    f"in category {case.category.name}. Manual intervention required."
+                ),
+                case=case,
+                priority='HIGH'
+            )
+    
 class CaseReviewService:
     """Service for case review operations"""
     
@@ -225,7 +318,28 @@ class CaseReviewService:
             case=case
         )
         
-        # Trigger registrar notification
+        # Notify defendant
+        if case.defendant:
+            create_notification(
+                user=case.defendant,
+                type='CASE_ACCEPTED',
+                title='Legal Case Opened Against You',
+                message=(
+                    f"A legal case '{case.title}' has been officially opened against you. "
+                    f"File Number: {case.file_number}. "
+                    "You will be notified of further actions required."
+                ),
+                case=case
+            )
+            cls._send_case_opened_email_to_defendant(case)
+        
+        # Trigger automatic judge assignment immediately after approval
+        try:
+            from .services import JudgeAssignmentService
+            JudgeAssignmentService.assign_judge(case, assigned_by=reviewer)
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Initial automatic judge assignment failed for case {case.id}: {str(e)}")
+            
         # Trigger payment initialization (Sends email automatically)
         from payments.services import PaymentService
         PaymentService.initiate_payment(case.id, case.created_by)
@@ -289,6 +403,22 @@ class CaseReviewService:
         cls._send_rejection_email(case)
         
         return case
+
+    @classmethod
+    def _send_case_opened_email_to_defendant(cls, case):
+        """Send case opened email to defendant"""
+        context = {
+            'defendant': case.defendant,
+            'case': case,
+            'frontend_url': settings.FRONTEND_URL
+        }
+        
+        send_email_template(
+            subject=f"Notice of Legal Case - {case.file_number}",
+            template_name='emails/case_opened_defendant.html',
+            context=context,
+            recipient_list=[case.defendant.email]
+        )
     
     @classmethod
     def _send_acceptance_email(cls, case):
@@ -328,8 +458,8 @@ class CaseNotificationService:
 
     @classmethod
     def notify_registrars_new_case(cls, case):
-        """Notify all users with REGISTRAR role about a new case"""
-        registrars = User.objects.filter(role='REGISTRAR', is_active=True)
+        """Notify all users with REGISTRAR or CLERK role about a new case"""
+        registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'], is_active=True)
         
         for registrar in registrars:
             # 1. Internal Notification
@@ -359,4 +489,27 @@ class CaseNotificationService:
             template_name='emails/registrar_new_case.html',
             context=context,
             recipient_list=[registrar.email]
+        )
+
+    @classmethod
+    def notify_defendant_action_required(cls, case, action_description):
+        """Notify defendant that a specific action is required by the judge"""
+        if not case.defendant:
+            return
+            
+        create_notification(
+            user=case.defendant,
+            type='ACTION_REQUIRED',
+            title='Court Action Required',
+            message=f"The judge has requested a specific action for case {case.file_number}: {action_description}",
+            case=case,
+            priority='HIGH'
+        )
+        
+        # Create CaseActionRequest record
+        CaseActionRequest.objects.create(
+            case=case,
+            requester=case.reviewed_by or case.judge_assignments.filter(is_active=True).first().judge,
+            action_description=action_description,
+            status='PENDING'
         )

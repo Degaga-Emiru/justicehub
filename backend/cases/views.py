@@ -190,14 +190,15 @@ class CaseViewSet(viewsets.ModelViewSet):
                     doc_type = document_types[i] if i < len(document_types) else 'OTHER'
                     doc_description = document_descriptions[i] if i < len(document_descriptions) else ''
                     
-                    CaseDocument.objects.create(
-                        case=instance,
-                        uploaded_by=request.user,
-                        file=document_file,
-                        document_type=doc_type,
-                        description=doc_description,
-                        is_confidential=request.data.get('is_confidential', False)
-                    )
+                    # Use CaseDocumentSerializer to create both CaseDocument and its first version
+                    doc_serializer = CaseDocumentSerializer(data={
+                        'document_type': doc_type,
+                        'description': doc_description,
+                        'is_confidential': request.data.get('is_confidential', False),
+                        'file': document_file
+                    }, context={'request': request})
+                    doc_serializer.is_valid(raise_exception=True)
+                    doc_serializer.save(case=instance)
             
             return Response(serializer.data)
         
@@ -268,6 +269,35 @@ class CaseViewSet(viewsets.ModelViewSet):
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsJudge | IsRegistrar])
+    def request_defendant_action(self, request, pk=None):
+        """Judge or Registrar requests a specific action from the defendant"""
+        case = self.get_object()
+        action_description = request.data.get('action_description')
+        
+        if not action_description:
+            return Response(
+                {"error": "action_description is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        from .services import CaseNotificationService
+        CaseNotificationService.notify_defendant_action_required(case, action_description)
+        
+        # Log the request
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.CASE_UPDATED,
+            obj=case,
+            description=f"Action requested from defendant: {action_description}",
+            entity_name=case.file_number or case.title
+        )
+        
+        return Response({
+            "message": "Action requested from defendant and notification sent.",
+            "defendant": case.defendant.get_full_name() if case.defendant else "N/A"
+        })
     
     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def add_document(self, request, pk=None):
@@ -289,14 +319,15 @@ class CaseViewSet(viewsets.ModelViewSet):
         if isinstance(is_confidential, str):
             is_confidential = is_confidential.lower() in ['true', '1', 'yes']
         
-        document = CaseDocument.objects.create(
-            case=case,
-            uploaded_by=request.user,
-            file=file,
-            document_type=document_type,
-            description=description,
-            is_confidential=is_confidential
-        )
+        # Use CaseDocumentSerializer to create both CaseDocument and its first version
+        serializer = CaseDocumentSerializer(data={
+            'document_type': document_type,
+            'description': description,
+            'is_confidential': is_confidential,
+            'file': file
+        }, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        document = serializer.save(case=case)
         
         serializer = CaseDocumentSerializer(document, context={'request': request})
         
@@ -336,14 +367,15 @@ class CaseViewSet(viewsets.ModelViewSet):
             doc_type = document_types[i] if i < len(document_types) else 'OTHER'
             description = descriptions[i] if i < len(descriptions) else ''
             
-            document = CaseDocument.objects.create(
-                case=case,
-                uploaded_by=request.user,
-                file=file,
-                document_type=doc_type,
-                description=description,
-                is_confidential=is_confidential
-            )
+            # Use CaseDocumentSerializer to create both CaseDocument and its first version
+            doc_serializer = CaseDocumentSerializer(data={
+                'document_type': doc_type,
+                'description': description,
+                'is_confidential': is_confidential,
+                'file': file
+            }, context={'request': request})
+            doc_serializer.is_valid(raise_exception=True)
+            document = doc_serializer.save(case=case)
             uploaded_docs.append(CaseDocumentSerializer(document, context={'request': request}).data)
             
             # Notify about each document

@@ -4,7 +4,7 @@ from django.template.loader import render_to_string
 from django.core.files.base import ContentFile
 from weasyprint import HTML
 from django.conf import settings
-from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
+from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment
 from notifications.services import create_notification
 from cases.constants import CaseStatus
 from cases.models import User, CaseDocument
@@ -258,26 +258,6 @@ class DecisionWorkflowService:
         delivery.save()
         return delivery
 
-    @staticmethod
-    def file_appeal(decision, user, reasons):
-        """
-        Files an appeal for a published decision.
-        """
-        if decision.status != Decision.DecisionStatus.PUBLISHED:
-            raise BusinessLogicError("Only published decisions can be appealed.")
-            
-        # Check if user is a party to the case
-        case = decision.case
-        is_party = user in [case.created_by, case.plaintiff, case.defendant, case.plaintiff_lawyer, case.defendant_lawyer]
-        if not is_party:
-            raise BusinessLogicError("Only parties to the case can file an appeal.")
-
-        appeal = DecisionAppeal.objects.create(
-            decision=decision,
-            appellant=user,
-            reasons=reasons
-        )
-        return appeal
 
     @staticmethod
     def add_comment(decision, user, text):

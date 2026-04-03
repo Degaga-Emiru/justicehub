@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
+from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment
 from cases.serializers import CaseListSerializer
 from accounts.serializers import UserProfileSerializer
 from cases.models import JudgeAssignment
@@ -28,13 +28,6 @@ class DecisionCommentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'author', 'author_name', 'created_at']
 
 
-class DecisionAppealSerializer(serializers.ModelSerializer):
-    appellant_name = serializers.CharField(source='appellant.get_full_name', read_only=True)
-    
-    class Meta:
-        model = DecisionAppeal
-        fields = ['id', 'appellant', 'appellant_name', 'reasons', 'filed_at']
-        read_only_fields = ['id', 'appellant', 'appellant_name', 'filed_at']
 
 
 class DecisionSerializer(serializers.ModelSerializer):
@@ -43,7 +36,7 @@ class DecisionSerializer(serializers.ModelSerializer):
     judge_details = serializers.SerializerMethodField()
     versions = DecisionVersionSerializer(many=True, read_only=True)
     comments = DecisionCommentSerializer(many=True, read_only=True)
-    appeals = DecisionAppealSerializer(many=True, read_only=True)
+
     signature_details = serializers.SerializerMethodField()
     
     class Meta:
@@ -55,7 +48,7 @@ class DecisionSerializer(serializers.ModelSerializer):
             'immediate_reason', 'description', 'finalized',
             'laws_cited', 'cases_cited',
             'document', 'pdf_document', 'is_published', 'published_at', 'finalized_at',
-            'created_at', 'updated_at', 'versions', 'comments', 'appeals', 'signature_details'
+            'created_at', 'updated_at', 'versions', 'comments', 'signature_details'
         ]
         read_only_fields = [
             'id', 'decision_number', 'status', 'version', 'judge',

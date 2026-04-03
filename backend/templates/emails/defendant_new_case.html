@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+        .info-box { background: #ebf5fb; padding: 15px; border-left: 5px solid #2c3e50; margin: 15px 0; }
+        .button { display: inline-block; padding: 10px 20px; background: #c0392b; color: white; text-decoration: none; border-radius: 5px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>Legal Notice: New Case Filed</h1></div>
+    <div class="content">
+        <p>Dear {{ defendant.get_full_name }},</p>
+        <p>This is an official notice that a new legal case has been filed against you in the <strong>Justice Hub Platform</strong>.</p>
+        <div class="info-box">
+            <h3>Case Details:</h3>
+            <p><strong>Case Number:</strong> {{ case.file_number }}</p>
+            <p><strong>Title:</strong> {{ case.title }}</p>
+            <p><strong>Plaintiff:</strong> {{ plaintiff.get_full_name }}</p>
+        </div>
+        <p>You are required to acknowledge receipt of this service and submit your defense response within the legal timeframe.</p>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ frontend_url }}/defendant/cases/{{ case.id }}" class="button">Access Case Portal</a>
+        </div>
+    </div>
+    <div class="footer"><p>&copy; Justice Hub Judicial Service Platform. This is an automated message.</p></div>
+</body>
+</html>

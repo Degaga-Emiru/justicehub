@@ -92,3 +92,44 @@ class PaymentListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
     queryset = Payment.objects.all().order_by('-created_at')
     serializer_class = PaymentSerializer
+
+class IsRegistrarOrAdmin(IsAuthenticated):
+    """Permission class for Registrars and Admins"""
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        return getattr(request.user, 'role', '') in ['REGISTRAR', 'ADMIN', 'CLERK']
+
+class ManualPaymentConfirmationView(views.APIView):
+    """Endpoint for Registrars to confirm manual bank payments"""
+    permission_classes = [IsRegistrarOrAdmin]
+
+    def patch(self, request):
+        from .serializers import ManualPaymentConfirmationSerializer
+        serializer = ManualPaymentConfirmationSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                payment = PaymentService.manual_confirm_payment(
+                    case_id=serializer.validated_data['case_id'],
+                    amount=serializer.validated_data['amount'],
+                    reference_number=serializer.validated_data['reference_number'],
+                    transaction_id=serializer.validated_data['transaction_id'],
+                    registrar=request.user,
+                    notes=serializer.validated_data.get('notes')
+                )
+                return Response({
+                    "message": "Manual payment confirmed successfully",
+                    "data": {
+                        "case_id": str(payment.case.id),
+                        "amount": float(payment.amount),
+                        "status": payment.status,
+                        "payment_method": payment.payment_method
+                    }
+                }, status=status.HTTP_200_OK)
+            except ValidationError as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return Response({"error": "Failed to confirm manual payment."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

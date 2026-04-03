@@ -166,3 +166,22 @@ class IsPartyToCase(permissions.BasePermission):
             case.plaintiff_lawyer == request.user or
             case.defendant_lawyer == request.user
         )
+
+
+class IsDefendantOfCase(permissions.BasePermission):
+    """
+    Allows access only to the assigned defendant of the case.
+    """
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
+            
+        from .models import Case, CaseDocument
+        if isinstance(obj, Case):
+            case = obj
+        elif hasattr(obj, 'case'):
+            case = obj.case
+        else:
+            return False
+            
+        return bool(case.defendant == request.user)

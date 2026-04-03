@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #c0392b; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+        .action-box { background: #fff3f3; padding: 15px; border-left: 5px solid #c0392b; margin: 15px 0; }
+        .button { display: inline-block; padding: 10px 20px; background: #34495e; color: white; text-decoration: none; border-radius: 5px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header"><h1>Court Action Required</h1></div>
+    <div class="content">
+        <p>Dear {{ defendant.get_full_name }},</p>
+        <p>The judge presiding over case <strong>{{ case.file_number }}</strong> has requested a specific action from you.</p>
+        <div class="action-box">
+            <h3>Required Action:</h3>
+            <p>{{ action_description }}</p>
+        </div>
+        <p>Please log in to the portal immediately to respond to this request or upload the necessary documents.</p>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{{ frontend_url }}/defendant/cases/{{ case.id }}" class="button">Respond via Portal</a>
+        </div>
+    </div>
+    <div class="footer"><p>&copy; Justice Hub Judicial Service Platform. This is an automated message.</p></div>
+</body>
+</html>

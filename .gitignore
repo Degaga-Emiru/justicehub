@@ -79,6 +79,7 @@ backend/test_report_output.csv
 backend/test_report_output.xlsx
 # Ignore any future test result files
 backend/test_*.txt
+backend/get_token.py
 # Virtual environment
 venv/
 

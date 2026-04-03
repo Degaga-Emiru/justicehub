@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework.parsers import MultiPartParser, FormParser
 
 import csv
 import io
@@ -20,7 +21,7 @@ from .serializers import (
     ChangePasswordSerializer, UserProfileSerializer, TokenResponseSerializer,
     UserAdminDetailSerializer, UserToggleStatusSerializer, AdminResetPasswordSerializer,
     BulkUserActionSerializer, RoleSerializer, CustomRoleCreateSerializer,
-    RolePermissionUpdateSerializer
+    RolePermissionUpdateSerializer, ProfileUpdateSerializer, ProfilePictureSerializer
 )
 from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
@@ -248,11 +249,40 @@ class ChangePasswordView(APIView):
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """Endpoint to get and update user profile."""
-    serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get_serializer_class(self):
+        if self.request.method in ['PATCH', 'PUT']:
+            return ProfileUpdateSerializer
+        return UserProfileSerializer
     
     def get_object(self):
         return self.request.user
+
+
+class ProfilePictureUploadView(APIView):
+    """Endpoint to upload or update profile picture image."""
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request):
+        serializer = ProfilePictureSerializer(request.user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        # Log Profile Picture Update
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.USER_UPDATED,
+            obj=request.user,
+            description=f"User {request.user.email} updated profile picture.",
+            entity_name=request.user.email
+        )
+        
+        return Response({
+            "message": "Profile picture updated successfully.",
+            "profile_picture": request.user.profile_picture.url if request.user.profile_picture else None
+        }, status=status.HTTP_200_OK)
 
 
 class UserListView(generics.ListAPIView):

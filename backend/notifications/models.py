@@ -18,6 +18,7 @@ class Notification(models.Model):
         DECISION_ISSUED = 'DECISION_ISSUED', 'Decision Issued'
         DOCUMENT_UPLOADED = 'DOCUMENT_UPLOADED', 'Document Uploaded'
         DEADLINE_REMINDER = 'DEADLINE_REMINDER', 'Deadline Reminder'
+        ACTION_REQUIRED = 'ACTION_REQUIRED', 'Action Required'
         SYSTEM_ALERT = 'SYSTEM_ALERT', 'System Alert'
 
     class Priority(models.TextChoices):

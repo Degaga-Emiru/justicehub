@@ -25,6 +25,7 @@ urlpatterns = [
     
     # User profile
     path('profile/', views.UserProfileView.as_view(), name='user-profile'),
+    path('profile/upload-picture/', views.ProfilePictureUploadView.as_view(), name='profile-upload-picture'),
     
     # Admin user management (legacy/individual paths)
     path('users/', views.UserListView.as_view(), name='user-list'),
