@@ -43,7 +43,8 @@ class CaseFilter(django_filters.FilterSet):
         model = Case
         fields = [
             'status', 'priority', 'category', 'created_by',
-            'plaintiff', 'defendant', 'plaintiff_lawyer', 'defendant_lawyer'
+            'plaintiff', 'defendant', 'plaintiff_lawyer', 'defendant_lawyer',
+            'payment_status'
         ]
     
     def search_filter(self, queryset, name, value):

@@ -71,6 +71,7 @@
                 <p><strong>Priority:</strong> {{ case.get_priority_display }}</p>
                 <p><strong>Filed By:</strong> {{ case.created_by.get_full_name }}</p>
                 <p><strong>Filing Date:</strong> {{ case.created_at|date:"F d, Y" }}</p>
+                <p><strong>Description:</strong> {{ case.description|truncatewords:50 }}</p>
             </div>
 
             <p>Please log in to the JusticeHub Staff Dashboard to review and process this case.</p>

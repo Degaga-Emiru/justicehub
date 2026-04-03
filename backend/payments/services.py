@@ -199,6 +199,14 @@ class PaymentService:
         # Email Confirmation
         PaymentService._send_confirmation_email(payment)
 
+        # Trigger automatic judge assignment
+        try:
+            from cases.services import JudgeAssignmentService
+            JudgeAssignmentService.assign_judge(case)
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Automatic judge assignment failed after payment: {str(e)}")
+            # Fail gracefully, registrar can manually assign if needed.
+
     @staticmethod
     @transaction.atomic
     def manual_confirm_payment(case_id, amount, reference_number, transaction_id, registrar, notes=None):
