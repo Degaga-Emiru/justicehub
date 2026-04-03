@@ -217,16 +217,3 @@ class DecisionDelivery(models.Model):
         unique_together = ['decision', 'recipient']
 
 
-class DecisionAppeal(models.Model):
-    """Tracks appeals filed by parties"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    decision = models.ForeignKey(Decision, on_delete=models.CASCADE, related_name='appeals')
-    appellant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='filed_appeals')
-    reasons = models.TextField()
-    filed_at = models.DateTimeField(auto_now_add=True)
-    
-    # Placeholder for appeal case reference if implemented later
-    # appeal_case = models.OneToOneField('cases.Case', on_delete=models.SET_NULL, null=True, blank=True)
-
-    class Meta:
-        ordering = ['-filed_at']

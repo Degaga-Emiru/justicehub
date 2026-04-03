@@ -297,12 +297,42 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'first_name', 'last_name', 'full_name', 'email', 
             'phone_number', 'role', 'is_verified', 'is_active', 
-            'date_joined', 'last_login'
+            'date_joined', 'last_login', 'address', 'profile_picture'
         ]
         read_only_fields = ['id', 'email', 'role', 'is_verified', 'date_joined', 'last_login']
     
     def get_full_name(self, obj):
         return obj.get_full_name()
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating user profile (phone_number and address only)
+    """
+    class Meta:
+        model = User
+        fields = ['phone_number', 'address']
+        
+    def validate_phone_number(self, value):
+        # Check if phone number already exists
+        if User.objects.exclude(pk=self.instance.pk).filter(phone_number=value).exists():
+            raise serializers.ValidationError("This phone number is already in use.")
+        return value
+
+
+class ProfilePictureSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating profile picture
+    """
+    class Meta:
+        model = User
+        fields = ['profile_picture']
+        
+    def validate_profile_picture(self, value):
+        from django.core.validators import FileExtensionValidator
+        validator = FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])
+        validator(value)
+        return value
 
 
 class TokenResponseSerializer(serializers.Serializer):

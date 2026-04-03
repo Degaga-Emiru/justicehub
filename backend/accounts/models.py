@@ -43,6 +43,8 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     age = models.PositiveIntegerField(null=True, blank=True)
     gender = models.CharField(max_length=20, null=True, blank=True)
     occupation = models.CharField(max_length=100, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     
     # Status flags
     is_active = models.BooleanField(default=False)

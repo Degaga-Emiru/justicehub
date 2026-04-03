@@ -10,11 +10,11 @@ from django.db.models import Count, Q
 from django.db import transaction
 from datetime import timedelta
 
-from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment, DecisionAppeal
+from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment
 from .serializers import (
     DecisionSerializer, DecisionDeliverySerializer,
     DecisionPublishSerializer, DecisionVersionSerializer,
-    DecisionCommentSerializer, DecisionAppealSerializer,
+    DecisionCommentSerializer,
     DecisionDocumentUploadSerializer, DecisionSignatureSerializer,
     ImmediateDecisionSerializer
 )
@@ -41,7 +41,7 @@ class DecisionViewSet(viewsets.ModelViewSet):
     queryset = Decision.objects.all().select_related(
         'case', 'judge'
     ).prefetch_related(
-        'deliveries__recipient', 'versions', 'comments__author', 'appeals__appellant'
+        'deliveries__recipient', 'versions', 'comments__author'
     )
     
     permission_classes = [IsAuthenticated]
@@ -49,8 +49,6 @@ class DecisionViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'publish':
             return DecisionPublishSerializer
-        elif self.action == 'appeal':
-            return DecisionAppealSerializer
         elif self.action == 'comments':
             return DecisionCommentSerializer
         elif self.action == 'upload_decision_document':
@@ -100,7 +98,7 @@ class DecisionViewSet(viewsets.ModelViewSet):
             permission_classes += [IsDecisionJudge]
         elif self.action == 'publish':
             permission_classes += [CanPublishDecision]
-        elif self.action in ['acknowledge', 'appeal']:
+        elif self.action == 'acknowledge':
             permission_classes += [IsPartyToDecision]
         elif self.action == 'upload_decision_document':
             permission_classes += [IsDecisionJudge]
@@ -296,30 +294,6 @@ class DecisionViewSet(viewsets.ModelViewSet):
             "acknowledged_at": delivery.acknowledged_at
         })
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsPartyToDecision])
-    def appeal(self, request, pk=None):
-        """File an appeal for a decision"""
-        decision = self.get_object()
-        reasons = request.data.get('reasons')
-        if not reasons:
-            raise BusinessLogicError("Reasons for appeal are required.")
-            
-        appeal = DecisionWorkflowService.file_appeal(decision, request.user, reasons)
-        
-        # Log Appeal
-        create_audit_log(
-            request=request,
-            action_type=AuditLog.ActionType.DECISION_UPDATED,
-            obj=decision,
-            description=f"Appeal filed for decision {decision.decision_number} by {request.user.email}",
-            entity_name=decision.decision_number
-        )
-        
-        return Response({
-            "message": "Appeal filed successfully",
-            "appeal_id": appeal.id,
-            "filed_at": appeal.filed_at
-        })
 
     @action(detail=True, methods=['post', 'get'], permission_classes=[IsAuthenticated])
     def comments(self, request, pk=None):
