@@ -7,13 +7,6 @@ router = DefaultRouter()
 router.register(r'', views.CaseViewSet, basename='case')
 router.register(r'categories', views.CaseCategoryViewSet, basename='case-category')
 router.register(r'judge-profiles', views.JudgeProfileViewSet, basename='judge-profile')
-<<<<<<< HEAD
-
-urlpatterns = [
-    # 2. Put bulk and statistics paths FIRST
-    path('cases/bulk/assign/', views.BulkAssignJudgesView.as_view(), name='bulk-assign'),
-    path('cases/bulk/status-update/', views.BulkStatusUpdateView.as_view(), name='bulk-status-update'),
-=======
 router.register(r'citizen/documents', views.CitizenDocumentViewSet, basename='citizen-document')
 router.register(r'judge/documents', views.JudgeDocumentViewSet, basename='judge-document')
 router.register(r'', views.CaseViewSet, basename='case')
@@ -41,7 +34,6 @@ urlpatterns = [
     path('bulk/status-update/', views.BulkStatusUpdateView.as_view(), name='bulk-status-update'),
     
     # Statistics and reports
->>>>>>> dcd84c36c12fceda971e17d9d8ca37e7337203ac
     path('statistics/dashboard/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('statistics/judge-workload/', views.JudgeWorkloadView.as_view(), name='judge-workload'),
     path('statistics/case-type-distribution/', views.CaseTypeDistributionView.as_view(), name='case-type-distribution'),

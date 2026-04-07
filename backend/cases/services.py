@@ -460,11 +460,6 @@ class CaseNotificationService:
 
     @classmethod
     def notify_registrars_new_case(cls, case):
-<<<<<<< HEAD
-        """Notify all users with CLERK role about a new case"""
-        try:
-            registrars = User.objects.filter(role='CLERK', is_active=True)
-=======
         """Notify all users with REGISTRAR or CLERK role about a new case"""
         registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'], is_active=True)
         
@@ -478,7 +473,6 @@ class CaseNotificationService:
                 case=case,
                 priority='MEDIUM'
             )
->>>>>>> dcd84c36c12fceda971e17d9d8ca37e7337203ac
             
             for registrar in registrars:
                 # 1. Internal Notification
@@ -491,10 +485,10 @@ class CaseNotificationService:
                     priority='MEDIUM'
                 )
                 
-                # 2. Email Notification
-                cls._send_registrar_new_case_email(registrar, case)
-        except Exception as e:
-            logger.error(f"Failed to notify registrars for case {case.id}: {str(e)}")
+        #         # 2. Email Notification
+        #         cls._send_registrar_new_case_email(registrar, case)
+        # except Exception as e:
+        #     logger.error(f"Failed to notify registrars for case {case.id}: {str(e)}")
 
     @classmethod
     def _send_registrar_new_case_email(cls, registrar, case):

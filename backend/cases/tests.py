@@ -282,12 +282,7 @@ class JudgeAssignmentServiceTests(TestCase):
         
         self.judge_profile = JudgeProfile.objects.create(
             user=self.judge_user,
-<<<<<<< HEAD
-            max_active_cases=3,
-            is_active=True
-=======
             max_active_cases=10
->>>>>>> dcd84c36c12fceda971e17d9d8ca37e7337203ac
         )
         self.judge_profile.specializations.add(self.category)
     
