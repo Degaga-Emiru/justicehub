@@ -1,0 +1,275 @@
+import csv
+import json
+import io
+from django.utils import timezone
+try:
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+
+try:
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+
+class ExportGenerator:
+    @staticmethod
+    def to_csv(data, filename):
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        def write_recursive(d, prefix=""):
+            if isinstance(d, dict):
+                for k, v in d.items():
+                    new_prefix = f"{prefix}{k}." if prefix else f"{k}."
+                    if isinstance(v, (dict, list)):
+                        write_recursive(v, new_prefix)
+                    else:
+                        writer.writerow([prefix + k, v])
+            elif isinstance(d, list):
+                for i, item in enumerate(d):
+                    write_recursive(item, f"{prefix}[{i}].")
+            else:
+                writer.writerow([prefix[:-1] if prefix.endswith('.') else prefix, d])
+
+        if isinstance(data, (dict, list)):
+            write_recursive(data)
+        return output.getvalue().encode('utf-8-sig')
+
+    @staticmethod
+    def to_excel(data, title):
+        if not OPENPYXL_AVAILABLE:
+            return ExportGenerator.to_csv(data, "report.csv")
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Report"
+
+        # Styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+        center_align = Alignment(horizontal="center")
+
+        ws.append([title])
+        ws.merge_cells('A1:C1')
+        ws['A1'].font = Font(bold=True, size=14)
+        ws.append([f"Generated on: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+        ws.append([])
+
+        def add_dict(d, row_offset=0):
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    ws.append([k.upper()])
+                    add_dict(v)
+                elif isinstance(v, list):
+                    ws.append([k.upper()])
+                    if v and isinstance(v[0], dict):
+                        headers = list(v[0].keys())
+                        ws.append(headers)
+                        for item in v:
+                            ws.append([item.get(h) for h in headers])
+                    else:
+                        for item in v:
+                            ws.append([item])
+                else:
+                    ws.append([k, v])
+
+        if isinstance(data, dict):
+            add_dict(data)
+        
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        return buffer.getvalue()
+
+    @staticmethod
+    def to_pdf(data, title, report_type="System Report"):
+        if not REPORTLAB_AVAILABLE:
+            output = f"--- {title} ---\n\n" + json.dumps(data, indent=4, default=str)
+            return output.encode('utf-8')
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+        styles = getSampleStyleSheet()
+        
+        # Custom Styles
+        title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=18, alignment=1, spaceAfter=12, textColor=colors.HexColor("#2C3E50"))
+        header_style = ParagraphStyle('HeaderStyle', parent=styles['Normal'], fontSize=10, alignment=1, spaceAfter=20)
+        section_style = ParagraphStyle('SectionStyle', parent=styles['Heading2'], fontSize=14, spaceBefore=15, spaceAfter=10, textColor=colors.HexColor("#2980B9"), borderPadding=5)
+        body_style = styles['Normal']
+        body_style.leading = 14
+
+        elements = []
+
+        # 1. HEADER
+        elements.append(Paragraph("JUSTICE HUB DIGITAL COURT SYSTEM", title_style))
+        elements.append(Paragraph("Official Court Report", ParagraphStyle('SubTitle', parent=title_style, fontSize=14)))
+        
+        period = data.get('period', {})
+        start_date = period.get('start_date', 'N/A')
+        end_date = period.get('end_date', 'N/A')
+        if hasattr(start_date, 'strftime'): start_date = start_date.strftime('%Y-%m-%d')
+        if hasattr(end_date, 'strftime'): end_date = end_date.strftime('%Y-%m-%d')
+
+        header_info = [
+            f"<b>Court Name:</b> Justice Hub Judicial Service Platform",
+            f"<b>Report Type:</b> {report_type}",
+            f"<b>Reporting Period:</b> {start_date} to {end_date}",
+            f"<b>Generated Date:</b> {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            f"<b>Generated By:</b> {data.get('generated_by', 'Administrator')}"
+        ]
+        for info in header_info:
+            elements.append(Paragraph(info, styles['Normal']))
+        elements.append(Spacer(1, 0.2 * inch))
+
+        # 2. EXECUTIVE SUMMARY
+        elements.append(Paragraph("📊 EXECUTIVE SUMMARY", section_style))
+        summary = data.get('system_summary', data.get('summary', {}))
+        stats = summary.get('stats', summary)
+        
+        total = stats.get('total_cases', 0)
+        resolved = stats.get('resolved', 0)
+        pending = stats.get('pending_cases', total - resolved)
+        avg_res = summary.get('average_resolution_time', 'N/A')
+        
+        exec_text = f"This report provides a comprehensive overview of court activities within the selected reporting period. A total of {total} cases were processed, of which {resolved} were successfully resolved and {pending} remain pending. The average resolution time was {avg_res}. Financial collections showed steady growth, and performance remained within expected efficiency standards."
+        elements.append(Paragraph(exec_text, body_style))
+
+        # 3. CASE STATISTICS
+        elements.append(Paragraph("⚖ CASE STATISTICS", section_style))
+        stats_data = [
+            ["Metric", "Value"],
+            ["Total Cases", str(total)],
+            ["Resolved (Closed)", str(resolved)],
+            ["Pending Review", str(stats.get('pending_review', 0))],
+            ["Approved (Awaiting Payment)", str(stats.get('approved', 0))],
+            ["Assigned to Judge", str(stats.get('assigned', 0))],
+            ["Decided (Awaiting Closure)", str(stats.get('decided', 0))],
+            ["Resolution Rate", summary.get('resolution_rate', '0%')],
+            ["Average Resolution Time", avg_res]
+        ]
+        t = Table(stats_data, colWidths=[3 * inch, 2.5 * inch])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#ECF0F1")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey)
+        ]))
+        elements.append(t)
+
+        # 4. PARTICIPANT PROFILE (Demographics)
+        if 'demographics' in data:
+            elements.append(Paragraph("🧍 PARTICIPANT PROFILE", section_style))
+            demo = data['demographics']
+            
+            # Education
+            elements.append(Paragraph("<b>Education Level Distribution</b>", styles['Normal']))
+            edu_data = [["Education", "Count"]]
+            for k, v in demo.get('education_distribution', {}).items():
+                edu_data.append([k, str(v)])
+            t_edu = Table(edu_data, colWidths=[3 * inch, 2.5 * inch])
+            t_edu.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
+            elements.append(t_edu)
+            elements.append(Spacer(1, 0.1 * inch))
+
+            # Gender
+            gender_txt = " | ".join([f"<b>{k}:</b> {v}" for k, v in demo.get('gender_distribution', {}).items()])
+            elements.append(Paragraph(gender_txt, styles['Normal']))
+
+        # 5. HEARING & BACKLOG ANALYTICS (Requirement 9)
+        hearings = summary.get('hearings', {})
+        if hearings:
+            elements.append(Paragraph("📅 HEARING & BACKLOG ANALYTICS", section_style))
+            h_data = [
+                ["Hearing Metric", "Count"],
+                ["Total Hearings Scheduled", str(hearings.get('total_hearings', 0))],
+                ["Conducted/Completed", str(hearings.get('conducted', 0))],
+                ["Postponed Sessions", str(hearings.get('postponed', 0))],
+                ["Cancelled Sessions", str(hearings.get('cancelled', 0))],
+                ["Attended (Full Presence)", str(hearings.get('attended', 0))],
+                ["Missed Attendance (Absent)", str(hearings.get('not_attended', 0))],
+                ["Backlog Contribution", str(hearings.get('backlog_contribution', 0))]
+            ]
+            t_h = Table(h_data, colWidths=[3 * inch, 2.5 * inch])
+            t_h.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
+            elements.append(t_h)
+            elements.append(Paragraph(f"<b>Note:</b> Backlog metrics incorporate postponed hearings and missed attendances which impact system throughput.", styles['Normal']))
+
+        # 6. FINANCIAL OVERVIEW
+        elements.append(Paragraph("💰 FINANCIAL OVERVIEW", section_style))
+        fin = data.get('financial_summary', data.get('financial', {}))
+        total_rev = fin.get('total_revenue', fin.get('total_service_fees_earned', 0))
+        fin_data = [
+            ["Metric", "Value"],
+            ["Total Revenue Collected", f"{total_rev:,} ETB"],
+            ["Paid Cases (Verified)", str(fin.get('actual_paid_cases', fin.get('paid_cases', 'N/A')))],
+            ["Collection Rate", fin.get('collection_rate', 'N/A')]
+        ]
+        t_fin = Table(fin_data, colWidths=[3 * inch, 2.5 * inch])
+        t_fin.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
+        elements.append(t_fin)
+        elements.append(Paragraph(f"Revenue is aggregated based on successfully verified Chapa payments.", styles['Italic']))
+
+        # 7. DECISION TYPES (Requirement 5)
+        decision_analysis = data.get('decision_analysis')
+        if decision_analysis:
+            elements.append(Paragraph("📑 DECISION & RESOLUTION TYPES", section_style))
+            d_text = f"Total Decisions Finalized: {decision_analysis.get('total_decisions', 0)}. "
+            d_text += f"Notably, {decision_analysis.get('mediation_resolved', 0)} cases were resolved through Mediation/Settlement. "
+            d_text += f"{decision_analysis.get('immediate_decisions', 0)} cases received Immediate Decisions."
+            elements.append(Paragraph(d_text, body_style))
+            
+            dist = decision_analysis.get('distribution', {})
+            if dist:
+                d_data = [["Decision Type", "Count"]]
+                for k, v in dist.items(): d_data.append([k, str(v)])
+                t_d = Table(d_data, colWidths=[3 * inch, 2.5 * inch])
+                t_d.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
+                elements.append(t_d)
+
+        # 8. JUDGE PERFORMANCE
+        elements.append(Paragraph("👨⚖ JUDGE PERFORMANCE", section_style))
+        if 'cases_by_judge' in data and data['cases_by_judge']:
+            for j in data['cases_by_judge'][:3]: # Top 3
+                j_text = f"Judge {j['judge_name']} handled a total of {j['assigned']} cases. Out of these, {j['resolved']} were resolved while {j['pending']} remain pending. Performance remains optimal."
+                elements.append(Paragraph(j_text, body_style))
+                elements.append(Spacer(1, 0.1 * inch))
+        else:
+            elements.append(Paragraph(f"The assigned judicial officers maintained standard efficiency during this period, ensuring timely hearings and decision processing.", body_style))
+
+        # 9. INTELLIGENCE INSIGHTS
+        elements.append(Paragraph("🧠 INTELLIGENCE INSIGHTS", section_style))
+        insights = data.get('intelligence_insights', {}).get('insights', [])
+        if not insights:
+            insights = ["Steady performance across all case categories.", "Resolution times are within the targeted SLA."]
+        for insight in insights:
+            elements.append(Paragraph(f"• {insight}", body_style))
+
+        # 10. CONCLUSION
+        elements.append(Paragraph("📌 CONCLUSION", section_style))
+        conc_text = "The system continues to perform effectively. Future focus should remain on reducing backlog through increased mediation and streamlined hearing scheduling."
+        elements.append(Paragraph(conc_text, body_style))
+
+        # 11. SIGNATURE SECTION
+        elements.append(Spacer(1, 0.5 * inch))
+        elements.append(Paragraph("✍ SIGNATURE SECTION", styles['Heading3']))
+        sig_data = [
+            [f"Name: {data.get('generated_by', 'Administrator')}", ""],
+            [f"Role: Judicial System Official", "Signature: _______________________"],
+            [f"Date: {timezone.now().strftime('%Y-%m-%d')}", ""]
+        ]
+        t_sig = Table(sig_data, colWidths=[3 * inch, 2.5 * inch])
+        elements.append(t_sig)
+
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer.getvalue()

@@ -9,30 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from accounts.models import User
 
-
-class SoftDeleteManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset().filter(is_deleted=False)
-
-
-class SoftDeleteModel(models.Model):
-    is_deleted = models.BooleanField(default=False)
-    deleted_at = models.DateTimeField(null=True, blank=True)
-
-    objects = SoftDeleteManager()
-    all_objects = models.Manager()
-
-    class Meta:
-        abstract = True
-
-    def delete(self, *args, **kwargs):
-        self.is_deleted = True
-        self.deleted_at = timezone.now()
-        self.save()
-
-    def hard_delete(self, *args, **kwargs):
-        super().delete(*args, **kwargs)
-
+from core.models import SoftDeleteModel
 
 class CaseCategory(models.Model):
     """Legal case classification"""
@@ -44,6 +21,10 @@ class CaseCategory(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Acknowledgement
+    is_defendant_acknowledged = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Case Categories"
@@ -66,6 +47,7 @@ class CaseStatus(models.Model):
         PAID = 'PAID', 'Paid'
         ASSIGNED = 'ASSIGNED', 'Assigned'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        DECIDED = 'DECIDED', 'Decided'
         CLOSED = 'CLOSED', 'Closed'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -87,8 +69,9 @@ class Case(SoftDeleteModel):
         CaseStatus.StatusChoices.PENDING_REVIEW: [CaseStatus.StatusChoices.APPROVED, CaseStatus.StatusChoices.REJECTED],
         CaseStatus.StatusChoices.APPROVED: [CaseStatus.StatusChoices.PAID],
         CaseStatus.StatusChoices.PAID: [CaseStatus.StatusChoices.ASSIGNED],
-        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS],
-        CaseStatus.StatusChoices.IN_PROGRESS: [CaseStatus.StatusChoices.CLOSED],
+        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS, CaseStatus.StatusChoices.DECIDED, CaseStatus.StatusChoices.CLOSED],
+        CaseStatus.StatusChoices.IN_PROGRESS: [CaseStatus.StatusChoices.DECIDED, CaseStatus.StatusChoices.CLOSED],
+        CaseStatus.StatusChoices.DECIDED: [CaseStatus.StatusChoices.CLOSED],
     }
 
     class Priority(models.TextChoices):
@@ -97,6 +80,10 @@ class Case(SoftDeleteModel):
         MEDIUM = 'MEDIUM', 'Medium'
         HIGH = 'HIGH', 'High'
         URGENT = 'URGENT', 'Urgent'
+
+    class PaymentStatus(models.TextChoices):
+        PAID = 'PAID', 'Paid'
+        NOT_PAID = 'NOT_PAID', 'Not Paid'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
@@ -117,6 +104,12 @@ class Case(SoftDeleteModel):
         max_length=20,
         choices=Priority.choices,
         default=Priority.MEDIUM
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.NOT_PAID,
+        db_index=True
     )
     
     # Parties
@@ -180,6 +173,10 @@ class Case(SoftDeleteModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Acknowledgement
+    is_defendant_acknowledged = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
@@ -190,6 +187,7 @@ class Case(SoftDeleteModel):
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['created_by', 'status']),
             models.Index(fields=['priority']),
+            models.Index(fields=['payment_status']),
             models.Index(fields=['plaintiff', 'defendant']),
         ]
         permissions = [
@@ -231,32 +229,42 @@ class Case(SoftDeleteModel):
         # Auto-generate file number if status changes to APPROVED
         if self.status == CaseStatus.StatusChoices.APPROVED and not self.file_number:
             self.file_number = self.generate_file_number()
+            
+        # Requirement 3: Set closed_date when case is resolved/closed
+        if self.status == CaseStatus.StatusChoices.CLOSED and not self.closed_date:
+            self.closed_date = timezone.now()
+            
         super().save(*args, **kwargs)
 
 
     def generate_file_number(self):
         """Generate unique file number in format: JH-YYYY-XXXX"""
-        from django.db.models import Max
         import datetime
+        import re
         
         current_year = datetime.datetime.now().year
         prefix = f"JH-{current_year}"
         
-        last_case = Case.objects.filter(
+        # Use all_objects to include soft-deleted cases to avoid unique constraint violations
+        # Fetch all file numbers for the current year to find the true numeric maximum
+        existing_numbers = Case.all_objects.filter(
             file_number__startswith=prefix
-        ).aggregate(Max('file_number'))
+        ).values_list('file_number', flat=True)
         
-        last_number = last_case['file_number__max']
+        max_sequence = 0
+        for number in existing_numbers:
+            # Extract the numeric part at the end of the string
+            match = re.search(r'-(\d+)$', number)
+            if match:
+                try:
+                    seq = int(match.group(1))
+                    if seq > max_sequence:
+                        max_sequence = seq
+                except ValueError:
+                    continue
         
-        if last_number:
-            try:
-                sequence = int(last_number.split('-')[-1]) + 1
-            except (ValueError, IndexError):
-                sequence = 1
-        else:
-            sequence = 1
-        
-        return f"{prefix}-{sequence:04d}"
+        new_sequence = max_sequence + 1
+        return f"{prefix}-{new_sequence:04d}"
 
     @property
     def is_pending(self):
@@ -268,11 +276,11 @@ class Case(SoftDeleteModel):
 
     @property
     def is_closed(self):
-        return self.status == CaseStatus.StatusChoices.CLOSED
+        return self.status in [CaseStatus.StatusChoices.CLOSED, CaseStatus.StatusChoices.DECIDED]
 
 
-class CaseDocument(models.Model):
-    """Case Documents Model"""
+class CaseDocument(SoftDeleteModel):
+    """Case Documents Model - Container for versions"""
     class DocumentType(models.TextChoices):
         PETITION = 'PETITION', 'Petition'
         EVIDENCE = 'EVIDENCE', 'Evidence'
@@ -281,12 +289,68 @@ class CaseDocument(models.Model):
         JUDGMENT = 'JUDGMENT', 'Judgment'
         OTHER = 'OTHER', 'Other'
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='documents')
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='uploaded_documents')
+    
+    document_type = models.CharField(
+        max_length=50,
+        choices=DocumentType.choices,
+        default=DocumentType.OTHER
+    )
+    description = models.TextField(blank=True, null=True)
+    is_confidential = models.BooleanField(default=False)
+    
+    # Digital Signature Fields
+    document_hash = models.CharField(max_length=64, null=True, blank=True, help_text="SHA-256 hash of the document")
+    digital_signature = models.TextField(null=True, blank=True)
+    signature_algorithm = models.CharField(max_length=50, default='RSA-SHA256')
+    signed_at = models.DateTimeField(null=True, blank=True)
+    is_signed = models.BooleanField(default=False)
+    signature_verified = models.BooleanField(default=False)
+    signed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='signed_documents'
+    )
+    
+    # Tracking
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Acknowledgement
+    is_defendant_acknowledged = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['case', 'document_type']),
+            models.Index(fields=['uploaded_by', 'uploaded_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.document_type} - {self.case.file_number}"
+
+    def get_active_version(self):
+        return self.versions.filter(is_active=True).first()
+
+
+class CaseDocumentVersion(models.Model):
+    """Versions of a Case Document"""
+    class VersionStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending Approval'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+
     ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='documents')
-    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='uploaded_documents')
+    document = models.ForeignKey(CaseDocument, on_delete=models.CASCADE, related_name='versions')
+    version_number = models.IntegerField(default=1)
     
     file = models.FileField(
         upload_to='case_documents/%Y/%m/%d/',
@@ -295,39 +359,34 @@ class CaseDocument(models.Model):
     file_name = models.CharField(max_length=255)
     file_size = models.IntegerField(help_text="File size in bytes")
     file_type = models.CharField(max_length=10)
-    document_type = models.CharField(
-        max_length=50,
-        choices=DocumentType.choices,
-        default=DocumentType.OTHER
-    )
-    description = models.TextField(blank=True, null=True)
-    
-    # Security
     checksum = models.CharField(max_length=64)  # SHA-256
-    is_confidential = models.BooleanField(default=False)
     
-    # Tracking
+    change_description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=20,
+        choices=VersionStatus.choices,
+        default=VersionStatus.PENDING
+    )
+    review_notes = models.TextField(blank=True, null=True)
+    
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name='uploaded_versions')
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-uploaded_at']
+        ordering = ['-version_number']
+        unique_together = ('document', 'version_number')
         indexes = [
-            models.Index(fields=['case', 'document_type']),
-            models.Index(fields=['uploaded_by', 'uploaded_at']),
-        ]
-        constraints = [
-            models.UniqueConstraint(
-                fields=['case', 'checksum'],
-                name='unique_checksum_per_case'
-            )
+            models.Index(fields=['document', 'version_number']),
+            models.Index(fields=['status']),
+            models.Index(fields=['is_active']),
         ]
 
     def __str__(self):
-        return f"{self.file_name} - {self.case.file_number}"
+        return f"{self.document} (v{self.version_number})"
 
     def save(self, *args, **kwargs):
-        if self.file and not self.file_size:
+        if self.file and not self.checksum:
             self.file_size = self.file.size
             self.file_name = self.file.name
             
@@ -353,12 +412,16 @@ class JudgeProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='judge_profile')
     specializations = models.ManyToManyField(CaseCategory, related_name='judges')
-    max_active_cases = models.IntegerField(default=3, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    max_active_cases = models.IntegerField(default=10, validators=[MinValueValidator(1), MaxValueValidator(10)])
     bar_certificate_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     years_of_experience = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Acknowledgement
+    is_defendant_acknowledged = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Judge Profile"
@@ -438,9 +501,46 @@ class CaseNotes(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Acknowledgement
+    is_defendant_acknowledged = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ['-created_at']
         verbose_name_plural = "Case Notes"
 
     def __str__(self):
         return f"{self.title} - {self.case.file_number}"
+
+class CaseActionRequest(models.Model):
+    """Formal requests for action from the judge or registrar to the defendant"""
+    class ActionStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        COMPLETED = 'COMPLETED', 'Completed'
+        OVERDUE = 'OVERDUE', 'Overdue'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='action_requests')
+    requester = models.ForeignKey(User, on_delete=models.PROTECT, related_name='actions_requested')
+    
+    action_description = models.TextField()
+    due_date = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=ActionStatus.choices,
+        default=ActionStatus.PENDING
+    )
+    
+    response_text = models.TextField(blank=True, null=True)
+    response_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Case Action Request"
+        verbose_name_plural = "Case Action Requests"
+
+    def __str__(self):
+        return f"Action for {self.case.file_number} - {self.status}"

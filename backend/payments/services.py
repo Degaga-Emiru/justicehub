@@ -10,113 +10,300 @@ from cases.services import JudgeAssignmentService
 from notifications.services import create_notification
 from core.utils.email import send_email_template
 from .models import Payment, Transaction
+import json
+import requests
+from decimal import Decimal
 
+# One logger is enough
 logger = logging.getLogger(__name__)
+
+class ChapaService:
+    """Service to interact with Chapa Payment API"""
+    BASE_URL = "https://api.chapa.co/v1"
+    SECRET_KEY = getattr(settings, 'CHAPA_SECRET_KEY', None)
+
+    @classmethod
+    def _get_headers(cls):
+        return {
+            "Authorization": f"Bearer {cls.SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+
+    @classmethod
+    def initialize_transaction(cls, amount, email, first_name, last_name, tx_ref, callback_url, description="Case Payment"):
+        """Initialize a transaction with Chapa"""
+        endpoint = f"{cls.BASE_URL}/transaction/initialize"
+        payload = {
+            "amount": str(amount),
+            "currency": "ETB",
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "tx_ref": tx_ref,
+            "callback_url": callback_url,
+            "customization": {
+                "title": "JusticeHub",
+                "description": description
+            }
+        }
+        
+        try:
+            response = requests.post(endpoint, json=payload, headers=cls._get_headers(), timeout=15)
+            response_data = response.json()
+            
+            if response.status_code == 200 and response_data.get('status') == 'success':
+                return response_data['data']['checkout_url']
+            else:
+                logging.getLogger(__name__).error(f"Chapa initialization failed: {response_data}")
+                raise ValidationError(f"Chapa Error: {response_data.get('message', 'Unknown error')}")
+        except requests.RequestException as e:
+            logging.getLogger(__name__).error(f"Chapa API Request Error: {str(e)}")
+            raise ValidationError("Failed to connect to Chapa Payment Gateway.")
+
+    @classmethod
+    def verify_transaction(cls, tx_ref):
+        """Verify a transaction with Chapa"""
+        endpoint = f"{cls.BASE_URL}/transaction/verify/{tx_ref}"
+        
+        try:
+            response = requests.get(endpoint, headers=cls._get_headers(), timeout=15)
+            response_data = response.json()
+            
+            if response.status_code == 200 and response_data.get('status') == 'success':
+                return response_data['data']
+            else:
+                logging.getLogger(__name__).error(f"Chapa verification failed for {tx_ref}: {response_data}")
+                return None
+        except requests.RequestException as e:
+            logging.getLogger(__name__).error(f"Chapa API Verification Error: {str(e)}")
+            return None
+
 
 class PaymentService:
     @staticmethod
     @transaction.atomic
-    def submit_payment(case_id, user, data):
-        """
-        Processes a manual bank transfer payment submission.
-        """
+    def initiate_payment(case_id, user):
+        """Initializes a Chapa payment for a case"""
         try:
             case = Case.objects.get(id=case_id)
         except Case.DoesNotExist:
             raise ValidationError("Case not found.")
 
-        # 1. Verify case status
+        # 1. Validation
         if case.status != CaseStatus.APPROVED:
-            raise ValidationError(f"Payment cannot be submitted for cases with status: {case.status}")
+            raise ValidationError(f"Payment can only be initialized for APPROVED cases. Current: {case.status}")
+        
+        if Payment.objects.filter(case=case, status=Payment.Status.SUCCESS).exists():
+            raise ValidationError("This case has already been paid successfully.")
 
-        # 2. Prevent duplicate payments for the same reference
-        if Payment.objects.filter(transaction_reference=data['transaction_reference']).exists():
-            raise ValidationError("A payment with this transaction reference already exists.")
+        # 2. Setup Reference and Amount
+        tx_ref = f"CASE-{case.id}-{uuid.uuid4().hex[:6].upper()}"
+        amount = case.category.fee
+        
+        # 3. Sanitize description for Chapa (No special chars except common ones)
+        import re
+        case_title = case.file_number or case.title
+        clean_title = re.sub(r'[^a-zA-Z0-9\s\.\_\-]', '', str(case_title))
+        description = f"Payment for Case {clean_title}"[:100]
 
-        # 3. Verify amount matches category fee
-        required_amount = case.category.fee
-        if float(data['amount']) != float(required_amount):
-            raise ValidationError(f"Payment amount ({data['amount']}) does not match required fee ({required_amount}).")
-
-        # 4. Create Payment record
-        payment = Payment.objects.create(
-            case=case,
-            user=user,
-            amount=data['amount'],
-            transaction_reference=data['transaction_reference'],
-            payment_method=data.get('payment_method', 'BANK_TRANSFER'),
-            sender_name=data['sender_name'],
-            bank_name=data['bank_name'],
-            transaction_date=data['transaction_date'],
-            status='PENDING'  # Needs manual verification by Clerk
+        # 4. Call Chapa to initialize
+        callback_url = f"{settings.BACKEND_URL}/api/payments/callback/"
+        checkout_url = ChapaService.initialize_transaction(
+            amount=amount,
+            email=user.email,
+            first_name=user.first_name or "Citizen",
+            last_name=user.last_name or "User",
+            tx_ref=tx_ref,
+            callback_url=callback_url,
+            description=description
         )
 
-        # 5. Create Transaction audit record
-        txn_id = f"TXN-{uuid.uuid4().hex[:8].upper()}"
-        Transaction.objects.create(
-            payment=payment,
-            transaction_id=txn_id,
-            amount=payment.amount,
-            details={
-                'method': payment.payment_method,
-                'bank': payment.bank_name,
-                'sender': payment.sender_name
+        # 4. Create/Update Payment record
+        payment, created = Payment.objects.update_or_create(
+            case=case,
+            user=user,
+            defaults={
+                'amount': amount,
+                'tx_ref': tx_ref,
+                'payment_url': checkout_url,
+                'status': Payment.Status.PENDING,
+                'payment_method': 'CHAPA'
             }
         )
 
-        # Leave case status as APPROVED (Awaiting Payment Verification)
-        # Note: Do not change to PAID here, wait for verification.
-
-        # 7. Create notification
-        create_notification(
-            user=user,
-            type='PAYMENT_RECEIVED',
-            title='Payment Successful',
-            message=f"Your payment for case {case.file_number} has been received and verified.",
-            case=case
-        )
-
-        # 8. Send confirmation email
-        PaymentService._send_confirmation_email(payment)
-
-        # Log action
-        from cases.services import AuditService
-        AuditService.log_action(
-            user=user,
-            action='PAYMENT_SUBMITTED',
-            entity=payment,
-            details={'reference': payment.transaction_reference, 'case_id': str(case_id)}
-        )
-
+        # 5. Send Email with payment link
+        PaymentService._send_payment_required_email(payment)
+        
         return payment
 
     @staticmethod
     @transaction.atomic
-    def verify_payment(payment_id, user):
-        """
-        Clerk/Registrar verifies a pending payment.
-        """
+    def verify_and_complete_payment(tx_ref):
+        """Verifies Chapa payment and updates case status"""
         try:
-            payment = Payment.objects.get(id=payment_id)
+            payment = Payment.objects.select_related('case', 'user', 'case__category').get(tx_ref=tx_ref)
         except Payment.DoesNotExist:
-            raise ValidationError("Payment not found.")
+            logging.getLogger(__name__).error(f"Verification failed: Payment with tx_ref {tx_ref} not found.")
+            return None
 
-        if payment.status != 'PENDING':
-            raise ValidationError(f"Payment is already {payment.status}.")
+        if payment.status in [Payment.Status.SUCCESS, Payment.Status.VERIFIED]:
+            return payment
 
-        payment.status = 'VERIFIED'
+        # 1. Verify with Chapa
+        verification_data = ChapaService.verify_transaction(tx_ref)
+        if not verification_data or verification_data.get('status') != 'success':
+            payment.status = Payment.Status.FAILED
+            payment.save()
+            return payment
+
+        # 2. Security Check: Verify amount and currency
+        verified_amount = Decimal(str(verification_data.get('amount')))
+        if verified_amount != payment.amount:
+            logging.getLogger(__name__).error(f"Security Alert: Amount mismatch for {tx_ref}. Expected {payment.amount}, got {verified_amount}")
+            payment.status = Payment.Status.FAILED
+            payment.notes = f"Amount mismatch. Expected {payment.amount}, got {verified_amount}"
+            payment.save()
+            return payment
+
+        # 3. Success Workflow
+        payment.status = Payment.Status.SUCCESS
+        payment.chapa_transaction_id = verification_data.get('reference')
+        payment.paid_at = timezone.now()
         payment.save()
 
-        # Update case status
+        # Update Case Status and Payment Status
         case = payment.case
         case.status = CaseStatus.PAID
+        case.payment_status = 'PAID'
         case.save()
 
-        # Trigger judge assignment
-        JudgeAssignmentService.assign_judge(case)
+        # Audit/Transaction Record
+        Transaction.objects.update_or_create(
+            payment=payment,
+            defaults={
+                'amount': payment.amount,
+                'chapa_transaction_id': payment.chapa_transaction_id,
+                'details': verification_data
+            }
+        )
+
+        # Notifications
+        create_notification(
+            user=payment.user,
+            type='PAYMENT_RECEIVED',
+            title='Payment Received',
+            message=f"Thank you. Your payment for case {case.file_number} has been verified.",
+            case=case
+        )
+        
+        # Email Confirmation
+        PaymentService._send_confirmation_email(payment)
+
+        # Trigger automatic judge assignment
+        try:
+            from cases.services import JudgeAssignmentService
+            JudgeAssignmentService.assign_judge(case)
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Automatic judge assignment failed after payment: {str(e)}")
+            # Fail gracefully, registrar can manually assign if needed.
+
+    @staticmethod
+    @transaction.atomic
+    def manual_confirm_payment(case_id, amount, reference_number, transaction_id, registrar, notes=None):
+        """Manually confirms payment by a registrar for bank transfers"""
+        try:
+            case = Case.objects.get(id=case_id)
+        except Case.DoesNotExist:
+            raise ValidationError("Case not found.")
+
+        if case.status != CaseStatus.APPROVED:
+            raise ValidationError(f"Manual payment can only be confirmed for APPROVED cases. Current: {case.status}")
+
+        # Requirement: Validate that the amount exactly matches the category fee
+        expected_fee = case.category.fee
+        if Decimal(str(amount)) != expected_fee:
+            raise ValidationError(
+                f"Incorrect payment amount. The required fee for category '{case.category.name}' "
+                f"is {expected_fee} ETB. You provided {amount} ETB."
+            )
+
+        # 1. Create/Update Payment record
+        payment, created = Payment.objects.update_or_create(
+            case=case,
+            defaults={
+                'user': case.created_by,
+                'amount': amount,
+                'tx_ref': reference_number,
+                'status': Payment.Status.SUCCESS,
+                'payment_method': 'MANUAL',
+                'paid_at': timezone.now(),
+                'notes': f"Manual confirmation by Registrar {registrar.get_full_name()} ({registrar.email}). {notes or ''}"
+            }
+        )
+
+        # 2. Update Case Status
+        case.status = CaseStatus.PAID
+        case.payment_status = 'PAID'
+        case.save()
+
+        # 3. Audit/Transaction Record
+        Transaction.objects.update_or_create(
+            payment=payment,
+            defaults={
+                'amount': amount,
+                'transaction_id': transaction_id,
+                'details': {
+                    'confirmed_by': registrar.email,
+                    'reference': reference_number,
+                    'method': 'MANUAL'
+                }
+            }
+        )
+
+        # 4. Audit Log
+        from cases.services import AuditService
+        AuditService.log_action(
+            user=registrar,
+            action='PAYMENT_VERIFIED',
+            entity=case,
+            details={
+                'method': 'MANUAL',
+                'amount': str(amount),
+                'txn_id': transaction_id
+            }
+        )
+
+        # 5. Notifications
+        create_notification(
+            user=case.created_by,
+            type='PAYMENT_RECEIVED',
+            title='Payment Confirmed (Manual)',
+            message=f"Your manual payment for case {case.file_number} has been confirmed by the registrar.",
+            case=case
+        )
+
+        # 6. Auto Assign Judge
+        JudgeAssignmentService.assign_judge(case, assigned_by=registrar)
 
         # Notify user (if needed we can trigger another notification here)
         return payment
+
+    @staticmethod
+    def _send_payment_required_email(payment):
+        """Send email with payment link after case approval"""
+        context = {
+            'user': payment.user,
+            'case': payment.case,
+            'payment_url': payment.payment_url,
+            'amount': payment.amount,
+            'frontend_url': settings.FRONTEND_URL
+        }
+        send_email_template(
+            subject=f"Action Required: Payment for Case {payment.case.file_number}",
+            template_name='emails/payment_required.html',
+            context=context,
+            recipient_list=[payment.user.email]
+        )
 
     @staticmethod
     def _send_confirmation_email(payment):
@@ -124,9 +311,9 @@ class PaymentService:
         context = {
             'user': payment.user,
             'payment': payment,
+            'case': payment.case,
             'frontend_url': settings.FRONTEND_URL
         }
-        
         send_email_template(
             subject=f"Payment Confirmation - {payment.case.file_number}",
             template_name='emails/payment_confirmation.html',

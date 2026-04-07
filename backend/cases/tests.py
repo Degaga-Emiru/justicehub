@@ -282,8 +282,12 @@ class JudgeAssignmentServiceTests(TestCase):
         
         self.judge_profile = JudgeProfile.objects.create(
             user=self.judge_user,
+<<<<<<< HEAD
             max_active_cases=3,
             is_active=True
+=======
+            max_active_cases=10
+>>>>>>> dcd84c36c12fceda971e17d9d8ca37e7337203ac
         )
         self.judge_profile.specializations.add(self.category)
     
@@ -297,8 +301,8 @@ class JudgeAssignmentServiceTests(TestCase):
     
     def test_judge_workload_limit(self):
         """Test judge workload limit"""
-        # Create 3 active assignments (max)
-        for i in range(3):
+        # Create 10 active assignments (max)
+        for i in range(10):
             case = Case.objects.create(
                 title=f'Case {i}',
                 description='Test',
@@ -315,7 +319,7 @@ class JudgeAssignmentServiceTests(TestCase):
         # Refresh profile
         self.judge_profile.refresh_from_db()
         
-        self.assertEqual(self.judge_profile.get_active_case_count(), 3)
+        self.assertEqual(self.judge_profile.get_active_case_count(), 10)
         self.assertFalse(self.judge_profile.can_take_more_cases())
         
         # Should find no available judges

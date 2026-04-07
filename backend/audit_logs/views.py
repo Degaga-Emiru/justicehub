@@ -1,7 +1,7 @@
 import csv
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Count, Q, Max, Sum
+from django.db.models import Count, Q, Max, Sum, Min
 from django.db.models.functions import TruncDate, ExtractHour
 from django.http import HttpResponse
 from django.contrib.contenttypes.models import ContentType
@@ -10,6 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from accounts.models import User
 from .models import AuditLog
 from .serializers import AuditLogSerializer
 from .permissions import AuditLogPermission, IsAdminUser, IsAdminOrRegistrar
@@ -193,6 +194,36 @@ class AuditLogViewSet(viewsets.ModelViewSet):
             log.delete(force_purge=True)
             
         return Response({"deleted_count": count}, status=200)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminUser])
+    def dashboard(self, request):
+        """Compliance and audit summary for admin dashboard"""
+        total_logs = AuditLog.objects.count()
+        
+        # Calculate recent activity by role
+        by_role = User.objects.values('role').annotate(count=Count('auditlog'))
+        role_stats = {item['role']: item['count'] for item in by_role}
+        
+        # Last purge (simplified, we'd ideally track this in a separate model)
+        last_purge = AuditLog.objects.aggregate(Min('timestamp'))['timestamp__min']
+        
+        # Critical events (e.g., DELETION, STATUS_CHANGE)
+        critical_events = AuditLog.objects.filter(
+            Q(action_type__icontains='DELETE') | 
+            Q(action_type__icontains='UPDATE')
+        ).count()
+        
+        # Recent failures
+        recent_failures = AuditLog.objects.filter(action_status='FAILURE').count()
+        
+        return Response({
+            "total_logs": total_logs,
+            "last_purge": last_purge,
+            "storage_used": "N/A", # Hard to calculate exactly from here
+            "critical_events": critical_events,
+            "recent_failures": recent_failures,
+            "activity_by_role": role_stats
+        })
 
     @action(detail=False, methods=['get'], permission_classes=[IsAdminUser])
     def summaries(self, request):

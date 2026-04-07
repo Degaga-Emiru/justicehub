@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* Main container */
+        .email-container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        /* Header with green gradient */
+        .email-header {
+            background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+            padding: 40px 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .email-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        .header-icon {
+            background: rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .header-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        h2 {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Content area */
+        .email-content {
+            padding: 40px;
+            background: white;
+        }
+
+        /* Greeting */
+        .greeting {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+            border-left: 4px solid #43a047;
+            padding-left: 20px;
+            background: linear-gradient(to right, rgba(67, 160, 71, 0.05), transparent);
+        }
+
+        .greeting span {
+            color: #43a047;
+        }
+
+        /* Case info card */
+        .case-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 5px solid #43a047;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .case-card:hover {
+            box-shadow: 0 8px 25px rgba(67, 160, 71, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .case-title {
+            font-size: 22px;
+            color: #2e7d32;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .case-title svg {
+            width: 24px;
+            height: 24px;
+            fill: #43a047;
+        }
+
+        .file-number {
+            display: inline-block;
+            background: #43a047;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+
+        /* Message */
+        .message {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.8;
+            margin: 20px 0;
+        }
+
+        .message strong {
+            color: #2e7d32;
+        }
+
+        /* Amount highlight */
+        .amount-highlight {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 25px 0;
+            border: 2px dashed #43a047;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .amount-highlight::before {
+            content: '💰';
+            position: absolute;
+            left: 10px;
+            bottom: 10px;
+            font-size: 40px;
+            opacity: 0.2;
+            transform: rotate(-15deg);
+        }
+
+        .amount-label {
+            font-size: 16px;
+            color: #2e7d32;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .amount-value {
+            font-size: 48px;
+            color: #2e7d32;
+            font-weight: 800;
+            line-height: 1.2;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .amount-currency {
+            font-size: 24px;
+            color: #43a047;
+        }
+
+        /* Button styles - Green theme */
+        .button-container {
+            text-align: center;
+            margin: 35px 0;
+            position: relative;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+            border: none;
+            color: white;
+            padding: 18px 45px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 8px 20px rgba(67, 160, 71, 0.4);
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid transparent;
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(67, 160, 71, 0.5);
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .button:active {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(67, 160, 71, 0.4);
+        }
+
+        .button i {
+            margin-right: 10px;
+            font-style: normal;
+            animation: bounce 2s infinite;
+        }
+
+        /* Alternative payment link */
+        .alt-link {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
+            border: 1px solid #e0e0e0;
+        }
+
+        .alt-link p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .link-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #2e7d32;
+            word-break: break-all;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .link-box:hover {
+            border-color: #43a047;
+            background: #f1f8e9;
+        }
+
+        .copy-hint {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #43a047;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .link-box:hover .copy-hint {
+            opacity: 1;
+        }
+
+        /* Features */
+        .features {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            padding: 20px 0;
+            border-top: 2px solid #e8f5e9;
+            border-bottom: 2px solid #e8f5e9;
+        }
+
+        .feature {
+            text-align: center;
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: #e8f5e9;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            color: #2e7d32;
+            font-size: 20px;
+        }
+
+        .feature-text {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .email-footer {
+            background: #f5f5f5;
+            padding: 30px 40px;
+            text-align: center;
+            border-top: 2px solid #43a047;
+        }
+
+        .footer-text {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .signature {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px dashed #43a047;
+        }
+
+        .signature strong {
+            color: #2e7d32;
+            font-size: 18px;
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) rotate(45deg);
+            }
+
+            100% {
+                transform: translateX(100%) rotate(45deg);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(67, 160, 71, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(67, 160, 71, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(67, 160, 71, 0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .email-content {
+                padding: 20px;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+
+            .greeting {
+                font-size: 20px;
+            }
+
+            .amount-value {
+                font-size: 36px;
+            }
+
+            .button {
+                padding: 15px 30px;
+                font-size: 18px;
+                width: 100%;
+            }
+
+            .features {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="header-icon">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+            </div>
+            <h2>Case Approved! ✅</h2>
+            <span class="header-badge">Action Required - Payment Pending</span>
+        </div>
+
+        <div class="email-content">
+            <div class="greeting">
+                Dear <span>{{ user.get_full_name }}</span>,
+            </div>
+
+            <p class="message">
+                Great news! Your case <strong>"{{ case.title }}"</strong> has been reviewed and
+                <strong style="color: #43a047;">approved by the registrar</strong>.
+            </p>
+
+            <div class="case-card">
+                <div class="case-title">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4z" />
+                    </svg>
+                    {{ case.title }}
+                </div>
+                <span class="file-number">📁 File No: {{ case.file_number }}</span>
+            </div>
+
+            <div class="amount-highlight">
+                <div class="amount-label">Payment Required</div>
+                <div class="amount-value">
+                    {{ amount }} <span class="amount-currency">ETB</span>
+                </div>
+                <p style="color: #2e7d32; margin-top: 10px; font-size: 14px;">
+                    To proceed with judge assignment and scheduling
+                </p>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">⚖️</div>
+                    <div class="feature-text">Judge Assignment</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📅</div>
+                    <div class="feature-text">Hearing Schedule</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-text">Secure Payment</div>
+                </div>
+            </div>
+
+            <div class="button-container">
+                <a href="{{ payment_url }}" class="button">
+                    <i>💰</i> Pay Now via Chapa
+                </a>
+            </div>
+
+            <div class="alt-link">
+                <p>🔗 If the button above doesn't work, copy and paste this link:</p>
+                <div class="link-box">
+                    {{ payment_url }}
+                    <span class="copy-hint">Click to copy</span>
+                </div>
+            </div>
+
+            <p style="color: #666; font-size: 14px; font-style: italic; margin-top: 20px;">
+                ⏰ Please complete the payment within 48 hours to avoid any delays in your case processing.
+            </p>
+        </div>
+
+        <div class="email-footer">
+            <p class="footer-text">Thank you for choosing JusticeHub</p>
+            <div class="signature">
+                <p class="footer-text">Best regards,</p>
+                <strong>JusticeHub Team</strong>
+                <p class="footer-text" style="margin-top: 10px; font-size: 12px;">
+                    📍 123 Legal Avenue, Justice City<br>
+                    📞 +251 11 234 5678<br>
+                    ✉️ support@justicehub.com
+                </p>
+            </div>
+            <p class="footer-text" style="margin-top: 20px; font-size: 12px; color: #999;">
+                This is an automated message, please do not reply directly to this email.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

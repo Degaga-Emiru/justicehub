@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CaseCategory, Case, CaseDocument, JudgeAssignment, CaseNotes
+from .models import CaseCategory, Case, CaseDocument, CaseDocumentVersion, JudgeAssignment, CaseNotes
 
 @admin.register(CaseCategory)
 class CaseCategoryAdmin(admin.ModelAdmin):
@@ -13,7 +13,14 @@ class CaseCategoryAdmin(admin.ModelAdmin):
 class CaseDocumentInline(admin.TabularInline):
     model = CaseDocument
     extra = 0
-    readonly_fields = ['file_name', 'file_size', 'checksum', 'uploaded_at']
+    fields = ['document_type', 'is_confidential', 'uploaded_at']
+    readonly_fields = ['uploaded_at']
+
+
+class CaseDocumentVersionInline(admin.TabularInline):
+    model = CaseDocumentVersion
+    extra = 0
+    readonly_fields = ['version_number', 'file_name', 'file_size', 'checksum', 'uploaded_at', 'uploaded_by']
 
 
 class JudgeAssignmentInline(admin.TabularInline):
@@ -60,9 +67,18 @@ class CaseAdmin(admin.ModelAdmin):
 
 @admin.register(CaseDocument)
 class CaseDocumentAdmin(admin.ModelAdmin):
-    list_display = ['file_name', 'case', 'document_type', 'uploaded_by', 'uploaded_at']
+    list_display = ['case', 'document_type', 'uploaded_by', 'uploaded_at', 'is_confidential']
     list_filter = ['document_type', 'is_confidential', 'uploaded_at']
-    search_fields = ['file_name', 'case__file_number', 'case__title']
+    search_fields = ['case__file_number', 'case__title']
+    readonly_fields = ['uploaded_at']
+    inlines = [CaseDocumentVersionInline]
+
+
+@admin.register(CaseDocumentVersion)
+class CaseDocumentVersionAdmin(admin.ModelAdmin):
+    list_display = ['document', 'version_number', 'file_name', 'status', 'uploaded_by', 'uploaded_at']
+    list_filter = ['status', 'uploaded_at']
+    search_fields = ['file_name', 'document__case__file_number']
     readonly_fields = ['checksum', 'file_size', 'uploaded_at']
 
 

@@ -72,8 +72,28 @@ backend/test_results_v4.txt
 backend/test_results_v5.txt
 backend/test_results_v6.txt
 backend/test_results_v7.txt
-
+backend/keys/
+backend/test_report_output
+backend/test_report_output.pdf
+backend/test_report_output.csv
+backend/test_report_output.xlsx
 # Ignore any future test result files
 backend/test_*.txt
+backend/get_token.py
 # Virtual environment
 venv/
+
+debug_*.py
+verify_*.py
+
+# Ignore text/debug/output files
+*.txt
+!requirements.txt
+
+# Optional: ignore test outputs specifically
+test_*.txt
+*_output*.txt
+*_results*.txt
+tree.txt
+all_py_files.txt
+check_output.txt

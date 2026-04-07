@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, generics, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,13 +13,13 @@ import csv
 from django.template.loader import render_to_string
 
 from .models import (
-    CaseCategory, Case, CaseDocument, 
+    CaseCategory, Case, CaseDocument, CaseDocumentVersion,
     JudgeAssignment, CaseNotes, JudgeProfile
 )
 from .serializers import (
     CaseCategorySerializer, CaseCreateSerializer, CaseDetailSerializer,
     CaseListSerializer, CaseReviewSerializer, JudgeAssignmentSerializer,
-    CaseDocumentSerializer, CaseNotesSerializer, JudgeProfileSerializer,
+    CaseDocumentSerializer, CaseDocumentVersionSerializer, CaseNotesSerializer, JudgeProfileSerializer,
     CaseBulkAssignSerializer, CaseStatusUpdateSerializer,
     DashboardStatsSerializer, JudgeWorkloadSerializer
 )
@@ -34,7 +35,6 @@ from audit_logs.models import AuditLog
 from notifications.services import create_notification
 from core.exceptions import BusinessLogicError
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -119,9 +119,22 @@ class CaseViewSet(viewsets.ModelViewSet):
         """
         # Handle multipart/form-data (file uploads)
         if request.content_type and 'multipart/form-data' in request.content_type:
+<<<<<<< HEAD
             # Pass request.data directly – do NOT .copy() as it deep-copies
             # file handles (BufferedRandom) which cannot be pickled.
             serializer = self.get_serializer(data=request.data)
+=======
+            # Create a mutable copy of request.data
+            data = request.data
+            
+            # Handle document files if they exist
+            documents = request.FILES.getlist('documents')
+            document_types = request.data.getlist('document_types', [])
+            document_descriptions = request.data.getlist('document_descriptions', [])
+            
+            # Create serializer with the data
+            serializer = self.get_serializer(data=data)
+>>>>>>> dcd84c36c12fceda971e17d9d8ca37e7337203ac
             serializer.is_valid(raise_exception=True)
             
             # Save the case (documents handled inside CaseCreateSerializer.create)
@@ -159,7 +172,7 @@ class CaseViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             
             # Create a mutable copy of request.data
-            data = request.data.copy()
+            data = request.data
             
             serializer = self.get_serializer(instance, data=data, partial=partial)
             serializer.is_valid(raise_exception=True)
@@ -175,14 +188,15 @@ class CaseViewSet(viewsets.ModelViewSet):
                     doc_type = document_types[i] if i < len(document_types) else 'OTHER'
                     doc_description = document_descriptions[i] if i < len(document_descriptions) else ''
                     
-                    CaseDocument.objects.create(
-                        case=instance,
-                        uploaded_by=request.user,
-                        file=document_file,
-                        document_type=doc_type,
-                        description=doc_description,
-                        is_confidential=request.data.get('is_confidential', False)
-                    )
+                    # Use CaseDocumentSerializer to create both CaseDocument and its first version
+                    doc_serializer = CaseDocumentSerializer(data={
+                        'document_type': doc_type,
+                        'description': doc_description,
+                        'is_confidential': request.data.get('is_confidential', False),
+                        'file': document_file
+                    }, context={'request': request})
+                    doc_serializer.is_valid(raise_exception=True)
+                    doc_serializer.save(case=instance)
             
             return Response(serializer.data)
         
@@ -248,11 +262,40 @@ class CaseViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_200_OK)
                 
         except Exception as e:
-            logger.error(f"Error reviewing case {case.id}: {str(e)}")
+            logging.getLogger(__name__).error(f"Error reviewing case {case.id}: {str(e)}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsJudge | IsRegistrar])
+    def request_defendant_action(self, request, pk=None):
+        """Judge or Registrar requests a specific action from the defendant"""
+        case = self.get_object()
+        action_description = request.data.get('action_description')
+        
+        if not action_description:
+            return Response(
+                {"error": "action_description is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        from .services import CaseNotificationService
+        CaseNotificationService.notify_defendant_action_required(case, action_description)
+        
+        # Log the request
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.CASE_UPDATED,
+            obj=case,
+            description=f"Action requested from defendant: {action_description}",
+            entity_name=case.file_number or case.title
+        )
+        
+        return Response({
+            "message": "Action requested from defendant and notification sent.",
+            "defendant": case.defendant.get_full_name() if case.defendant else "N/A"
+        })
     
     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def add_document(self, request, pk=None):
@@ -274,14 +317,15 @@ class CaseViewSet(viewsets.ModelViewSet):
         if isinstance(is_confidential, str):
             is_confidential = is_confidential.lower() in ['true', '1', 'yes']
         
-        document = CaseDocument.objects.create(
-            case=case,
-            uploaded_by=request.user,
-            file=file,
-            document_type=document_type,
-            description=description,
-            is_confidential=is_confidential
-        )
+        # Use CaseDocumentSerializer to create both CaseDocument and its first version
+        serializer = CaseDocumentSerializer(data={
+            'document_type': document_type,
+            'description': description,
+            'is_confidential': is_confidential,
+            'file': file
+        }, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        document = serializer.save(case=case)
         
         serializer = CaseDocumentSerializer(document, context={'request': request})
         
@@ -321,14 +365,15 @@ class CaseViewSet(viewsets.ModelViewSet):
             doc_type = document_types[i] if i < len(document_types) else 'OTHER'
             description = descriptions[i] if i < len(descriptions) else ''
             
-            document = CaseDocument.objects.create(
-                case=case,
-                uploaded_by=request.user,
-                file=file,
-                document_type=doc_type,
-                description=description,
-                is_confidential=is_confidential
-            )
+            # Use CaseDocumentSerializer to create both CaseDocument and its first version
+            doc_serializer = CaseDocumentSerializer(data={
+                'document_type': doc_type,
+                'description': description,
+                'is_confidential': is_confidential,
+                'file': file
+            }, context={'request': request})
+            doc_serializer.is_valid(raise_exception=True)
+            document = doc_serializer.save(case=case)
             uploaded_docs.append(CaseDocumentSerializer(document, context={'request': request}).data)
             
             # Notify about each document
@@ -412,6 +457,30 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         return Response(timeline)
 
+    @action(detail=True, methods=['get'], url_path='hearing-timeline')
+    def hearing_timeline(self, request, pk=None):
+        """Get case hearing timeline"""
+        case = self.get_object()
+        hearings = case.hearings.all().order_by('hearing_number')
+        
+        timeline = []
+        for h in hearings:
+            timeline.append({
+                "hearing_number": h.hearing_number,
+                "title": h.title,
+                "type": h.get_hearing_type_display(),
+                "status": h.get_status_display(),
+                "date": h.scheduled_date,
+                "location": h.location
+            })
+            
+        return Response({
+            "case_id": case.id,
+            "file_number": case.file_number,
+            "title": case.title,
+            "timeline": timeline
+        })
+
 
 class AssignJudgeView(generics.CreateAPIView):
     """
@@ -455,96 +524,251 @@ class AssignJudgeView(generics.CreateAPIView):
             )
 
 
+class CitizenDocumentViewSet(viewsets.ViewSet):
+    """
+    ViewSet for Citizens to manage their own documents.
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    def get_queryset(self):
+        return CaseDocument.objects.filter(
+            Q(uploaded_by=self.request.user) |
+            Q(case__created_by=self.request.user) |
+            Q(case__plaintiff=self.request.user) |
+            Q(case__defendant=self.request.user)
+        ).distinct()
+
+    @action(detail=False, methods=['post'], url_path='cases/(?P<case_id>[^/.]+)/documents')
+    def upload_new(self, request, case_id=None):
+        """Upload a new document (ver 1)"""
+        try:
+            case = Case.objects.get(id=case_id)
+        except Case.DoesNotExist:
+            return Response({"error": "Case not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if not (case.created_by == request.user or case.plaintiff == request.user or case.defendant == request.user):
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            
+        serializer = CaseDocumentSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(case=case)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='versions')
+    def upload_version(self, request, pk=None):
+        """Upload a new version of an existing document"""
+        document = get_object_or_404(CaseDocument, pk=pk)
+        
+        if document.uploaded_by != request.user:
+            return Response({"error": "You can only upload versions to your own documents"}, status=status.HTTP_403_FORBIDDEN)
+            
+        if 'file' not in request.FILES:
+            return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        change_description = request.data.get('change_description')
+        if not change_description:
+            return Response({"error": "Change description is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Deactivate previous versions
+        document.versions.update(is_active=False)
+        
+        # Create new version
+        last_version = document.versions.order_by('-version_number').first()
+        new_version_num = (last_version.version_number + 1) if last_version else 1
+        
+        version = CaseDocumentVersion.objects.create(
+            document=document,
+            file=request.FILES['file'],
+            version_number=new_version_num,
+            change_description=change_description,
+            uploaded_by=request.user,
+            is_active=True,
+            status='PENDING'
+        )
+        
+        serializer = CaseDocumentVersionSerializer(version)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def list(self, request):
+        """List current user's documents"""
+        documents = self.get_queryset()
+        serializer = CaseDocumentSerializer(documents, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='cases/(?P<case_id>[^/.]+)/documents')
+    def list_by_case(self, request, case_id=None):
+        """List documents for a specific case"""
+        documents = self.get_queryset().filter(case_id=case_id)
+        serializer = CaseDocumentSerializer(documents, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        """Get document details"""
+        document = get_object_or_404(self.get_queryset(), pk=pk)
+        serializer = CaseDocumentSerializer(document)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='versions')
+    def version_history(self, request, pk=None):
+        """View version history of a document"""
+        document = get_object_or_404(self.get_queryset(), pk=pk)
+        versions = document.versions.all()
+        serializer = CaseDocumentVersionSerializer(versions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='versions/(?P<version_id>[^/.]+)/download')
+    def download_version(self, request, version_id=None):
+        """Download a specific version"""
+        version = get_object_or_404(CaseDocumentVersion, id=version_id)
+        
+        # Check permissions
+        document = version.document
+        user = request.user
+        
+        is_authorized = (
+            user.role in ['ADMIN', 'REGISTRAR', 'JUDGE'] or
+            document.uploaded_by == user or 
+            document.case.created_by == user or
+            document.case.plaintiff == user or 
+            document.case.defendant == user or
+            (user.role == 'LAWYER' and (document.case.plaintiff_lawyer == user or document.case.defendant_lawyer == user))
+        )
+        
+        if not is_authorized:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            
+        from django.http import FileResponse
+        return FileResponse(version.file.open('rb'), as_attachment=True, filename=version.file_name)
+
+    def destroy(self, request, pk=None):
+        """Soft delete document"""
+        document = get_object_or_404(CaseDocument, pk=pk)
+        if document.uploaded_by != request.user:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            
+        document.delete() # Soft delete
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class JudgeDocumentViewSet(viewsets.ViewSet):
+    """
+    ViewSet for Judges to manage case documents.
+    """
+    permission_classes = [IsAuthenticated, IsJudge]
+    
+    def get_queryset(self):
+        # Judges see documents of cases they are assigned to
+        return CaseDocument.objects.all().filter(
+            case__judge_assignments__judge=self.request.user,
+            case__judge_assignments__is_active=True
+        ).distinct()
+
+    @action(detail=False, methods=['get'], url_path='cases/(?P<case_id>[^/.]+)/documents')
+    def list_by_case(self, request, case_id=None):
+        """List all documents for a case"""
+        # Judges can see all case documents
+        documents = CaseDocument.objects.filter(case_id=case_id)
+        serializer = CaseDocumentSerializer(documents, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        """Get document with all versions"""
+        document = get_object_or_404(CaseDocument, pk=pk)
+        serializer = CaseDocumentSerializer(document)
+        data = serializer.data
+        data['versions'] = CaseDocumentVersionSerializer(document.versions.all(), many=True).data
+        return Response(data)
+
+    @action(detail=True, methods=['get'], url_path='versions')
+    def list_versions(self, request, pk=None):
+        """List all versions of a document"""
+        document = get_object_or_404(CaseDocument, pk=pk)
+        serializer = CaseDocumentVersionSerializer(document.versions.all(), many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='approve')
+    def approve(self, request, pk=None):
+        """Approve active document version"""
+        document = get_object_or_404(CaseDocument, pk=pk)
+        version = document.get_active_version()
+        if not version:
+            return Response({"error": "No active version to approve"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        version.status = 'APPROVED'
+        version.review_notes = request.data.get('notes', '')
+        version.save()
+        return Response({"message": "Document version approved"})
+
+    @action(detail=True, methods=['post'], url_path='reject')
+    def reject(self, request, pk=None):
+        """Reject active document version"""
+        document = get_object_or_404(CaseDocument, pk=pk)
+        version = document.get_active_version()
+        if not version:
+            return Response({"error": "No active version to reject"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        reason = request.data.get('reason')
+        if not reason:
+            return Response({"error": "Reason for rejection is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        version.status = 'REJECTED'
+        version.review_notes = reason
+        version.save()
+        return Response({"message": "Document version rejected"})
+
+    @action(detail=True, methods=['post'], url_path='restore')
+    def restore(self, request, pk=None):
+        """Restore a previous version"""
+        version_id = request.data.get('version_id')
+        if not version_id:
+            return Response({"error": "version_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        document = get_object_or_404(CaseDocument, pk=pk)
+        version_to_restore = get_object_or_404(CaseDocumentVersion, id=version_id, document=document)
+        
+        # Deactivate all and activate selected
+        document.versions.update(is_active=False)
+        version_to_restore.is_active = True
+        version_to_restore.save()
+        
+        return Response({"message": f"Version {version_to_restore.version_number} restored"})
+
+    @action(detail=True, methods=['get'], url_path='audit')
+    def audit_trail(self, request, pk=None):
+        """View audit trail of document"""
+        document = get_object_or_404(CaseDocument, pk=pk)
+        versions = document.versions.order_by('-uploaded_at')
+        
+        trail = []
+        for v in versions:
+            trail.append({
+                'version': v.version_number,
+                'action': 'Upload',
+                'user': v.uploaded_by.get_full_name(),
+                'date': v.uploaded_at,
+                'status': v.status,
+                'notes': v.review_notes,
+                'change_description': v.change_description
+            })
+            
+        return Response(trail)
+
+
 class CaseDocumentViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for managing case documents.
+    Legacy/Generic ViewSet for managing case documents.
     """
     serializer_class = CaseDocumentSerializer
     permission_classes = [IsAuthenticated, CanManageDocuments]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def get_queryset(self):
-        return CaseDocument.objects.filter(case_id=self.kwargs['pk'])
-    
-    def perform_create(self, serializer):
-        case = Case.objects.get(pk=self.kwargs['pk'])
-        serializer.save(
-            case=case,
-            uploaded_by=self.request.user
-        )
-    
-    def create(self, request, *args, **kwargs):
-        """Override create to handle file uploads"""
-        if request.content_type and 'multipart/form-data' in request.content_type:
-            # Handle multipart form data
-            case = Case.objects.get(pk=self.kwargs['pk'])
-            
-            if 'file' not in request.FILES:
-                return Response(
-                    {"error": "No file provided."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            
-            # Save with the case and user
-            serializer.save(
-                case=case,
-                uploaded_by=request.user,
-                file=request.FILES['file']
-            )
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-        return super().create(request, *args, **kwargs)
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        
-        # Log Document Viewed
-        create_audit_log(
-            request=request,
-            action_type=AuditLog.ActionType.DOCUMENT_VIEWED,
-            obj=instance,
-            description=f"User {request.user.email} viewed document {instance.file_name}",
-            entity_name=instance.file_name
-        )
-        
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        doc_name = instance.file_name
-        
-        # Log Document Deleted
-        create_audit_log(
-            request=request,
-            action_type=AuditLog.ActionType.DOCUMENT_DELETED,
-            obj=instance,
-            description=f"Document {doc_name} deleted from case {instance.case.file_number}",
-            entity_name=doc_name
-        )
-        
-        return super().destroy(request, *args, **kwargs)
-
-    @action(detail=True, methods=['get'])
-    def download(self, request, pk=None):
-        """Download document and log event"""
-        instance = self.get_object()
-        
-        # Log Document Downloaded
-        create_audit_log(
-            request=request,
-            action_type=AuditLog.ActionType.DOCUMENT_DOWNLOADED,
-            obj=instance,
-            description=f"Document {instance.file_name} downloaded",
-            entity_name=instance.file_name
-        )
-        
-        from django.http import FileResponse
-        return FileResponse(instance.file.open('rb'), as_attachment=True, filename=instance.file_name)
+        # Support both pk passed in URL and case_id
+        case_id = self.kwargs.get('pk')
+        if case_id:
+            return CaseDocument.objects.filter(case_id=case_id)
+        return CaseDocument.objects.all()
 
 
 class CaseNotesViewSet(viewsets.ModelViewSet):

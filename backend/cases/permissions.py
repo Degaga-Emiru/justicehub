@@ -102,19 +102,46 @@ class CanManageDocuments(permissions.BasePermission):
         if not request.user.is_authenticated:
             return False
         
-        # Admin can do anything
-        if request.user.role == 'ADMIN':
+        user = request.user
+        
+        # Admin / Registrar / Clerk can do anything
+        if user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
             return True
         
+        # Get case and document uploader
+        from .models import Case, CaseDocument, CaseDocumentVersion
+        
+        if isinstance(obj, CaseDocument):
+            case = obj.case
+            uploader = obj.uploaded_by
+        elif isinstance(obj, CaseDocumentVersion):
+            case = obj.document.case
+            uploader = obj.uploaded_by
+        else:
+            # If obj is a Case
+            case = obj if isinstance(obj, Case) else getattr(obj, 'case', None)
+            uploader = getattr(obj, 'uploaded_by', None)
+
+        if not case:
+            return False
+
         # Uploader can manage their documents
-        if hasattr(obj, 'uploaded_by') and obj.uploaded_by == request.user:
+        if uploader and uploader == user:
             return True
         
-        # Assigned judge can view documents
-        if request.user.role == 'JUDGE' and request.method in permissions.SAFE_METHODS:
-            case = obj.case if hasattr(obj, 'case') else obj
+        # Parties to the case can view documents (Safe methods only)
+        if request.method in permissions.SAFE_METHODS:
+            if (case.created_by == user or
+                case.plaintiff == user or
+                case.defendant == user or
+                case.plaintiff_lawyer == user or
+                case.defendant_lawyer == user):
+                return True
+        
+        # Assigned judge can manage documents of their cases
+        if user.role == 'JUDGE':
             active_assignment = case.judge_assignments.filter(is_active=True).first()
-            if active_assignment and active_assignment.judge == request.user:
+            if active_assignment and active_assignment.judge == user:
                 return True
         
         return False
@@ -139,3 +166,22 @@ class IsPartyToCase(permissions.BasePermission):
             case.plaintiff_lawyer == request.user or
             case.defendant_lawyer == request.user
         )
+
+
+class IsDefendantOfCase(permissions.BasePermission):
+    """
+    Allows access only to the assigned defendant of the case.
+    """
+    def has_object_permission(self, request, view, obj):
+        if not request.user.is_authenticated:
+            return False
+            
+        from .models import Case, CaseDocument
+        if isinstance(obj, Case):
+            case = obj
+        elif hasattr(obj, 'case'):
+            case = obj.case
+        else:
+            return False
+            
+        return bool(case.defendant == request.user)

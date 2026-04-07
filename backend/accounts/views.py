@@ -1,19 +1,28 @@
-from rest_framework import status, generics, permissions
+from rest_framework import status, generics, permissions, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken
 from drf_spectacular.utils import extend_schema, OpenApiParameter # ✅ Added for Swagger support
+from rest_framework.parsers import MultiPartParser, FormParser
 
+import csv
+import io
+import json
+from django.db.models import Count, Q
+from django.http import HttpResponse
 from .models import User, OTP
 from .serializers import (
     CitizenRegistrationSerializer, AdminCreateUserSerializer,
     VerifyOTPSerializer, ResendOTPSerializer, SetPasswordAfterOTPSerializer,
     LoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,
     ChangePasswordSerializer, UserProfileSerializer, TokenResponseSerializer,
-    AdminUserUpdateSerializer
+    UserAdminDetailSerializer, UserToggleStatusSerializer, AdminResetPasswordSerializer,
+    BulkUserActionSerializer, RoleSerializer, CustomRoleCreateSerializer,
+    RolePermissionUpdateSerializer, ProfileUpdateSerializer, ProfilePictureSerializer
 )
 from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
@@ -240,11 +249,40 @@ class ChangePasswordView(APIView):
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """Endpoint to get and update user profile."""
-    serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get_serializer_class(self):
+        if self.request.method in ['PATCH', 'PUT']:
+            return ProfileUpdateSerializer
+        return UserProfileSerializer
     
     def get_object(self):
         return self.request.user
+
+
+class ProfilePictureUploadView(APIView):
+    """Endpoint to upload or update profile picture image."""
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def post(self, request):
+        serializer = ProfilePictureSerializer(request.user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        
+        # Log Profile Picture Update
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.USER_UPDATED,
+            obj=request.user,
+            description=f"User {request.user.email} updated profile picture.",
+            entity_name=request.user.email
+        )
+        
+        return Response({
+            "message": "Profile picture updated successfully.",
+            "profile_picture": request.user.profile_picture.url if request.user.profile_picture else None
+        }, status=status.HTTP_200_OK)
 
 
 class UserListView(generics.ListAPIView):
@@ -260,14 +298,262 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     lookup_field = 'id'
 
-    def get_serializer_class(self):
-        if self.request.method in ['PUT', 'PATCH']:
-            return AdminUserUpdateSerializer
-        return UserProfileSerializer
 
-    def perform_destroy(self, instance):
-        """Prevent admin from deleting themselves."""
-        if instance == self.request.user:
-            from rest_framework.exceptions import ValidationError
-            raise ValidationError("You cannot delete your own account.")
-        instance.delete()
+class AdminUserViewSet(viewsets.ModelViewSet):
+    """ViewSet for comprehensive admin user management."""
+    queryset = User.objects.all()
+    serializer_class = UserAdminDetailSerializer
+    permission_classes = [IsAdmin]
+    lookup_field = 'id'
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UserProfileSerializer
+        return super().get_serializer_class()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        
+        # Filters
+        role = self.request.query_params.get('role')
+        status = self.request.query_params.get('status')
+        verified = self.request.query_params.get('verified')
+        date_from = self.request.query_params.get('date_from')
+        date_to = self.request.query_params.get('date_to')
+        search = self.request.query_params.get('search')
+        sort_by = self.request.query_params.get('sort_by', 'date_joined')
+        sort_order = self.request.query_params.get('sort_order', 'desc')
+
+        if role:
+            qs = qs.filter(role=role)
+        if status:
+            is_active = (status == 'active')
+            qs = qs.filter(is_active=is_active)
+        if verified:
+            is_verified = (verified.lower() == 'true')
+            qs = qs.filter(is_verified=is_verified)
+        if date_from:
+            qs = qs.filter(date_joined__gte=date_from)
+        if date_to:
+            qs = qs.filter(date_joined__lte=date_to)
+        if search:
+            qs = qs.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(phone_number__icontains=search)
+            )
+
+        order_prefix = '-' if sort_order == 'desc' else ''
+        return qs.order_by(f"{order_prefix}{sort_by}")
+
+    @action(detail=False, methods=['get'])
+    def dashboard(self, request):
+        """Overview of user statistics and management tools."""
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        pending_verification = User.objects.filter(is_verified=False).count()
+        
+        users_by_role = User.objects.values('role').annotate(count=Count('id'))
+        role_stats = {item['role']: item['count'] for item in users_by_role}
+
+        recent = User.objects.all().order_by('-date_joined')[:5]
+        recent_data = UserProfileSerializer(recent, many=True).data
+
+        return Response({
+            "total_users": total_users,
+            "active_users": active_users,
+            "pending_verification": pending_verification,
+            "users_by_role": role_stats,
+            "recent_registrations": recent_data,
+            "pending_approvals": 0
+        })
+
+    @action(detail=False, methods=['post'], url_path='bulk')
+    def bulk_create(self, request):
+        """Create multiple users at once (CSV/JSON upload)."""
+        import csv
+        import io
+        
+        file = request.FILES.get('file')
+        if not file:
+            return Response({"error": "No file uploaded"}, status=400)
+            
+        decoded_file = file.read().decode('utf-8')
+        io_string = io.StringIO(decoded_file)
+        reader = csv.DictReader(io_string)
+        
+        total = 0
+        successful = 0
+        failed = 0
+        results = []
+        
+        for row in reader:
+            total += 1
+            try:
+                email = row.get('email')
+                if not email:
+                    continue
+                if User.objects.filter(email=email).exists():
+                    failed += 1
+                    results.append({"email": email, "status": "failed", "error": "Email already exists"})
+                    continue
+                    
+                user = User.objects.create_user(
+                    email=email,
+                    first_name=row.get('first_name', ''),
+                    last_name=row.get('last_name', ''),
+                    phone_number=row.get('phone_number', ''),
+                    role=row.get('role', 'CITIZEN'),
+                    is_active=True,
+                    is_verified=True
+                )
+                successful += 1
+                results.append({"email": email, "status": "success", "user_id": str(user.id)})
+            except Exception as e:
+                failed += 1
+                results.append({"email": row.get('email'), "status": "failed", "error": str(e)})
+                
+        return Response({
+            "total": total,
+            "successful": successful,
+            "failed": failed,
+            "results": results
+        })
+
+    @action(detail=True, methods=['post'], url_path='toggle-status')
+    def toggle_status(self, request, id=None):
+        """Deactivate/Activate User."""
+        user = self.get_object()
+        serializer = UserToggleStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        action = serializer.validated_data['action']
+        user.is_active = (action == 'activate')
+        user.status_reason = serializer.validated_data['reason']
+        user.save()
+
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.USER_ACTIVATED if user.is_active else AuditLog.ActionType.USER_DEACTIVATED,
+            obj=user,
+            description=f"User {user.email} status changed to {'active' if user.is_active else 'inactive'}: {user.status_reason}"
+        )
+
+        return Response({
+            "id": str(user.id),
+            "email": user.email,
+            "status": "active" if user.is_active else "inactive",
+            "updated_at": timezone.now(),
+            "message": f"User {action}d successfully"
+        })
+
+    @action(detail=True, methods=['post'], url_path='reset-password')
+    def reset_password(self, request, id=None):
+        """Force password reset for a user."""
+        user = self.get_object()
+        serializer = AdminResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        import secrets
+        import string
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+        user.set_password(temp_password)
+        user.is_password_set = False
+        user.save()
+        
+        return Response({
+            "message": "Password reset successfully",
+            "temporary_password": temp_password if not serializer.validated_data['send_email'] else "Sent via email",
+            "reset_at": timezone.now()
+        })
+
+    @action(detail=False, methods=['post'], url_path='bulk-action')
+    def bulk_action(self, request):
+        """Perform actions on multiple users."""
+        serializer = BulkUserActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user_ids = serializer.validated_data['user_ids']
+        action_type = serializer.validated_data['action']
+        
+        users = User.objects.filter(id__in=user_ids)
+        successful = 0
+        
+        for user in users:
+            if action_type == 'activate':
+                user.is_active = True
+            elif action_type == 'deactivate':
+                user.is_active = False
+            elif action_type == 'verify':
+                user.is_verified = True
+            user.save()
+            successful += 1
+            
+        return Response({
+            "total": len(user_ids),
+            "successful": successful,
+            "failed": len(user_ids) - successful,
+            "results": [{"user_id": str(uid), "status": "success"} for uid in user_ids]
+        })
+
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        """Export user data in CSV format."""
+        qs = self.get_queryset()
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="users_export.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Email', 'First Name', 'Last Name', 'Role', 'Status', 'Verified', 'Joined'])
+        
+        for user in qs:
+            writer.writerow([
+                user.id, user.email, user.first_name, user.last_name, 
+                user.role, 'Active' if user.is_active else 'Inactive', 
+                user.is_verified, user.date_joined
+            ])
+            
+        return response
+
+    @action(detail=True, methods=['get'])
+    def permissions(self, request, id=None):
+        """Get user permissions."""
+        user = self.get_object()
+        return Response({
+            "user_id": str(user.id),
+            "role": user.role,
+            "inherited_permissions": [],
+            "custom_permissions": [],
+            "all_permissions": []
+        })
+
+
+class AdminRoleViewSet(viewsets.ViewSet):
+    """ViewSet for role and permission management."""
+    permission_classes = [IsAdmin]
+
+    def list(self, request):
+        roles = User.Role.choices
+        data = []
+        for role_name, display_name in roles:
+            data.append({
+                "name": role_name,
+                "display_name": display_name,
+                "description": f"Role for {display_name}",
+                "user_count": User.objects.filter(role=role_name).count(),
+                "permissions": ["*"] if role_name == 'ADMIN' else []
+            })
+        return Response({"roles": data})
+
+    def create(self, request):
+        serializer = CustomRoleCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['put'], url_path='(?P<role_name>[^/.]+)')
+    def update_role(self, request, role_name=None):
+        serializer = RolePermissionUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"message": f"Role {role_name} updated"})
