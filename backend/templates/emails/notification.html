@@ -75,6 +75,10 @@
         <div style="text-align: center;">
             <a href="{{ frontend_url }}{{ notification.action_url }}" class="button">View Details</a>
         </div>
+        {% elif notification.case %}
+        <div style="text-align: center;">
+            <a href="{{ frontend_url }}/dashboard" class="button">View Dashboard</a>
+        </div>
         {% endif %}
         
         <p style="margin-top: 20px;">

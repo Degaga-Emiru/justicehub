@@ -276,12 +276,14 @@ class JudgeAssignmentServiceTests(TestCase):
             password='judge123',
             first_name='Judge',
             last_name='User',
-            role='JUDGE'
+            role='JUDGE',
+            is_active=True
         )
         
         self.judge_profile = JudgeProfile.objects.create(
             user=self.judge_user,
-            max_active_cases=3
+            max_active_cases=3,
+            is_active=True
         )
         self.judge_profile.specializations.add(self.category)
     

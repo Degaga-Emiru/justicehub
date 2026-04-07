@@ -136,7 +136,8 @@ def handle_judge_assignment(sender, instance, created, **kwargs):
             title='New Case Assignment',
             message=f'You have been assigned to case: {instance.case.title} (File No: {instance.case.file_number})',
             case=instance.case,
-            priority='HIGH'
+            priority='HIGH',
+            action_url='/dashboard/judge'
         )
         
         # Notify case creator
@@ -145,7 +146,8 @@ def handle_judge_assignment(sender, instance, created, **kwargs):
             type='JUDGE_ASSIGNED',
             title='Judge Assigned to Your Case',
             message=f'Judge {instance.judge.get_full_name()} has been assigned to your case.',
-            case=instance.case
+            case=instance.case,
+            action_url='/dashboard/client'
         )
         
         # Send email to judge

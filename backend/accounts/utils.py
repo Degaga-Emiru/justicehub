@@ -73,6 +73,7 @@ def send_otp_email(user, purpose='VERIFICATION'):
         'otp_code': code,
         'expiry_minutes': settings.OTP_EXPIRE_MINUTES,
         'current_year': timezone.now().year,
+        'frontend_url': settings.FRONTEND_URL,
     }
     
     # Send email based on purpose using HTML templates

@@ -43,7 +43,7 @@ def custom_exception_handler(exc, context):
         
         data = {
             'error': 'Internal Server Error',
-            'details': 'An unexpected error occurred. Please try again later.'
+            'details': f'An unexpected error occurred. {str(exc)} {exc.__class__.__name__}'
         }
         return Response(data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     

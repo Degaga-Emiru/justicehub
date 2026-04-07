@@ -48,7 +48,7 @@ class PaymentService:
             sender_name=data['sender_name'],
             bank_name=data['bank_name'],
             transaction_date=data['transaction_date'],
-            status='VERIFIED'  # Auto-verified for this manual flow simulation
+            status='PENDING'  # Needs manual verification by Clerk
         )
 
         # 5. Create Transaction audit record
@@ -64,9 +64,8 @@ class PaymentService:
             }
         )
 
-        # 6. Update case status to PAID
-        case.status = CaseStatus.PAID
-        case.save()
+        # Leave case status as APPROVED (Awaiting Payment Verification)
+        # Note: Do not change to PAID here, wait for verification.
 
         # 7. Create notification
         create_notification(
@@ -89,11 +88,34 @@ class PaymentService:
             details={'reference': payment.transaction_reference, 'case_id': str(case_id)}
         )
 
-        # 9. Trigger judge assignment (Automatically move to ASSIGNED)
-        # In a real system, there might be an admin verification step here.
-        # But per requirements, we proceed to assign judge.
+        return payment
+
+    @staticmethod
+    @transaction.atomic
+    def verify_payment(payment_id, user):
+        """
+        Clerk/Registrar verifies a pending payment.
+        """
+        try:
+            payment = Payment.objects.get(id=payment_id)
+        except Payment.DoesNotExist:
+            raise ValidationError("Payment not found.")
+
+        if payment.status != 'PENDING':
+            raise ValidationError(f"Payment is already {payment.status}.")
+
+        payment.status = 'VERIFIED'
+        payment.save()
+
+        # Update case status
+        case = payment.case
+        case.status = CaseStatus.PAID
+        case.save()
+
+        # Trigger judge assignment
         JudgeAssignmentService.assign_judge(case)
 
+        # Notify user (if needed we can trigger another notification here)
         return payment
 
     @staticmethod

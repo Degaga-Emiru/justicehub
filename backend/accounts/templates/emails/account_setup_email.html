@@ -74,9 +74,25 @@
             
             <div class="otp-code">{{ otp_code }}</div>
             
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary" style="margin: 20px auto; text-align: center;">
+                <tbody>
+                    <tr>
+                        <td align="center">
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                <tbody>
+                                    <tr>
+                                        <td> <a href="{{ frontend_url }}/setup-account?email={{ user.email }}" target="_blank" style="background-color: #3498db; border: solid 1px #3498db; border-radius: 5px; box-sizing: border-box; color: #ffffff; cursor: pointer; display: inline-block; font-size: 16px; font-weight: bold; margin: 0; padding: 12px 25px; text-decoration: none; text-transform: capitalize;">Set Up Your Account</a> </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
             <p>This OTP will expire in <strong>{{ expiry_minutes }} minutes</strong>.</p>
             
-            <p>After verification, you'll be able to set your password and access the platform according to your role.</p>
+            <p>After clicking the link, enter your OTP to set your password and access the platform according to your role.</p>
             
             <p>Best regards,<br>
             <strong>Justice Hub Team</strong></p>
