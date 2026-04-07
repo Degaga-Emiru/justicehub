@@ -44,9 +44,16 @@ class CitizenRegistrationSerializer(serializers.ModelSerializer):
 
 
 class AdminCreateUserSerializer(serializers.ModelSerializer):
+    specialization_ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        write_only=True,
+        required=False,
+        help_text="Category UUIDs for judge specializations (required when role is JUDGE)"
+    )
+
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role']
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'role', 'specialization_ids']
     
     def validate_role(self, value):
         if value == 'CITIZEN':
@@ -54,8 +61,20 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
         if value == 'ADMIN':
             raise serializers.ValidationError("Use admin creation endpoint for admin users.")
         return value
+
+    def validate(self, attrs):
+        if attrs.get('role') == 'JUDGE':
+            spec_ids = attrs.get('specialization_ids', [])
+            if not spec_ids:
+                raise serializers.ValidationError({
+                    "specialization_ids": "At least one specialization category is required for judges."
+                })
+        return attrs
     
     def create(self, validated_data):
+        # Pop specialization_ids before creating user (not a User field)
+        specialization_ids = validated_data.pop('specialization_ids', [])
+
         # Create user with random password (user will set their own after OTP)
         import secrets
         import string
@@ -69,6 +88,9 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
             is_password_set=False
         )
         
+        # Store specialization_ids on the instance so the view can use them
+        user._specialization_ids = specialization_ids
+
         # Send account setup OTP
         send_otp_email(user, 'ACCOUNT_SETUP')
         

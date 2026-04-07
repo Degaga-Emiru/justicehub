@@ -232,7 +232,8 @@ class JudgeAssignmentService:
                 f"(File No: {assignment.case.file_number})"
             ),
             case=assignment.case,
-            priority='HIGH'
+            priority='HIGH',
+            action_url='/dashboard/judge'
         )
         
         # Notify case creator
@@ -244,7 +245,8 @@ class JudgeAssignmentService:
                 f"Judge {assignment.judge.get_full_name()} has been assigned "
                 f"to your case: {assignment.case.title}"
             ),
-            case=assignment.case
+            case=assignment.case,
+            action_url='/dashboard/client'
         )
         
         # Notify defendant
@@ -472,8 +474,21 @@ class CaseNotificationService:
                 priority='MEDIUM'
             )
             
-            # 2. Email Notification
-            cls._send_registrar_new_case_email(registrar, case)
+            for registrar in registrars:
+                # 1. Internal Notification
+                create_notification(
+                    user=registrar,
+                    type='NEW_CASE_FILED',
+                    title='New Case Filed',
+                    message=f"A new case '{case.title}' has been filed and is pending review.",
+                    case=case,
+                    priority='MEDIUM'
+                )
+                
+        #         # 2. Email Notification
+        #         cls._send_registrar_new_case_email(registrar, case)
+        # except Exception as e:
+        #     logger.error(f"Failed to notify registrars for case {case.id}: {str(e)}")
 
     @classmethod
     def _send_registrar_new_case_email(cls, registrar, case):

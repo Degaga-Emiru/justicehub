@@ -45,6 +45,9 @@ urlpatterns = [
     path('api/', include('accounts.urls')),
     path('api/', include('core.urls')),
 
+    # 3. Admin and App APIs
+    path('admin/', admin.site.urls),
+    path('api/', include('accounts.urls')),
     path('api/cases/', include('cases.urls')),
     path('api/hearings/', include('hearings.urls')),
     path('api/decisions/', include('decisions.urls')),
@@ -64,7 +67,6 @@ urlpatterns = [
     # Optional: Redoc
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
-
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

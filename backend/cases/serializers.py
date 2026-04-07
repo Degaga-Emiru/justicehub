@@ -14,7 +14,7 @@ from notifications.services import create_notification
 class CaseCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseCategory
-        fields = ['id', 'name', 'description', 'code', 'is_active', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'code', 'fee', 'is_active', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
@@ -233,17 +233,20 @@ class CaseListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for case lists"""
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_code = serializers.CharField(source='category.code', read_only=True)
+    category_fee = serializers.DecimalField(source='category.fee', max_digits=10, decimal_places=2, read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     client_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    client_email = serializers.CharField(source='created_by.email', read_only=True)
     assigned_judge = serializers.SerializerMethodField()
     
     class Meta:
         model = Case
         fields = [
-            'id', 'title', 'file_number', 'category_name', 'category_code',
+            'id', 'title', 'description', 'file_number', 'category_name', 'category_code', 'category_fee',
             'status', 'status_display', 'priority', 'priority_display',
-            'client_name', 'assigned_judge', 'created_at'
+            'client_name', 'client_email', 'assigned_judge', 'created_at', 'defendant_name',
+            'rejection_reason'
         ]
 
     def get_assigned_judge(self, obj):
@@ -268,12 +271,14 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
+    # Optional free-text defendant name (used when defendant is not a registered user)
+    defendant_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Case
         fields = [
             'id', 'title', 'description', 'case_summary',
-            'category', 'priority', 'plaintiff', 'defendant',
+            'category', 'priority', 'plaintiff', 'defendant', 'defendant_name',
             'plaintiff_lawyer', 'defendant_lawyer',
             'documents', 'document_types'
         ]
@@ -281,26 +286,29 @@ class CaseCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get('request')
-        
-        # 1.1: Party Role Constraints
-        plaintiff = attrs.get('plaintiff')
-        defendant = attrs.get('defendant')
-        
-        # For citizens, they can only create cases for themselves as plaintiff
+
+        # For citizens, auto-assign themselves as plaintiff
         if request.user.role == 'CITIZEN':
             attrs['plaintiff'] = request.user
-            plaintiff = request.user
 
-        # 1.2: A case must have at least 1 Plaintiff and 1 Defendant
+        plaintiff = attrs.get('plaintiff')
+        defendant = attrs.get('defendant')
+        defendant_name = attrs.get('defendant_name', '')
+
         if not plaintiff:
             raise serializers.ValidationError("A case must have a Plaintiff.")
-        if not defendant:
-            raise serializers.ValidationError("A case must have a Defendant.")
 
-        # 1.1: Plaintiff and Defendant cannot be the same person
-        if plaintiff == defendant:
-            raise serializers.ValidationError("A person cannot be both Plaintiff and Defendant in the same case.")
-        
+        # Defendant must be provided as either a User FK or a free-text name
+        if not defendant and not defendant_name:
+            raise serializers.ValidationError(
+                "A case must have a Defendant (either a registered user or a defendant name)."
+            )
+
+        if defendant and plaintiff == defendant:
+            raise serializers.ValidationError(
+                "A person cannot be both Plaintiff and Defendant in the same case."
+            )
+
         return attrs
 
     @transaction.atomic
@@ -370,7 +378,7 @@ class CaseDetailSerializer(serializers.ModelSerializer):
             'id', 'case_number', 'title', 'description', 'case_summary',
             'category', 'status', 'status_display', 'priority', 'priority_display',
             'file_number', 'court_name', 'court_room',
-            'created_by', 'plaintiff', 'defendant',
+            'created_by', 'plaintiff', 'defendant', 'defendant_name',
             'plaintiff_lawyer', 'defendant_lawyer',
             'reviewed_by', 'reviewed_at', 'rejection_reason',
             'filing_date', 'closed_date', 'created_at', 'updated_at',

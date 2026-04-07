@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 import csv
-from weasyprint import HTML
+#from weasyprint import HTML
 from django.template.loader import render_to_string
 
 from .models import (
@@ -96,8 +96,6 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         if user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
             return self.queryset
-            return self.queryset
-            return self.queryset
         elif user.role == 'JUDGE':
             # Judges see only assigned cases
             return self.queryset.filter(
@@ -121,6 +119,11 @@ class CaseViewSet(viewsets.ModelViewSet):
         """
         # Handle multipart/form-data (file uploads)
         if request.content_type and 'multipart/form-data' in request.content_type:
+<<<<<<< HEAD
+            # Pass request.data directly – do NOT .copy() as it deep-copies
+            # file handles (BufferedRandom) which cannot be pickled.
+            serializer = self.get_serializer(data=request.data)
+=======
             # Create a mutable copy of request.data
             data = request.data
             
@@ -131,16 +134,11 @@ class CaseViewSet(viewsets.ModelViewSet):
             
             # Create serializer with the data
             serializer = self.get_serializer(data=data)
+>>>>>>> dcd84c36c12fceda971e17d9d8ca37e7337203ac
             serializer.is_valid(raise_exception=True)
             
-            # Save the case first
+            # Save the case (documents handled inside CaseCreateSerializer.create)
             self.perform_create(serializer)
-            
-            # Now handle document uploads if any
-            if documents:
-                case = serializer.instance
-                # Document creation is already handled by CaseCreateSerializer.create
-                # No need for manual creation here.
             
             headers = self.get_success_headers(serializer.data)
             # Return detailed serializer data

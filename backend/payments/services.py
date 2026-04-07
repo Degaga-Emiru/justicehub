@@ -285,6 +285,7 @@ class PaymentService:
         # 6. Auto Assign Judge
         JudgeAssignmentService.assign_judge(case, assigned_by=registrar)
 
+        # Notify user (if needed we can trigger another notification here)
         return payment
 
     @staticmethod

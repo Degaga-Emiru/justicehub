@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken
+from drf_spectacular.utils import extend_schema, OpenApiParameter # ✅ Added for Swagger support
 from rest_framework.parsers import MultiPartParser, FormParser
 
 import csv
@@ -28,6 +29,7 @@ from audit_logs.models import AuditLog
 from .permissions import IsAdmin
 from .utils import send_otp_email
 from .utils import send_password_change_notification, send_password_reset_confirmation
+
 class CitizenRegistrationView(generics.CreateAPIView):
     """Endpoint for citizens to register themselves."""
     queryset = User.objects.all()
@@ -39,7 +41,6 @@ class CitizenRegistrationView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
-        # Log User Created
         create_audit_log(
             request=request,
             action_type=AuditLog.ActionType.USER_CREATED,
@@ -65,7 +66,22 @@ class AdminCreateUserView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
-        # Log User Created
+        # Auto-create JudgeProfile for JUDGE users with specializations
+        if user.role == 'JUDGE':
+            from cases.models import JudgeProfile
+            profile, _ = JudgeProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'max_active_cases': 3,
+                    'is_active': True,
+                    'years_of_experience': 0,
+                }
+            )
+            # Set specializations from the request data
+            specialization_ids = getattr(user, '_specialization_ids', [])
+            if specialization_ids:
+                profile.specializations.set(specialization_ids)
+        
         create_audit_log(
             request=request,
             action_type=AuditLog.ActionType.USER_CREATED,
@@ -84,7 +100,9 @@ class AdminCreateUserView(generics.CreateAPIView):
 class VerifyOTPView(APIView):
     """Endpoint to verify OTP."""
     permission_classes = [permissions.AllowAny]
-    
+    serializer_class = VerifyOTPSerializer # ✅ Set for Swagger visibility
+
+    @extend_schema(request=VerifyOTPSerializer, responses={200: OpenApiParameter(name="message", type=str)})
     def post(self, request):
         serializer = VerifyOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -92,53 +110,41 @@ class VerifyOTPView(APIView):
         user = serializer.validated_data['user']
         purpose = serializer.validated_data['purpose']
         
-        # Update user status based on purpose
         if purpose == 'VERIFICATION':
             user.is_verified = True
             user.is_active = True
             user.save()
-            
-            return Response({
-                "message": "Email verified successfully. You can now login."
-            }, status=status.HTTP_200_OK)
+            return Response({"message": "Email verified successfully. You can now login."}, status=status.HTTP_200_OK)
         
         elif purpose == 'ACCOUNT_SETUP':
-            return Response({
-                "message": "OTP verified. Please set your password.",
-                "email": user.email
-            }, status=status.HTTP_200_OK)
+            return Response({"message": "OTP verified. Please set your password.", "email": user.email}, status=status.HTTP_200_OK)
         
         elif purpose == 'PASSWORD_RESET':
-            return Response({
-                "message": "OTP verified. Please reset your password.",
-                "email": user.email
-            }, status=status.HTTP_200_OK)
+            return Response({"message": "OTP verified. Please reset your password.", "email": user.email}, status=status.HTTP_200_OK)
 
 
 class ResendOTPView(APIView):
     """Endpoint to resend OTP."""
     permission_classes = [permissions.AllowAny]
-    
+    serializer_class = ResendOTPSerializer
+
+    @extend_schema(request=ResendOTPSerializer)
     def post(self, request):
         serializer = ResendOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        # OTP already sent in serializer validation
-        return Response({
-            "message": f"OTP resent successfully to {serializer.validated_data['email']}"
-        }, status=status.HTTP_200_OK)
+        return Response({"message": f"OTP resent successfully to {serializer.validated_data['email']}"}, status=status.HTTP_200_OK)
 
 
 class SetPasswordAfterOTPView(APIView):
     """Endpoint for users created by admin to set their password after OTP verification."""
     permission_classes = [permissions.AllowAny]
-    
+    serializer_class = SetPasswordAfterOTPSerializer
+
+    @extend_schema(request=SetPasswordAfterOTPSerializer, responses={200: TokenResponseSerializer})
     def post(self, request):
         serializer = SetPasswordAfterOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        
-        # Generate tokens for auto-login
         refresh = RefreshToken.for_user(user)
         
         return Response({
@@ -152,7 +158,13 @@ class SetPasswordAfterOTPView(APIView):
 class LoginView(APIView):
     """Endpoint for user login."""
     permission_classes = [permissions.AllowAny]
-    
+    serializer_class = LoginSerializer # ✅ Essential for Swagger fields to appear
+
+    @extend_schema(
+        request=LoginSerializer,
+        responses={200: TokenResponseSerializer},
+        description="Login with email and password to receive JWT tokens."
+    )
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
@@ -160,7 +172,6 @@ class LoginView(APIView):
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
         
-        # Log Login Success
         create_audit_log(
             request=request,
             action_type=AuditLog.ActionType.LOGIN,
@@ -177,75 +188,64 @@ class LoginView(APIView):
 
 class CustomTokenRefreshView(TokenRefreshView):
     """Custom token refresh view."""
-    
+    @extend_schema(responses={200: TokenResponseSerializer})
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        
         try:
             serializer.is_valid(raise_exception=True)
         except InvalidToken:
-            return Response({
-                "error": "Invalid or expired refresh token"
-            }, status=status.HTTP_401_UNAUTHORIZED)
-        
+            return Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
 class ForgotPasswordView(APIView):
     """Endpoint for forgot password - sends OTP."""
     permission_classes = [permissions.AllowAny]
-    
+    serializer_class = ForgotPasswordSerializer
+
+    @extend_schema(request=ForgotPasswordSerializer)
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        
-        # Note: OTP email is already sent in serializer.save()
-        # We don't send additional email here to avoid spam
-        
-        return Response({
-            "message": f"OTP sent to {user.email} for password reset. Please check your email."
-        }, status=status.HTTP_200_OK)
+        return Response({"message": f"OTP sent to {user.email} for password reset. Please check your email."}, status=status.HTTP_200_OK)
 
 class ResetPasswordView(APIView):
     """Endpoint to reset password using OTP."""
     permission_classes = [permissions.AllowAny]
-    
+    serializer_class = ResetPasswordSerializer
+
+    @extend_schema(request=ResetPasswordSerializer)
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         
-        # Send password reset confirmation email
         try:
             send_password_reset_confirmation(user)
         except Exception as e:
             print(f"Failed to send password reset confirmation: {e}")
         
-        return Response({
-            "message": "Password reset successful. A confirmation email has been sent to your registered email address. You can now login with your new password."
-        }, status=status.HTTP_200_OK)
+        return Response({"message": "Password reset successful."}, status=status.HTTP_200_OK)
 
 
 class ChangePasswordView(APIView):
     """Endpoint for authenticated users to change password."""
     permission_classes = [permissions.IsAuthenticated]
-    
+    serializer_class = ChangePasswordSerializer
+
+    @extend_schema(request=ChangePasswordSerializer)
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         
-        # Send password change notification email
         try:
             send_password_change_notification(request.user)
         except Exception as e:
-            # Log error but don't fail the request
             print(f"Failed to send password change notification: {e}")
         
-        return Response({
-            "message": "Password changed successfully. A confirmation email has been sent to your registered email address. Please login again with your new password."
-        }, status=status.HTTP_200_OK)
+        return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """Endpoint to get and update user profile."""
@@ -294,7 +294,6 @@ class UserListView(generics.ListAPIView):
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Endpoint for admin to manage specific user."""
-    serializer_class = UserProfileSerializer
     permission_classes = [IsAdmin]
     queryset = User.objects.all()
     lookup_field = 'id'
