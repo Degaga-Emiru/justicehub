@@ -9,11 +9,8 @@ router.register(r'categories', views.CaseCategoryViewSet, basename='case-categor
 router.register(r'judge-profiles', views.JudgeProfileViewSet, basename='judge-profile')
 router.register(r'citizen/documents', views.CitizenDocumentViewSet, basename='citizen-document')
 router.register(r'judge/documents', views.JudgeDocumentViewSet, basename='judge-document')
-router.register(r'', views.CaseViewSet, basename='case')
 
 urlpatterns = [
-    path('', include(router.urls)),
-    
     # Citizen Documents (Explicit patterns for nested paths)
     path('citizen/cases/<uuid:case_id>/documents/', views.CitizenDocumentViewSet.as_view({'get': 'list_by_case', 'post': 'upload_new'}), name='citizen-case-documents'),
     path('citizen/documents/versions/<uuid:version_id>/download/', views.CitizenDocumentViewSet.as_view({'get': 'download_version'}), name='citizen-version-download'),
@@ -39,8 +36,7 @@ urlpatterns = [
     path('statistics/case-type-distribution/', views.CaseTypeDistributionView.as_view(), name='case-type-distribution'),
     
     # 3. Put UUID paths NEXT
-    path('cases/<uuid:pk>/assign-judge/', views.AssignJudgeView.as_view(), name='assign-judge'),
-    path('cases/<uuid:pk>/timeline/', views.CaseTimelineView.as_view(), name='case-timeline'),
+    # (Removed duplicated paths to avoid collisions)
     
     # Export paths
     path('export/csv/', views.ExportCasesCSVView.as_view(), name='export-cases-csv'),

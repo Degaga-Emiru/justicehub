@@ -119,22 +119,9 @@ class CaseViewSet(viewsets.ModelViewSet):
         """
         # Handle multipart/form-data (file uploads)
         if request.content_type and 'multipart/form-data' in request.content_type:
-<<<<<<< HEAD
             # Pass request.data directly – do NOT .copy() as it deep-copies
             # file handles (BufferedRandom) which cannot be pickled.
             serializer = self.get_serializer(data=request.data)
-=======
-            # Create a mutable copy of request.data
-            data = request.data
-            
-            # Handle document files if they exist
-            documents = request.FILES.getlist('documents')
-            document_types = request.data.getlist('document_types', [])
-            document_descriptions = request.data.getlist('document_descriptions', [])
-            
-            # Create serializer with the data
-            serializer = self.get_serializer(data=data)
->>>>>>> dcd84c36c12fceda971e17d9d8ca37e7337203ac
             serializer.is_valid(raise_exception=True)
             
             # Save the case (documents handled inside CaseCreateSerializer.create)
