@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@import "tailwind-animate";
+@import "./tailwind-animate.css";
+
 
 :root {
   --background: oklch(0.99 0 0); /* Pure White */
