@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUsers, adminCreateUser, adminUpdateUser, adminDeleteUser, fetchCategories } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/components/language-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 export default function UserManagementPage() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -121,103 +123,178 @@ export default function UserManagementPage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{t("userManagement")}</h1>
-                    <p className="text-muted-foreground">{t("manageSystemAccess")}</p>
+        <div className="space-y-10 animate-fade-up">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{t("userManagement")}</h1>
+                    <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-primary" />
+                        {t("manageSystemAccess")}
+                    </p>
                 </div>
-                <Button onClick={() => setIsCreateOpen(true)}>
+                <Button 
+                    onClick={() => setIsCreateOpen(true)}
+                    className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 text-white"
+                >
                     <UserPlus className="mr-2 h-4 w-4" /> {t("addUser")}
                 </Button>
             </div>
 
-            <div className="relative max-w-sm">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder={t("searchUsers")}
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            {/* Controls */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full md:max-w-md group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                    <Input
+                        placeholder={t("searchUsers")}
+                        className="pl-11 h-12 bg-muted/30 border-white/5 rounded-2xl glass focus-visible:ring-primary/50 focus-visible:border-primary transition-all font-medium"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/20 border border-white/5">
+                    <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Directory size:</span>
+                    <span className="text-sm font-black text-foreground">{filteredUsers.length}</span>
+                </div>
             </div>
 
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[80px]">Avatar</TableHead>
-                            <TableHead>{t("fullName")}</TableHead>
-                            <TableHead>{t("email")}</TableHead>
-                            <TableHead>{t("role")}</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Join Date</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">{t("loadingUsers")}</TableCell>
-                            </TableRow>
-                        ) : filteredUsers.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell>
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarFallback>{user.first_name?.[0] || user.email?.[0]?.toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                </TableCell>
-                                <TableCell className="font-medium">{user.full_name}</TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>
-                                    <Badge variant="outline" className="capitalize">
-                                        {t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()) || user.role}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant={user.is_active !== false ? "default" : "secondary"} className={user.is_active !== false ? "bg-green-100 text-green-800 hover:bg-green-100" : "bg-red-100 text-red-800 hover:bg-red-100"}>
-                                        {user.is_active !== false ? "Active" : "Inactive"}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>{user.date_joined ? new Date(user.date_joined).toLocaleDateString() : "N/A"}</TableCell>
-                                <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => {
-                                                setRoleTarget(user);
-                                                setSelectedRole(user.role);
-                                                setRoleError("");
-                                                setIsRoleOpen(true);
-                                            }}>
-                                                <Shield className="mr-2 h-4 w-4" /> {t("changeRole")}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleToggleActive(user)}>
-                                                <Power className="mr-2 h-4 w-4" />
-                                                {user.is_active !== false ? "Deactivate" : "Activate"}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                className="text-destructive"
-                                                onClick={() => {
-                                                    setDeleteTarget(user);
-                                                    setDeleteError("");
-                                                    setIsDeleteOpen(true);
-                                                }}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" /> {t("deleteUser")}
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            {/* User Directory Table */}
+            <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-white/5">
+                                <TableRow className="border-white/5 hover:bg-transparent">
+                                    <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Identity</TableHead>
+                                    <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Contact Detail</TableHead>
+                                    <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Access Level</TableHead>
+                                    <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Security State</TableHead>
+                                    <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Timeline</TableHead>
+                                    <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="py-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-4">
+                                                <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                                                <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t("loadingUsers")}</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredUsers.length > 0 ? (
+                                    filteredUsers.map((user) => (
+                                        <TableRow key={user.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                            <TableCell className="pl-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative">
+                                                        <Avatar className="h-12 w-12 rounded-2xl border-2 border-white/10 group-hover:border-primary/50 transition-colors shadow-xl">
+                                                            <AvatarFallback className="bg-gradient-to-br from-muted to-muted/50 text-foreground font-black text-lg">
+                                                                {user.first_name?.[0] || user.email?.[0]?.toUpperCase()}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        {user.is_active !== false && (
+                                                            <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-background ring-1 ring-emerald-500/20" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{user.full_name}</span>
+                                                        <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">ID: #{user.id.slice(0, 8)}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-sm font-medium text-muted-foreground">{user.email}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="px-3 py-1 rounded-lg border-white/10 bg-muted/30 font-black text-[10px] uppercase tracking-widest group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                                    {t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()) || user.role}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={cn("h-2 w-2 rounded-full", user.is_active !== false ? "bg-emerald-500 shadow-lg shadow-emerald-500/50" : "bg-rose-500")} />
+                                                    <span className={cn("text-xs font-black uppercase tracking-tighter", user.is_active !== false ? "text-emerald-500" : "text-rose-500")}>
+                                                        {user.is_active !== false ? "Authorized" : "Revoked"}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-xs font-bold text-muted-foreground/80">{user.date_joined ? new Date(user.date_joined).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "—"}</span>
+                                            </TableCell>
+                                            <TableCell className="text-right pr-8">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                                            <MoreHorizontal className="h-5 w-5" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[200px]">
+                                                        <div className="px-3 py-2 border-b border-white/5 mb-1">
+                                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Command Panel</p>
+                                                        </div>
+                                                        <DropdownMenuItem 
+                                                            className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-3 cursor-pointer transition-colors"
+                                                            onSelect={() => {
+                                                                setTimeout(() => {
+                                                                    setRoleTarget(user);
+                                                                    setSelectedRole(user.role);
+                                                                    setRoleError("");
+                                                                    setIsRoleOpen(true);
+                                                                }, 0);
+                                                            }}
+                                                        >
+                                                            <Shield className="h-4 w-4 text-blue-500" /> {t("changeRole")}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-3 cursor-pointer transition-colors"
+                                                            onSelect={() => {
+                                                                setTimeout(() => {
+                                                                    handleToggleActive(user);
+                                                                }, 0);
+                                                            }}
+                                                        >
+                                                            <Power className={cn("h-4 w-4", user.is_active !== false ? "text-rose-500" : "text-emerald-500")} />
+                                                            {user.is_active !== false ? "Suspend Access" : "Restore Access"}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-3 cursor-pointer focus:bg-rose-500/10 focus:text-rose-500 transition-colors"
+                                                            onSelect={() => {
+                                                                setTimeout(() => {
+                                                                    setDeleteTarget(user);
+                                                                    setDeleteError("");
+                                                                    setIsDeleteOpen(true);
+                                                                }, 0);
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-rose-500" /> {t("deleteUser")}
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="py-32 text-center">
+                                            <div className="flex flex-col items-center justify-center space-y-4">
+                                                <div className="h-20 w-20 rounded-[2.5rem] bg-muted/10 flex items-center justify-center border border-white/5 rotate-12 shadow-inner">
+                                                    <Search className="h-10 w-10 text-muted-foreground/20" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-xl font-black font-display text-foreground">No matches found</p>
+                                                    <p className="text-sm font-medium text-muted-foreground">Try adjusting your search criteria.</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Create User Dialog */}
             <Dialog open={isCreateOpen} onOpenChange={(open) => {

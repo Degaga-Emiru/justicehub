@@ -207,6 +207,54 @@ class PaymentService:
             logging.getLogger(__name__).error(f"Automatic judge assignment failed after payment: {str(e)}")
             # Fail gracefully, registrar can manually assign if needed.
 
+        return payment
+
+    @staticmethod
+    @transaction.atomic
+    def submit_bank_transfer(case_id, user, transaction_reference, sender_name, bank_name, transaction_date=None, amount=None):
+        """Citizens submit bank transfer proof — creates a PENDING payment for registrar review"""
+        try:
+            case = Case.objects.select_related('category').get(id=case_id)
+        except Case.DoesNotExist:
+            raise ValidationError("Case not found.")
+
+        if case.status != CaseStatus.APPROVED:
+            raise ValidationError(f"Payment can only be submitted for APPROVED cases. Current status: {case.status}")
+
+        if Payment.objects.filter(case=case, status=Payment.Status.SUCCESS).exists():
+            raise ValidationError("This case has already been paid successfully.")
+
+        fee = case.category.fee
+        payment_amount = amount if amount else fee
+
+        payment, created = Payment.objects.update_or_create(
+            case=case,
+            defaults={
+                'user': user,
+                'amount': payment_amount,
+                'tx_ref': transaction_reference,
+                'status': Payment.Status.PENDING,
+                'payment_method': 'BANK_TRANSFER',
+                'notes': f"Bank: {bank_name} | Sender: {sender_name} | Date: {transaction_date or 'N/A'}",
+            }
+        )
+
+        # Case stays APPROVED with payment_status=NOT_PAID until registrar confirms the transfer
+
+        # Notify registrars that a payment needs verification
+        from accounts.models import User
+        registrars = User.objects.filter(role='REGISTRAR', is_active=True)
+        for registrar in registrars:
+            create_notification(
+                user=registrar,
+                type='PAYMENT_RECEIVED',
+                title='Bank Transfer Submitted',
+                message=f"Citizen {user.get_full_name()} submitted bank transfer proof for case {case.file_number or case.title}. Reference: {transaction_reference}. Please verify.",
+                case=case
+            )
+
+        return payment
+
     @staticmethod
     @transaction.atomic
     def manual_confirm_payment(case_id, amount, reference_number, transaction_id, registrar, notes=None):

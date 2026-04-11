@@ -16,38 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from drf_yasg.views import get_schema_view
-from drf_yasg import openapi
-from rest_framework import permissions
 from django.conf import settings
-from django.conf.urls.static import static  # ✅ REQUIRED
+from django.conf.urls.static import static
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Justice Hub API",
-        default_version='v1',
-        description="API for Justice Hub Judicial Service Platform",
-        terms_of_service="https://www.justicehub.com/terms/",
-        contact=openapi.Contact(email="support@justicehub.com"),
-        license=openapi.License(name="BSD License"),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny],
-)
-
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('api/', include('accounts.urls')),
     path('api/', include('core.urls')),
 
-    # 3. Admin and App APIs
+    # Admin and App APIs
     path('admin/', admin.site.urls),
-    path('api/', include('accounts.urls')),
     path('api/cases/', include('cases.urls')),
     path('api/hearings/', include('hearings.urls')),
     path('api/decisions/', include('decisions.urls')),

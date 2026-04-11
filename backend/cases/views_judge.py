@@ -72,7 +72,13 @@ class JudgeCaseListView(generics.ListAPIView):
             judge=judge, is_active=True
         ).values_list('case_id', flat=True)
         
-        queryset = Case.objects.filter(id__in=assigned_case_ids)
+        queryset = Case.objects.filter(
+            id__in=assigned_case_ids
+        ).select_related(
+            'category', 'created_by', 'plaintiff', 'defendant'
+        ).prefetch_related(
+            'documents', 'documents__versions'
+        )
         
         status_filter = self.request.query_params.get('status')
         if status_filter:

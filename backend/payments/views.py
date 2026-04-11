@@ -87,18 +87,56 @@ class PaymentRetryView(views.APIView):
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class PaymentListView(generics.ListAPIView):
-    """Admin endpoint to list all payments"""
-    permission_classes = [IsAuthenticated, IsAdminUser]
-    queryset = Payment.objects.all().order_by('-created_at')
-    serializer_class = PaymentSerializer
-
 class IsRegistrarOrAdmin(IsAuthenticated):
     """Permission class for Registrars and Admins"""
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
         return getattr(request.user, 'role', '') in ['REGISTRAR', 'ADMIN', 'CLERK']
+
+
+class PaymentListView(generics.ListAPIView):
+    """Admin/Registrar/Clerk endpoint to list all payments"""
+    permission_classes = [IsRegistrarOrAdmin]
+    queryset = Payment.objects.all().select_related('case', 'user').order_by('-created_at')
+    serializer_class = PaymentSerializer
+
+
+class BankTransferSubmitView(views.APIView):
+    """Endpoint for Citizens to submit bank transfer proof"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .serializers import BankTransferSubmissionSerializer
+        serializer = BankTransferSubmissionSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                payment = PaymentService.submit_bank_transfer(
+                    case_id=serializer.validated_data['case_id'],
+                    user=request.user,
+                    transaction_reference=serializer.validated_data['transaction_reference'],
+                    sender_name=serializer.validated_data['sender_name'],
+                    bank_name=serializer.validated_data['bank_name'],
+                    transaction_date=serializer.validated_data.get('transaction_date'),
+                    amount=serializer.validated_data.get('amount'),
+                )
+                return Response({
+                    "message": "Bank transfer details submitted successfully. A registrar will verify your payment.",
+                    "data": {
+                        "case_id": str(payment.case.id),
+                        "amount": float(payment.amount),
+                        "tx_ref": payment.tx_ref,
+                        "status": payment.status,
+                    }
+                }, status=status.HTTP_201_CREATED)
+            except ValidationError as e:
+                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return Response({"error": "Failed to submit bank transfer details."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ManualPaymentConfirmationView(views.APIView):
     """Endpoint for Registrars to confirm manual bank payments"""

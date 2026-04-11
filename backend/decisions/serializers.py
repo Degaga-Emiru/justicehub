@@ -112,25 +112,7 @@ class DecisionSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"immediate_reason": "Reason is required for immediate decisions."})
             if not attrs.get('description') and not (self.instance and self.instance.description):
                 raise serializers.ValidationError({"description": "Description is required for immediate decisions."})
-        else:
-            # For all other types, introduction, background, analysis, conclusion, order are mandatory
-            required_fields = ['introduction', 'background', 'analysis', 'conclusion', 'order']
-            errors = {}
-            for field in required_fields:
-                if not attrs.get(field) and not (self.instance and getattr(self.instance, field)):
-                    errors[field] = f"{field.capitalize()} is required for this decision type."
-            if errors:
-                raise serializers.ValidationError(errors)
 
-        # Check for at least one conducted (COMPLETED) hearing
-        conducted_hearing_exists = Hearing.objects.filter(
-            case=case,
-            status=Hearing.HearingStatus.COMPLETED
-        ).exists()
-        
-        if not conducted_hearing_exists:
-            raise serializers.ValidationError("A decision cannot be issued unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
-        
         return attrs
     
     def create(self, validated_data):
@@ -204,10 +186,10 @@ class ImmediateDecisionSerializer(serializers.Serializer):
         # Check for conducted hearing
         conducted_hearing_exists = Hearing.objects.filter(
             case=case,
-            status=Hearing.HearingStatus.COMPLETED
+            status=Hearing.HearingStatus.CONDUCTED
         ).exists()
         
         if not conducted_hearing_exists:
-            raise serializers.ValidationError("An immediate decision cannot be issued unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
+            raise serializers.ValidationError("An immediate decision cannot be issued unless at least one hearing for the case has been conducted.")
             
         return attrs

@@ -3,10 +3,12 @@ from .views import (
     PaymentInitiateView, PaymentCallbackView, 
     PaymentVerifyView, PaymentByCaseView, 
     PaymentRetryView, PaymentListView,
-    ManualPaymentConfirmationView
+    ManualPaymentConfirmationView,
+    BankTransferSubmitView
 )
 
 urlpatterns = [
+    path('bank-transfer-submit/', BankTransferSubmitView.as_view(), name='payment-bank-transfer-submit'),
     path('manual-confirm/', ManualPaymentConfirmationView.as_view(), name='payment-manual-confirm'),
     path('initiate/<uuid:case_id>/', PaymentInitiateView.as_view(), name='payment-initiate'),
     path('callback/', PaymentCallbackView.as_view(), name='payment-callback'),

@@ -59,11 +59,11 @@ class DecisionWorkflowService:
         # Check for conducted hearing
         conducted_hearing_exists = Hearing.objects.filter(
             case=decision.case,
-            status=Hearing.HearingStatus.COMPLETED
+            status=Hearing.HearingStatus.CONDUCTED
         ).exists()
         
         if not conducted_hearing_exists:
-            raise BusinessLogicError("A decision cannot be finalized unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
+            raise BusinessLogicError("A decision cannot be finalized unless at least one hearing for the case has been conducted.")
 
         with transaction.atomic():
             decision.status = Decision.DecisionStatus.FINALIZED
@@ -282,11 +282,11 @@ class DecisionWorkflowService:
         # 1. Validation for conducted hearing (already done in serializer but double check)
         conducted_hearing_exists = Hearing.objects.filter(
             case=case,
-            status=Hearing.HearingStatus.COMPLETED
+            status=Hearing.HearingStatus.CONDUCTED
         ).exists()
         
         if not conducted_hearing_exists:
-            raise BusinessLogicError("An immediate decision cannot be issued unless at least one hearing for the case is marked as 'conducted' (COMPLETED).")
+            raise BusinessLogicError("An immediate decision cannot be issued unless at least one hearing for the case has been conducted.")
 
         with transaction.atomic():
             # 2. Create Decision

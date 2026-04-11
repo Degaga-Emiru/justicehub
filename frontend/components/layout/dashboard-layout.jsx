@@ -4,11 +4,12 @@ import { Sidebar, SidebarContent } from "@/components/layout/sidebar";
 import { useAuthStore } from "@/store/auth-store";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Search, Menu, X } from "lucide-react";
+import { Bell, Search, Menu, X, Scale } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/components/language-provider";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 const roleMenus = {
     client: [
@@ -35,7 +36,6 @@ export function DashboardLayout({ children }) {
     const { user, isAuthenticated, logout } = useAuthStore();
     const router = useRouter();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
     const { t } = useLanguage();
 
     useEffect(() => {
@@ -46,88 +46,97 @@ export function DashboardLayout({ children }) {
 
     if (!isAuthenticated || !user) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="animate-pulse flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/20" />
-                    <p className="text-sm text-muted-foreground">{t("loading")}</p>
+            <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
+                <div className="absolute inset-0 bg-primary/5 -z-10 blur-[100px]"></div>
+                <div className="flex flex-col items-center gap-6 animate-pulse">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-xl shadow-primary/20 flex items-center justify-center">
+                         <Scale className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="text-sm font-black text-primary uppercase tracking-[0.2em] font-display">{t("loading")}</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background font-sans selection:bg-primary/20">
             <Sidebar />
 
             {/* Mobile Sidebar Overlay */}
             {mobileMenuOpen && (
                 <div className="fixed inset-0 z-50 md:hidden">
                     <div
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity duration-500"
                         onClick={() => setMobileMenuOpen(false)}
                     />
-                    <div className="fixed inset-y-0 left-0 z-50 w-64 bg-sidebar-background shadow-xl animate-slide-in">
+                    <div className="fixed inset-y-0 left-0 z-50 w-72 bg-[#0f172a] shadow-2xl animate-in slide-in-from-left duration-500">
                         <MobileSidebarContent user={user} logout={logout} onClose={() => setMobileMenuOpen(false)} />
                     </div>
                 </div>
             )}
 
             {/* Main content area */}
-            <div className="md:pl-64 transition-all duration-300 flex flex-col min-h-screen">
-                {/* Top bar */}
-                <header className="sticky top-0 z-30 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6">
-                    <div className="flex items-center gap-4 flex-1">
-                        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
-                            <Menu className="h-5 w-5" />
+            <div className="md:pl-72 transition-all duration-500 flex flex-col min-h-screen relative">
+                {/* Background Decoration */}
+                <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-primary/5 to-transparent -z-10 pointer-events-none"></div>
+
+                {/* Top bar - Glass Effect */}
+                <header className="sticky top-0 z-30 h-20 border-b border-border/40 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40 flex items-center justify-between px-6 md:px-10">
+                    <div className="flex items-center gap-6 flex-1">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="md:hidden hover:bg-primary/10 hover:text-primary transition-all rounded-xl" 
+                            onClick={() => setMobileMenuOpen(true)}
+                        >
+                            <Menu className="h-6 w-6" />
                         </Button>
-                        <div className="relative max-w-md w-full hidden sm:block">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        
+                        <div className="relative max-w-md w-full hidden sm:block group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                             <Input
                                 placeholder={t("searchCasesDocs")}
-                                className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
+                                className="h-11 pl-11 bg-muted/30 border-white/5 rounded-2xl focus-visible:ring-primary/20 focus-visible:bg-muted/50 transition-all font-medium text-sm"
                             />
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" className="relative">
-                            <Bell className="h-5 w-5 text-muted-foreground" />
-                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-                                3
-                            </span>
-                        </Button>
+                    <div className="flex items-center gap-6">
+                        <NotificationBell />
 
-                        <div className="h-8 w-px bg-border hidden sm:block" />
+                        <div className="h-10 w-px bg-border/40 hidden sm:block" />
 
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs font-normal capitalize hidden sm:flex">
-                                {user.role}
-                            </Badge>
-                            <div className="sm:hidden h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                                {user.avatar}
+                        <div className="flex items-center gap-3">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-xs font-black text-foreground font-display uppercase tracking-wider">{user.name}</p>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{user.role}</p>
                             </div>
+                            <Badge variant="outline" className="h-10 w-10 p-0 flex items-center justify-center rounded-2xl border-primary/20 bg-primary/5 text-primary text-xs font-black shadow-sm transform hover:scale-105 transition-transform cursor-default">
+                                {user.avatar || user.name?.charAt(0)}
+                            </Badge>
                         </div>
                     </div>
                 </header>
 
                 {/* Page content */}
-                <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+                <main className="flex-1 p-6 md:p-10 lg:p-12 animate-in fade-in slide-in-from-bottom-2 duration-700">
                     {children}
                 </main>
+
+                <footer className="py-8 px-10 border-t border-border/40 text-center">
+                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.2em] font-display">
+                        © {new Date().getFullYear()} JusticeHub Global Platform • Secure Infrastructure
+                    </p>
+                </footer>
             </div>
         </div>
     );
 }
 
-// Helper to render sidebar content with roleMenus duplication workaround
-// Since I can't import roleMenus, I will define it here or import it if I export it.
-// I will import SidebarContent. But I need to pass menuItems.
-// I'll copy the roleMenus structure here for simplicity to avoid another file edit cycle, 
-// or I can assume I can import it if I did export it. I didn't export it in previous step.
-// I'll Duplicate roleMenus here. Cons: Duplication. Pros: Works now.
-
+// Mobile sidebar logic integration
+import { usePathname as usePathnameHook } from "next/navigation";
 import {
-    LayoutDashboard, FileText, Calendar, Upload, Gavel, Settings, Users, BarChart3, ClipboardList, CreditCard, FilePlus
+    LayoutDashboard, FileText, Calendar, Gavel, Users, BarChart3, ClipboardList, CreditCard, FilePlus
 } from "lucide-react";
 
 const mobileRoleMenus = {
@@ -142,72 +151,59 @@ const mobileRoleMenus = {
         { key: "navSearch", href: "/dashboard/judge/search", icon: Search },
         { key: "navDecisions", href: "/dashboard/judge/decisions", icon: Gavel },
     ],
-    registrar: [
-        { key: "navDashboard", href: "/dashboard/registrar", icon: ClipboardList },
-        { key: "navPayments", href: "/dashboard/registrar/payments", icon: CreditCard },
-        { key: "navFiles", href: "/dashboard/registrar/file-creation", icon: FilePlus },
+    clerk: [
+        { key: "navDashboard", href: "/dashboard/clerk", icon: ClipboardList },
+        { key: "navPayments", href: "/dashboard/clerk/payments", icon: CreditCard },
+        { key: "navFiles", href: "/dashboard/clerk/file-creation", icon: FilePlus },
     ],
     admin: [
+        { key: "navDashboard", href: "/dashboard/admin/overview", icon: LayoutDashboard },
         { key: "navUsers", href: "/dashboard/admin", icon: Users },
+        { key: "navCases", href: "/dashboard/admin/cases", icon: FileText },
         { key: "navReports", href: "/dashboard/admin/reports", icon: BarChart3 },
     ],
 };
 
 function MobileSidebarContent({ user, logout, onClose }) {
-    const roleLabel = user.role.charAt(0).toUpperCase() + user.role.slice(1);
     const { t } = useLanguage();
-
+    const pathname = usePathnameHook();
+    
     const roleMap = {
-        "CITIZEN": "client",
-        "LAWYER": "client",
-        "CLERK": "client",
-        "DEFENDANT": "client",
-        "JUDGE": "judge",
-        "REGISTRAR": "registrar",
-        "ADMIN": "admin"
+        'CITIZEN': 'client',
+        'DEFENDANT': 'client',
+        'LAWYER': 'client',
+        'JUDGE': 'judge',
+        'CLERK': 'clerk',
+        'ADMIN': 'admin'
     };
     
     const normalizedRole = roleMap[user.role?.toUpperCase()] || user.role?.toLowerCase() || "client";
-
-    // Map keys to actual labels
     const menuItems = (mobileRoleMenus[normalizedRole] || []).map(item => ({
         ...item,
         label: t(item.key)
     }));
-    // We need usePathname here too
-    const pathnameOriginal = useRouter().pathname; // next/navigation doesn't have pathname in router? usePathname hook needed.
-    // I need to use usePathname hook in this component or pass it.
-    // Let's passed it from parent or use hook.
-    // Hook cannot be used in standard function unless it's a component. This IS a component.
-    // But I need to import usePathname. I did import useRouter, but not usePathname in the replacement block?
-    // I see `import { useRouter } from "next/navigation";` in my replacement. 
-    // I should also import `usePathname`.
-
-    // Wait, I can't add imports easily in `replace_file_content`.
-    // I should use `SidebarContent` logic.
-    // I will try to use `SidebarContent` component I imported!
-    // But `SidebarContent` needs `menuItems`.
-    // So I will pass `menuItems` from `mobileRoleMenus`.
-
-    // I need `usePathname` for `SidebarContent` prop `pathname`.
-    // I will add `usePathname` to the imports at the top using `multi_replace`.
-    // Wait, `replace_file_content` replaces a block. I can replace the whole file or a large chunk.
+    const roleLabel = user.role.charAt(0).toUpperCase() + user.role.slice(1);
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="absolute top-4 right-4 z-50 md:hidden">
-                <Button variant="ghost" size="icon" className="text-sidebar-foreground" onClick={onClose}>
-                    <X className="h-5 w-5" />
+        <div className="flex flex-col h-full bg-[#0f172a] relative overflow-hidden">
+            {/* Background Decorative Mesh */}
+            <div className="absolute top-0 right-0 w-full h-[50%] bg-primary/10 rounded-full blur-[80px] -z-10 pointer-events-none opacity-50"></div>
+            
+            <div className="absolute top-6 right-6 z-50 md:hidden">
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all" onClick={onClose}>
+                    <X className="h-6 w-6" />
                 </Button>
             </div>
+            
             <SidebarContent
                 user={user}
                 logout={logout}
                 collapsed={false}
                 roleLabel={roleLabel}
                 menuItems={menuItems}
-                pathname={window.location.pathname} // Hacky? No, usePathname is better.
+                pathname={pathname}
                 onLinkClick={onClose}
+                menuRole={normalizedRole}
             />
         </div>
     );

@@ -60,13 +60,6 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     # For users created by admin (Lawyer, Judge, Clerk, Defendant)
     is_password_set = models.BooleanField(default=False)
     
-    # Audit and Status Fields (Missing in model but present in DB)
-    is_deleted = models.BooleanField(default=False)
-    deleted_at = models.DateTimeField(null=True, blank=True)
-    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
-    login_count = models.PositiveIntegerField(default=0)
-    status_reason = models.TextField(null=True, blank=True)
-    
     objects = CustomUserManager()
     
     USERNAME_FIELD = 'email'

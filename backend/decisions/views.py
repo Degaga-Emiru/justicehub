@@ -7,7 +7,7 @@ from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Count, Q
-from django.db import transaction
+from django.db import transaction, models
 from datetime import timedelta
 
 from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment
