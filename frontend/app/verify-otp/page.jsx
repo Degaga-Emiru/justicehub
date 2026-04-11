@@ -89,63 +89,83 @@ function VerifyOTPContent() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-muted/30 p-6">
-            <Card className="w-full max-w-md mx-auto shadow-2xl border-primary/10">
-                <CardHeader className="space-y-1 items-center text-center">
-                    <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mb-2 shadow-inner">
-                        <ShieldCheck className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight text-primary">
-                        {t("verifyOTP")}
-                    </CardTitle>
-                    <CardDescription>
-                        {t("otpSentTo")} <span className="font-medium text-foreground">{emailParam}</span>
-                    </CardDescription>
-                </CardHeader>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <CardContent className="space-y-4">
-                        {error && (
-                            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md text-center">
-                                {error}
-                            </div>
-                        )}
-                        {success && (
-                            <div className="bg-green-100 text-green-800 text-sm p-3 rounded-md text-center">
-                                {success}
-                            </div>
-                        )}
+        <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-6 font-sans">
+            {/* Background Mesh Gradients */}
+            <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-30 dark:opacity-20 pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow"></div>
+                <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[120px]"></div>
+            </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="otp">{t("enterOTP")}</Label>
-                            <Input
-                                id="otp"
-                                type="text"
-                                maxLength={6}
-                                placeholder="123456"
-                                className="text-center text-2xl tracking-[0.5em] font-bold"
-                                {...register("otp")}
-                            />
-                            {errors.otp && <p className="text-xs text-destructive text-center">{errors.otp.message}</p>}
+            <div className="w-full max-w-md relative group animate-fade-up">
+                {/* Background Glow Effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary to-blue-600 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
+
+                <Card className="relative glass-card border-white/20 dark:border-white/10 rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-primary/5">
+                    <CardHeader className="space-y-4 items-center text-center pb-8 pt-10 px-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center mb-2 shadow-lg shadow-primary/20 transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                            <ShieldCheck className="h-8 w-8 text-white" />
                         </div>
-                    </CardContent>
-                    <CardFooter className="flex flex-col gap-4">
-                        <Button className="w-full" type="submit" disabled={isLoading}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {t("verify")}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="w-full text-xs"
-                            type="button"
-                            onClick={handleResend}
-                            disabled={isResending}
-                        >
-                            {isResending && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-                            {t("resendOTP")}
-                        </Button>
-                    </CardFooter>
-                </form>
-            </Card>
+                        <div className="space-y-1">
+                            <CardTitle className="text-3xl font-black font-display tracking-tight text-foreground">
+                                {t("verifyOTP")}
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground font-medium text-base">
+                                {t("otpSentTo")} <br /> 
+                                <span className="font-bold text-primary mt-1 inline-block">{emailParam}</span>
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <CardContent className="space-y-6 px-8">
+                            {error && (
+                                <div className="bg-destructive/10 text-destructive text-sm font-bold p-4 rounded-xl text-center glass border border-destructive/20 animate-in fade-in slide-in-from-top-2">
+                                    {error}
+                                </div>
+                            )}
+                            {success && (
+                                <div className="bg-emerald-500/10 text-emerald-600 text-sm font-bold p-4 rounded-xl text-center glass border border-emerald-500/20">
+                                    {success}
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <Label htmlFor="otp" className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80 ml-1">{t("enterOTP")}</Label>
+                                <Input
+                                    id="otp"
+                                    type="text"
+                                    maxLength={6}
+                                    placeholder="0 0 0 0 0 0"
+                                    className="h-20 text-center text-4xl tracking-[0.2em] font-black font-display bg-background/50 border-white/20 rounded-2xl focus:ring-4 focus:ring-primary/10 transition-all shadow-inner"
+                                    {...register("otp")}
+                                />
+                                {errors.otp && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight text-center mt-1">{errors.otp.message}</p>}
+                            </div>
+                        </CardContent>
+                        <CardFooter className="flex flex-col gap-6 px-8 pb-10 pt-6">
+                            <Button className="w-full h-14 rounded-xl font-bold bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-primary/40 active:scale-[0.98] text-white" type="submit" disabled={isLoading}>
+                                {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                                {t("verify")}
+                            </Button>
+                            
+                            <div className="w-full flex justify-center">
+                                <Button
+                                    variant="ghost"
+                                    className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary hover:bg-transparent transition-colors px-0 group/resend"
+                                    type="button"
+                                    onClick={handleResend}
+                                    disabled={isResending}
+                                >
+                                    {isResending ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <span className="group-hover/resend:underline underline-offset-4">{t("resendOTP")}</span>
+                                    )}
+                                </Button>
+                            </div>
+                        </CardFooter>
+                    </form>
+                </Card>
+            </div>
         </div>
     );
 }

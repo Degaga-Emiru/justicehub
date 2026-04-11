@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { statusColors } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, FileCheck, XCircle, Eye, FileText, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -107,133 +108,158 @@ export default function ClerkDashboard() {
     const activeCount = allCases?.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(c.status)).length || 0;
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Case Review Queue</h1>
-                <p className="text-muted-foreground">Review incoming case filings, accept or reject them.</p>
+        <div className="space-y-10 animate-fade-up">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Registry Command</h1>
+                    <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-primary" />
+                        Administrative review and oversight
+                    </p>
+                </div>
             </div>
 
-            {/* Status Overview Cards */}
-            <div className="grid md:grid-cols-4 gap-4">
-                <Card className="bg-yellow-50/50 border-yellow-100 dark:bg-yellow-900/10 dark:border-yellow-800">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-yellow-600" />
-                            Pending Review
-                        </CardTitle>
+            {/* Status Overview Cards - Premium Glass Edition */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="glass-card hover:border-amber-500/30 transition-all duration-500 overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-amber-500/10 transition-colors" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Pending Review</CardTitle>
+                        <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                            <FileText className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{pendingCases?.length || 0}</div>
+                        <div className="text-4xl font-black font-display text-foreground">{pendingCases?.length || 0}</div>
+                        <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-tight mt-1">Awaiting attention</p>
                     </CardContent>
                 </Card>
-                <Card className="bg-blue-50/50 border-blue-100 dark:bg-blue-900/10 dark:border-blue-800">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-blue-600" />
-                            Awaiting Payment
-                        </CardTitle>
+
+                <Card className="glass-card hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Awaiting Payment</CardTitle>
+                        <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                            <CheckCircle className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{approvedCount}</div>
+                        <div className="text-4xl font-black font-display text-foreground">{approvedCount}</div>
+                        <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-tight mt-1">Approved pipeline</p>
                     </CardContent>
                 </Card>
-                <Card className="bg-teal-50/50 border-teal-100 dark:bg-teal-900/10 dark:border-teal-800">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <FileCheck className="h-4 w-4 text-teal-600" />
-                            Paid
-                        </CardTitle>
+
+                <Card className="glass-card hover:border-teal-500/30 transition-all duration-500 overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-teal-500/10 transition-colors" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Paid Assets</CardTitle>
+                        <div className="h-10 w-10 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center">
+                            <FileCheck className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{paidCount}</div>
+                        <div className="text-4xl font-black font-display text-foreground">{paidCount}</div>
+                        <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-tight mt-1">Verified financial</p>
                     </CardContent>
                 </Card>
-                <Card className="bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-800">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4 text-green-600" />
-                            Active Cases
-                        </CardTitle>
+
+                <Card className="glass-card hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Active Lifecycle</CardTitle>
+                        <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                            <AlertCircle className="h-5 w-5" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{activeCount}</div>
+                        <div className="text-4xl font-black font-display text-foreground">{activeCount}</div>
+                        <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-tight mt-1">In judicial process</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Tabs */}
-            <Tabs defaultValue="pending" className="w-full">
-                <TabsList className="mb-4">
-                    <TabsTrigger value="pending">Case Review</TabsTrigger>
-                    <TabsTrigger value="payments">Payments ({payments?.filter(p => p.status === 'PENDING').length || 0})</TabsTrigger>
-                    <TabsTrigger value="all">All Cases</TabsTrigger>
+            {/* Navigation Tabs - Modern Frosted Styled */}
+            <Tabs defaultValue="pending" className="w-full space-y-8">
+                <TabsList className="h-14 p-1.5 bg-muted/30 border border-white/5 rounded-2xl glass backdrop-blur-xl w-full lg:max-w-xl flex">
+                    <TabsTrigger value="pending" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
+                        Case Review
+                    </TabsTrigger>
+                    <TabsTrigger value="payments" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
+                        Payments ({payments?.filter(p => p.status === 'PENDING').length || 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="all" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
+                        Case Index
+                    </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="pending">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Pending Registrations</CardTitle>
-                            <CardDescription>Cases awaiting your review. Accept to proceed with payment, or reject with a reason.</CardDescription>
+                <TabsContent value="pending" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
+                        <CardHeader className="p-8 border-b border-white/5">
+                            <CardTitle className="text-2xl font-black font-display tracking-tight">Registration Queue</CardTitle>
+                            <CardDescription className="text-muted-foreground font-medium">Verify incoming filings and proceed with procedural intake.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-0">
                             {loadingPending ? (
-                                <div className="space-y-2">
-                                    {[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted rounded animate-pulse" />)}
+                                <div className="p-8 space-y-4">
+                                    {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted/20 rounded-xl animate-pulse" />)}
                                 </div>
                             ) : (
-                                <div className="rounded-md border">
+                                <div className="overflow-x-auto">
                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>File #</TableHead>
-                                                <TableHead>Case Title</TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>Fee</TableHead>
-                                                <TableHead>Filed On</TableHead>
-                                                <TableHead>Filed By</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
+                                        <TableHeader className="bg-white/5">
+                                            <TableRow className="border-white/5 hover:bg-transparent">
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Entry #</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Case Profile</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Categorization</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Filing Info</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Lifecycle</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Command</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {pendingCases && pendingCases.length > 0 ? (
                                                 pendingCases.map((c) => (
-                                                    <TableRow key={c.id}>
-                                                        <TableCell className="font-mono text-xs">{c.file_number || "—"}</TableCell>
-                                                        <TableCell>
-                                                            <div className="flex flex-col">
-                                                                <span className="font-medium">{c.title}</span>
-                                                                <span className="text-xs text-muted-foreground truncate max-w-[200px]">{c.description}</span>
+                                                    <TableRow key={c.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                                        <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number || "F-PENDING"}</TableCell>
+                                                        <TableCell className="py-6">
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{c.title}</span>
+                                                                <span className="text-xs font-medium text-muted-foreground/60 truncate max-w-[240px] italic">{c.description}</span>
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="text-xs">{c.category?.name || "—"}</TableCell>
-                                                        <TableCell className="text-xs font-medium">{c.category?.fee || c.category_fee || 0} ETB</TableCell>
-                                                        <TableCell className="text-xs">
-                                                            {c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}
-                                                        </TableCell>
-                                                        <TableCell className="text-xs">
-                                                            {c.created_by?.first_name ? `${c.created_by.first_name} ${c.created_by.last_name || ""}`.trim() : c.created_by?.email || "—"}
+                                                        <TableCell>
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="text-xs font-black uppercase tracking-widest">{c.category?.name || "UNSPECIFIED"}</span>
+                                                                <span className="text-[10px] font-bold text-primary">{c.category?.fee || c.category_fee || 0} ETB</span>
+                                                            </div>
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Badge className={statusColors[c.status] || "bg-gray-100 text-gray-800"}>
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="text-xs font-bold">{c.created_at ? new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "—"}</span>
+                                                                <span className="text-[10px] uppercase font-black tracking-tighter text-muted-foreground/50">
+                                                                    By: {c.created_by?.first_name ? `${c.created_by.first_name} ${c.created_by.last_name || ""}` : c.created_by?.email || "—"}
+                                                                </span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", statusColors[c.status])}>
                                                                 {STATUS_LABELS[c.status] || c.status}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell className="text-right">
+                                                        <TableCell className="text-right pr-8">
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                        <span className="sr-only">Open menu</span>
-                                                                        <MoreHorizontal className="h-4 w-4" />
+                                                                    <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                                                        <MoreHorizontal className="h-5 w-5" />
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end">
-                                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                                    <DropdownMenuItem onClick={() => handleAction(c, "accept")}>
-                                                                        <FileCheck className="mr-2 h-4 w-4 text-green-600" /> Accept Case
+                                                                <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[160px]">
+                                                                    <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-green-500/10 focus:text-green-500 transition-colors" onClick={() => handleAction(c, "accept")}>
+                                                                        <FileCheck className="h-4 w-4" /> Accept Entry
                                                                     </DropdownMenuItem>
-                                                                    <DropdownMenuItem onClick={() => handleAction(c, "reject")}>
-                                                                        <XCircle className="mr-2 h-4 w-4 text-red-600" /> Reject Case
+                                                                    <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-red-500/10 focus:text-red-500 transition-colors" onClick={() => handleAction(c, "reject")}>
+                                                                        <XCircle className="h-4 w-4" /> Decline Entry
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -242,8 +268,16 @@ export default function ClerkDashboard() {
                                                 ))
                                             ) : (
                                                 <TableRow>
-                                                    <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                                                        No pending cases found. All caught up! 🎉
+                                                    <TableCell colSpan={8} className="py-32 text-center">
+                                                        <div className="flex flex-col items-center justify-center space-y-4">
+                                                            <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-white/5 shadow-inner">
+                                                                <FileCheck className="h-10 w-10 text-muted-foreground/20" />
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <p className="text-xl font-black font-display text-foreground">Clear Registry</p>
+                                                                <p className="text-sm font-medium text-muted-foreground">All incoming filings have been processed.</p>
+                                                            </div>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             )}
@@ -255,44 +289,51 @@ export default function ClerkDashboard() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="payments">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Payments</CardTitle>
-                            <CardDescription>View all incoming payments. Payments automatically trigger case assignment upon submission.</CardDescription>
+                <TabsContent value="payments" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
+                        <CardHeader className="p-8 border-b border-white/5">
+                            <CardTitle className="text-2xl font-black font-display tracking-tight">Financial Audits</CardTitle>
+                            <CardDescription className="text-muted-foreground font-medium">Verify transaction receipts against case registrations.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-0">
                             {loadingPayments ? (
-                                <div className="space-y-2">
-                                    {[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted rounded animate-pulse" />)}
+                                <div className="p-8 space-y-4">
+                                    {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted/20 rounded-xl animate-pulse" />)}
                                 </div>
                             ) : (
-                                <div className="rounded-md border">
+                                <div className="overflow-x-auto">
                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>File #</TableHead>
-                                                <TableHead>Case Title</TableHead>
-                                                <TableHead>Amount</TableHead>
-                                                <TableHead>Reference</TableHead>
-                                                <TableHead>Submitted By</TableHead>
-                                                <TableHead>Date</TableHead>
-                                                <TableHead>Verification Status</TableHead>
+                                        <TableHeader className="bg-white/5">
+                                            <TableRow className="border-white/5 hover:bg-transparent">
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Transaction Detail</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Currency/Value</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Reference</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Authentication</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Status</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {payments && payments.length > 0 ? (
                                                 payments.map((p) => (
-                                                    <TableRow key={p.id}>
-                                                        <TableCell className="font-mono text-xs">{p.case_file_number || "—"}</TableCell>
-                                                        <TableCell className="text-xs font-medium max-w-[200px] truncate">{p.case_title || "—"}</TableCell>
-                                                        <TableCell className="text-xs font-bold">{p.amount} ETB</TableCell>
-                                                        <TableCell className="font-mono text-xs text-muted-foreground">{p.transaction_reference}</TableCell>
-                                                        <TableCell className="text-xs">{p.sender_name || p.user_name}</TableCell>
-                                                        <TableCell className="text-xs">{new Date(p.transaction_date || p.created_at).toLocaleDateString()}</TableCell>
+                                                    <TableRow key={p.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                                        <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{p.case_file_number || "—"}</TableCell>
+                                                        <TableCell className="py-6">
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="font-black font-display text-sm tracking-tight group-hover:text-primary transition-colors truncate max-w-[200px]">{p.case_title || "—"}</span>
+                                                                <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Date: {new Date(p.transaction_date || p.created_at).toLocaleDateString()}</span>
+                                                            </div>
+                                                        </TableCell>
                                                         <TableCell>
+                                                            <span className="text-base font-black font-display text-foreground">{p.amount} <span className="text-[10px] text-muted-foreground">ETB</span></span>
+                                                        </TableCell>
+                                                        <TableCell className="font-mono text-[11px] font-bold text-primary/70">{p.transaction_reference}</TableCell>
+                                                        <TableCell className="text-xs font-black uppercase tracking-tight text-muted-foreground/80">{p.sender_name || p.user_name}</TableCell>
+                                                        <TableCell className="text-right pr-8">
                                                             <Badge variant={p.status === 'VERIFIED' ? 'default' : p.status === 'FAILED' ? 'destructive' : 'secondary'}
-                                                                className={p.status === 'VERIFIED' ? 'bg-green-100 text-green-800' : ''}>
+                                                                className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", 
+                                                                    p.status === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-500' : 
+                                                                    p.status === 'FAILED' ? 'bg-rose-500/20 text-rose-500' : 'bg-muted/50 text-muted-foreground')}>
                                                                 {p.status}
                                                             </Badge>
                                                         </TableCell>
@@ -300,8 +341,8 @@ export default function ClerkDashboard() {
                                                 ))
                                             ) : (
                                                 <TableRow>
-                                                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                                                        No payments found.
+                                                    <TableCell colSpan={7} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
+                                                        No financial records found.
                                                     </TableCell>
                                                 </TableRow>
                                             )}
@@ -313,47 +354,49 @@ export default function ClerkDashboard() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="all">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>All Cases Master List</CardTitle>
-                            <CardDescription>Comprehensive view of all cases and their current status.</CardDescription>
+                <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
+                        <CardHeader className="p-8 border-b border-white/5">
+                            <CardTitle className="text-2xl font-black font-display tracking-tight">Master Repository</CardTitle>
+                            <CardDescription className="text-muted-foreground font-medium">Comprehensive index of all recorded legal proceedings.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="p-0">
                             {loadingAll ? (
-                                <div className="space-y-2">
-                                    {[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted rounded animate-pulse" />)}
+                                <div className="p-8 space-y-4">
+                                    {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted/20 rounded-xl animate-pulse" />)}
                                 </div>
                             ) : (
-                                <div className="rounded-md border">
+                                <div className="overflow-x-auto">
                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>File #</TableHead>
-                                                <TableHead>Case Title</TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>Filed On</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
+                                        <TableHeader className="bg-white/5">
+                                            <TableRow className="border-white/5 hover:bg-transparent">
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Jurisdiction</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Timeline</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Security State</TableHead>
+                                                <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Audit</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
                                             {allCases && allCases.length > 0 ? (
                                                 allCases.map((c) => (
-                                                    <TableRow key={c.id}>
-                                                        <TableCell className="font-mono text-xs">{c.file_number || "—"}</TableCell>
-                                                        <TableCell className="text-xs max-w-[250px] truncate">{c.title}</TableCell>
-                                                        <TableCell className="text-xs">{c.category?.name || c.category || "—"}</TableCell>
-                                                        <TableCell className="text-xs">{c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}</TableCell>
+                                                    <TableRow key={c.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                                        <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number || "—"}</TableCell>
+                                                        <TableCell className="py-6">
+                                                            <span className="font-black font-display text-sm tracking-tight group-hover:text-primary transition-colors truncate max-w-[280px] block">{c.title}</span>
+                                                        </TableCell>
+                                                        <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category?.name || c.category || "GENERAL"}</TableCell>
+                                                        <TableCell className="text-xs font-bold">{c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}</TableCell>
                                                         <TableCell>
-                                                            <Badge className={statusColors[c.status] || "bg-gray-100 text-gray-800"}>
+                                                            <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none px-2", statusColors[c.status])}>
                                                                 {STATUS_LABELS[c.status] || c.status}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <Button variant="outline" size="sm" asChild>
+                                                        <TableCell className="text-right pr-8">
+                                                            <Button variant="outline" size="sm" asChild className="h-9 px-4 rounded-xl border-white/10 glass text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all hover:text-white">
                                                                 <Link href={`/dashboard/clerk/cases/${c.id}`} className="flex items-center">
-                                                                    <Eye className="mr-2 h-4 w-4" /> View Docs
+                                                                    <Eye className="mr-2 h-4 w-4" /> Review
                                                                 </Link>
                                                             </Button>
                                                         </TableCell>
@@ -361,8 +404,8 @@ export default function ClerkDashboard() {
                                                 ))
                                             ) : (
                                                 <TableRow>
-                                                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                                        No cases found.
+                                                    <TableCell colSpan={6} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
+                                                        Repository index empty.
                                                     </TableCell>
                                                 </TableRow>
                                             )}

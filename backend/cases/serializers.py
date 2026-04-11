@@ -516,18 +516,32 @@ class JudgeDashboardSerializer(serializers.Serializer):
 
 
 class JudgeCaseSerializer(serializers.ModelSerializer):
-    """Serializer for judge-specific case list/detail"""
+    """Serializer for judge-specific case list/detail — includes documents and party info"""
+    category = CaseCategorySerializer(read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    plaintiff_name = serializers.SerializerMethodField()
+    documents = CaseDocumentSerializer(many=True, read_only=True)
+    document_count = serializers.IntegerField(source='documents.count', read_only=True)
     
     class Meta:
         model = Case
         fields = [
-            'id', 'title', 'file_number', 'category_name', 
+            'id', 'title', 'file_number', 'description',
+            'category', 'category_name',
             'status', 'status_display', 'priority', 'priority_display',
-            'created_at'
+            'court_name', 'court_room', 'filing_date',
+            'created_by_name', 'plaintiff_name', 'defendant_name',
+            'documents', 'document_count',
+            'created_at', 'updated_at'
         ]
+
+    def get_plaintiff_name(self, obj):
+        if obj.plaintiff:
+            return obj.plaintiff.get_full_name()
+        return obj.created_by.get_full_name() if obj.created_by else None
 
 class CaseActionRequestSerializer(serializers.ModelSerializer):
     """Serializer for CaseActionRequest"""

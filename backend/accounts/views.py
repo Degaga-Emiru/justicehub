@@ -6,13 +6,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken
-from drf_spectacular.utils import extend_schema, OpenApiParameter # ✅ Added for Swagger support
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.utils import timezone
 
 import csv
 import io
 import json
-from django.db.models import Count, Q
+from django.db.models import Count, Q, ProtectedError
 from django.http import HttpResponse
 from .models import User, OTP
 from .serializers import (
@@ -294,6 +295,7 @@ class UserListView(generics.ListAPIView):
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Endpoint for admin to manage specific user."""
+    serializer_class = UserAdminDetailSerializer
     permission_classes = [IsAdmin]
     queryset = User.objects.all()
     lookup_field = 'id'
@@ -306,10 +308,28 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdmin]
     lookup_field = 'id'
 
+
+
     def get_serializer_class(self):
         if self.action == 'list':
             return UserProfileSerializer
         return super().get_serializer_class()
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            self.perform_destroy(instance)
+            return Response({"detail": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        except ProtectedError:
+            return Response(
+                {"detail": "This user cannot be deleted. They are permanently linked to official court records (Cases, Decisions, or Financial ledgers). Consider deactivating their account instead."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"detail": f"Deletion failed: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     def get_queryset(self):
         qs = super().get_queryset()

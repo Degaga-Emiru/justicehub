@@ -335,12 +335,9 @@ class CaseReviewService:
             )
             cls._send_case_opened_email_to_defendant(case)
         
-        # Trigger automatic judge assignment immediately after approval
-        try:
-            from .services import JudgeAssignmentService
-            JudgeAssignmentService.assign_judge(case, assigned_by=reviewer)
-        except Exception as e:
-            logging.getLogger(__name__).error(f"Initial automatic judge assignment failed for case {case.id}: {str(e)}")
+        # Judge assignment happens automatically AFTER payment is confirmed
+        # (via PaymentService.verify_and_complete_payment or manual_confirm_payment)
+        # Do NOT assign here — STATUS_FLOW only allows APPROVED → PAID → ASSIGNED
             
         # Trigger payment initialization (Sends email automatically)
         from payments.services import PaymentService

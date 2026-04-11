@@ -3,6 +3,8 @@ const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:800
 function formatError(errData) {
     if (typeof errData === 'string') return errData;
     if (errData?.detail) return errData.detail;
+    // Prefer 'details' (the actual message) over 'error' (the generic code)
+    if (errData?.details) return errData.details;
     if (errData?.error) return errData.error;
     if (typeof errData === 'object' && errData !== null) {
         const messages = [];
@@ -62,11 +64,12 @@ export async function fetchCases(filters = {}) {
 
 export async function fetchCategories() {
     try {
-        const res = await fetch(`${getApiUrl()}/cases/categories/active/`, {
+        const res = await fetch(`${getApiUrl()}/cases/categories/`, {
             headers: getAuthHeaders()
         });
         if (!res.ok) return [];
-        return await res.json();
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
     } catch (error) {
         console.error("fetchCategories error:", error);
         return [];
@@ -105,7 +108,7 @@ export async function fetchUsers(filters = {}) {
     try {
         // Typically role-based access for this, but let's assume there is a users endpoint or fallback
         const queryParams = new URLSearchParams(filters).toString();
-        const res = await fetch(`${getApiUrl()}/users/?${queryParams}`, {
+        const res = await fetch(`${getApiUrl()}/admin/users/?${queryParams}`, {
             headers: getAuthHeaders()
         });
         if (!res.ok) return [];
@@ -150,13 +153,16 @@ export async function fetchTransactions(filters = {}) {
     }
 }
 
-export async function confirmPayment(transactionId) {
+export async function confirmPayment(txRef) {
     try {
-        const res = await fetch(`${getApiUrl()}/payments/${transactionId}/verify/`, {
-            method: "PATCH", // Changed to PATCH to work with DRF UpdateAPIView
+        const res = await fetch(`${getApiUrl()}/payments/verify/${txRef}/`, {
+            method: "GET",
             headers: getAuthHeaders()
         });
-        if (!res.ok) throw new Error("Payment verification failed");
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || "Payment verification failed");
+        }
         return await res.json();
     } catch (error) {
         console.error("verifyPayment error:", error);
@@ -166,8 +172,7 @@ export async function confirmPayment(transactionId) {
 
 export async function fetchReports() {
     try {
-        // Assume there is a general reports or statistics endpoint
-        const res = await fetch(`${getApiUrl()}/audit/reports/`, {
+        const res = await fetch(`${getApiUrl()}/reports/admin/system/?type=overview`, {
             headers: getAuthHeaders()
         });
         if (!res.ok) throw new Error("Failed to fetch reports");
@@ -222,7 +227,7 @@ export async function reviewCase(caseId, data) {
 
 export async function submitPayment(data) {
     try {
-        const res = await fetch(`${getApiUrl()}/payments/submit/`, {
+        const res = await fetch(`${getApiUrl()}/payments/bank-transfer-submit/`, {
             method: "POST",
             headers: getAuthHeaders(),
             body: JSON.stringify(data)
@@ -254,7 +259,7 @@ export async function fetchPendingCases() {
 
 export async function adminUpdateUser(userId, data) {
     try {
-        const res = await fetch(`${getApiUrl()}/users/${userId}/`, {
+        const res = await fetch(`${getApiUrl()}/admin/users/${userId}/`, {
             method: "PATCH",
             headers: getAuthHeaders(),
             body: JSON.stringify(data)
@@ -272,7 +277,7 @@ export async function adminUpdateUser(userId, data) {
 
 export async function adminDeleteUser(userId) {
     try {
-        const res = await fetch(`${getApiUrl()}/users/${userId}/`, {
+        const res = await fetch(`${getApiUrl()}/admin/users/${userId}/`, {
             method: "DELETE",
             headers: getAuthHeaders()
         });
@@ -328,6 +333,45 @@ export async function fetchCaseTypeDistribution() {
     }
 }
 
+// ======================================
+// ADMIN REPORTS & ANALYTICS
+// ======================================
+
+export async function fetchSystemReport(type = 'overview', filters = {}) {
+    try {
+        const queryParams = new URLSearchParams({ type, ...filters }).toString();
+        const res = await fetch(`${getApiUrl()}/reports/admin/system/?${queryParams}`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to fetch system report");
+        return await res.json();
+    } catch (error) {
+        console.error("fetchSystemReport error:", error);
+        throw error;
+    }
+}
+
+export async function fetchAnalyticsReport(type = 'master') {
+    try {
+        const queryParams = new URLSearchParams({ type }).toString();
+        const res = await fetch(`${getApiUrl()}/reports/admin/analytics/?${queryParams}`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to fetch analytics report");
+        return await res.json();
+    } catch (error) {
+        console.error("fetchAnalyticsReport error:", error);
+        throw error;
+    }
+}
+
+export function getReportDownloadUrl(format = 'pdf', type = 'system', filters = {}) {
+    const queryParams = new URLSearchParams({ type, ...filters }).toString();
+    return `${getApiUrl()}/reports/admin/export/${format}/?${queryParams}`;
+}
+
+
+
 export async function fetchNotifications(filters = {}) {
     try {
         const queryParams = new URLSearchParams(filters).toString();
@@ -345,10 +389,16 @@ export async function fetchNotifications(filters = {}) {
 
 export async function scheduleHearing(data) {
     try {
+        const payload = {
+            ...data,
+            scheduled_date: data.scheduled_date ? new Date(data.scheduled_date).toISOString() : undefined,
+            hearing_format: data.hearing_format || "PHYSICAL",
+        };
+        
         const res = await fetch(`${getApiUrl()}/hearings/`, {
             method: "POST",
             headers: getAuthHeaders(),
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -364,7 +414,7 @@ export async function scheduleHearing(data) {
 export async function rescheduleHearing(id, data) {
     try {
         const res = await fetch(`${getApiUrl()}/hearings/${id}/reschedule/`, {
-            method: "PATCH",
+            method: "POST",
             headers: getAuthHeaders(),
             body: JSON.stringify(data)
         });
@@ -378,3 +428,427 @@ export async function rescheduleHearing(id, data) {
         throw error;
     }
 }
+
+// ======================================
+// ROLE-SPECIFIC NAMESPACES & CASES
+// ======================================
+
+export async function fetchDefendantCases() {
+    try {
+        const res = await fetch(`${getApiUrl()}/defendant/cases/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch defendant cases");
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
+    } catch (e) { throw e; }
+}
+
+export async function fetchDefendantHearings() {
+    try {
+        const res = await fetch(`${getApiUrl()}/defendant/hearings/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch defendant hearings");
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
+    } catch (e) { throw e; }
+}
+
+export async function submitDefendantResponse(caseId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/submit-response/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to submit response");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function acknowledgeDefendantDecision(caseId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/acknowledge-decision/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to acknowledge decision");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchDefendantDocuments(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/documents/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch documents");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function assignJudge(caseId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/${caseId}/assign-judge/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to assign judge");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchRegistrarStatistics() {
+    try {
+        const res = await fetch(`${getApiUrl()}/registrar/cases/statistics/`, { headers: getAuthHeaders() });
+        if (!res.ok) return {};
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchJudgeCaseDocuments(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/judge/cases/${caseId}/documents/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch judge documents");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchJudgeDocumentAudit(docId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/judge/documents/audit/${docId}/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+// ======================================
+// ADVANCED HEARING MANAGEMENT
+// ======================================
+
+export async function recordHearingAttendance(hearingId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/record-attendance/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to record attendance");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function confirmHearingAttendance(hearingId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/confirm-attendance/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to confirm attendance");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function bulkScheduleHearings(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/bulk/schedule/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to bulk schedule");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchJudgeCalendar(judgeId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/calendar/judge/${judgeId}/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchCourtroomAvailability(courtroom) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/calendar/courtroom/${encodeURIComponent(courtroom)}/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchUpcomingHearingsReport() {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/reports/upcoming/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchJudgeHearingWorkload() {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/reports/judge-workload/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+// ======================================
+// GENERAL CASE MGMT & BULK ACTIONS
+// ======================================
+
+export async function fetchCaseTimeline(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/${caseId}/timeline/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchCaseNotes(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/${caseId}/notes/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function createCaseNote(caseId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/${caseId}/notes/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to create note");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function bulkAssignJudges(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/bulk/assign/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to bulk assign");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function bulkStatusUpdate(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/bulk/status-update/`, { 
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to bulk update status");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchJudgeWorkloadStats() {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/statistics/judge-workload/`, { headers: getAuthHeaders() });
+        if (!res.ok) return {};
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function exportCasesCSV() {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/export/csv/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to export cases CSV");
+        return await res.text();
+    } catch (e) { throw e; }
+}
+
+export async function exportCasesPDF() {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/export/pdf/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to export cases PDF");
+        return await res.blob();
+    } catch (e) { throw e; }
+}
+
+// ======================================
+// EXTENDED PAYMENTS
+// ======================================
+
+export async function confirmManualPayment(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/payments/manual-confirm/`, { 
+            method: "PATCH", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to manual confirm payment");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function retryPayment(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/payments/retry/${caseId}/`, { 
+            method: "POST", headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to retry payment");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchPaymentByCase(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/payments/case/${caseId}/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch payment by case");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+// ======================================
+// JUDGE-SPECIFIC API FUNCTIONS
+// ======================================
+
+export async function fetchJudgeDashboard() {
+    try {
+        const res = await fetch(`${getApiUrl()}/judge/dashboard`, { headers: getAuthHeaders() });
+        if (!res.ok) return { assigned_cases: 0, pending_cases: 0, closed_cases: 0, upcoming_hearings: 0 };
+        return await res.json();
+    } catch (e) {
+        console.error("fetchJudgeDashboard error:", e);
+        return { assigned_cases: 0, pending_cases: 0, closed_cases: 0, upcoming_hearings: 0 };
+    }
+}
+
+export async function fetchJudgeCases(statusFilter) {
+    try {
+        const params = statusFilter ? `?status=${statusFilter}` : '';
+        const res = await fetch(`${getApiUrl()}/judge/cases${params}`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch judge cases");
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
+    } catch (e) {
+        console.error("fetchJudgeCases error:", e);
+        return [];
+    }
+}
+
+export async function fetchJudgeCaseDetail(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/judge/cases/${caseId}`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch judge case detail");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchJudgeCaseHearings(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/judge/cases/${caseId}/hearings`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
+    } catch (e) {
+        console.error("fetchJudgeCaseHearings error:", e);
+        return [];
+    }
+}
+
+export async function updateCaseStatus(caseId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/${caseId}/`, {
+            method: "PATCH", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to update case status");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function cancelHearing(hearingId, reason) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/cancel/`, {
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ reason })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to cancel hearing");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function completeHearing(hearingId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/complete/`, {
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to complete hearing");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+// ======================================
+// DECISIONS API (Judge)
+// ======================================
+
+export async function createDecision(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/decisions/`, {
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to create decision");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function updateDecision(decisionId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/`, {
+            method: "PATCH", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to update decision");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function finalizeDecision(decisionId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/finalize/`, {
+            method: "POST", headers: getAuthHeaders()
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to finalize decision");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchDecisionsByCase(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/decisions/by-case/${caseId}/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
+    } catch (e) {
+        console.error("fetchDecisionsByCase error:", e);
+        return [];
+    }
+}
+
+export async function fetchPendingDecisions() {
+    try {
+        const res = await fetch(`${getApiUrl()}/decisions/pending/`, { headers: getAuthHeaders() });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
+    } catch (e) {
+        console.error("fetchPendingDecisions error:", e);
+        return [];
+    }
+}
+
+export async function createImmediateDecision(caseId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/decisions/by-case/${caseId}/immediate/`, {
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to create immediate decision");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+

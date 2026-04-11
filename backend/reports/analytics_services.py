@@ -1,4 +1,4 @@
-from django.db.models import Count, Avg, F, ExpressionWrapper, fields, Max, Min
+from django.db.models import Count, Avg, F, ExpressionWrapper, fields, Max, Min, Q
 from django.utils import timezone
 from datetime import timedelta
 from .db_models import Case, User, CaseCategory
@@ -32,7 +32,7 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def get_dispute_analysis(self):
+    def get_dispute_analysis():
         active_cases = ReportService.get_active_cases()
         analysis = active_cases.values('category__name').annotate(
             total=Count('id')

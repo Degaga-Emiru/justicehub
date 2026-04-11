@@ -126,7 +126,7 @@ class Decision(models.Model):
             if not self.order:
                 errors['order'] = "Order is required."
             
-            if errors:
+            if errors and self.status != self.DecisionStatus.DRAFT:
                 raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
