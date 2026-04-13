@@ -145,36 +145,45 @@ def send_otp_email(user, purpose='VERIFICATION'):
     return otp
 
 
-def verify_otp(user, code, purpose='VERIFICATION'):
+def verify_otp(user, code, purpose='VERIFICATION', mark_used=True):
     """
     Verify OTP for user.
     Returns (bool, message)
     """
-    try:
-        otp = OTP.objects.filter(
-            user=user,
-            code=code,
-            purpose=purpose,
-            is_used=False,
-            expires_at__gt=timezone.now()
-        ).latest('created_at')
+    # 1. Check if the code exists for this user at all (not used and not expired)
+    matching_otps = OTP.objects.filter(
+        user=user,
+        code=code,
+        is_used=False,
+        expires_at__gt=timezone.now()
+    )
+    
+    if not matching_otps.exists():
+        return False, "Invalid or expired OTP"
         
-        # Mark as used
+    # 2. Check if any match the specific purpose
+    otp = matching_otps.filter(purpose=purpose).first()
+    
+    if not otp:
+        # Code exists but for a different purpose
+        actual_purpose = matching_otps.first().purpose
+        purpose_display = actual_purpose.replace('_', ' ').lower()
+        return False, f"This OTP is intended for {purpose_display}. Please use the correct page."
+        
+    # 3. Mark as used if requested
+    if mark_used:
         otp.is_used = True
         otp.save()
-        
-        return True, "OTP verified successfully"
     
-    except OTP.DoesNotExist:
-        return False, "Invalid or expired OTP"
+    return True, "OTP verified successfully"
 
 def validate_password_strength(password):
     """
     Validate password strength.
     Returns (bool, message)
     """
-    if len(password) < 8:
-        return False, "Password must be at least 8 characters long"
+    if len(password) < 9:
+        return False, "Password must be at least 9 characters long"
     
     if not any(char.isdigit() for char in password):
         return False, "Password must contain at least one number"
@@ -215,6 +224,27 @@ def send_password_reset_confirmation(user):
     context = {
         'user': user,
         'reset_time': timezone.now().strftime("%B %d, %Y at %I:%M %p"),
+        'current_year': timezone.now().year,
+    }
+    
+    send_html_email(
+        subject=subject,
+        template_name=template_name,
+        context=context,
+        recipient_list=[user.email]
+    )
+
+def send_admin_reset_email(user, temp_password):
+    """
+    Send email to user with temporary password when reset by admin.
+    """
+    subject = 'Your Justice Hub Password Has Been Reset'
+    template_name = 'emails/admin_password_reset_email.html'
+    
+    context = {
+        'user': user,
+        'temp_password': temp_password,
+        'frontend_url': settings.FRONTEND_URL,
         'current_year': timezone.now().year,
     }
     

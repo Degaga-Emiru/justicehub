@@ -43,7 +43,7 @@ export function AuthForm({ type = "login", onTypeChange }) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const { login, signup } = useAuthStore();
+    const { login, signup, forgotPassword } = useAuthStore();
     const router = useRouter();
     const { t } = useLanguage();
 
@@ -113,20 +113,11 @@ export function AuthForm({ type = "login", onTypeChange }) {
                 }
             } else {
                 // Forgot password – call the real API
-                try {
-                    const res = await fetch(`${getApiUrl()}/auth/forgot-password/`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email: data.email }),
-                    });
-                    if (res.ok) {
-                        setSuccess(t("resetLinkSent"));
-                    } else {
-                        const err = await res.json().catch(() => ({}));
-                        setError(err.detail || err.email?.[0] || t("unexpectedError"));
-                    }
-                } catch {
-                    setError(t("unexpectedError"));
+                const result = await forgotPassword(data.email);
+                if (result.success) {
+                    router.push(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=PASSWORD_RESET`);
+                } else {
+                    setError(result.error);
                 }
             }
         } catch (err) {
@@ -231,40 +222,53 @@ export function AuthForm({ type = "login", onTypeChange }) {
                             {type === "login" ? t("signIn") : type === "signup" ? t("signUp") : t("sendResetLink")}
                         </Button>
 
-                        <div className="text-center text-sm font-semibold text-muted-foreground">
-                            {type === "login" ? (
-                                <>
-                                    {t("noAccount")}{" "}
-                                    {onTypeChange ? (
-                                        <button type="button" onClick={() => onTypeChange("signup")} className="text-primary font-bold hover:text-blue-500 transition-colors">
-                                            {t("signUp")}
-                                        </button>
-                                    ) : (
-                                        <Link href="/signup" className="text-primary font-bold hover:text-blue-500 transition-colors">
-                                            {t("signUp")}
+                        <div className="text-center text-sm font-semibold text-muted-foreground space-y-4">
+                            <div className="space-y-2">
+                                {(type === "login" || type === "signup") && (
+                                    <p className="text-xs text-muted-foreground font-medium">
+                                        If your account is created by Admin, reset your password by{" "}
+                                        <Link href="/setup-account" className="text-primary font-bold hover:text-blue-600 underline underline-offset-4">
+                                            clicking here
                                         </Link>
-                                    )}
-                                </>
-                            ) : type === "signup" ? (
-                                <>
-                                    {t("hasAccount")}{" "}
-                                    {onTypeChange ? (
-                                        <button type="button" onClick={() => onTypeChange("login")} className="text-primary font-bold hover:text-blue-500 transition-colors">
-                                            {t("signIn")}
-                                        </button>
-                                    ) : (
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                {type === "login" ? (
+                                    <>
+                                        {t("noAccount")}{" "}
+                                        {onTypeChange ? (
+                                            <button type="button" onClick={() => onTypeChange("signup")} className="text-primary font-bold hover:text-blue-500 transition-colors">
+                                                {t("signUp")}
+                                            </button>
+                                        ) : (
+                                            <Link href="/signup" className="text-primary font-bold hover:text-blue-500 transition-colors">
+                                                {t("signUp")}
+                                            </Link>
+                                        )}
+                                    </>
+                                ) : type === "signup" ? (
+                                    <>
+                                        {t("hasAccount")}{" "}
+                                        {onTypeChange ? (
+                                            <button type="button" onClick={() => onTypeChange("login")} className="text-primary font-bold hover:text-blue-500 transition-colors">
+                                                {t("signIn")}
+                                            </button>
+                                        ) : (
+                                            <Link href="/login" className="text-primary font-bold hover:text-blue-500 transition-colors">
+                                                {t("signIn")}
+                                            </Link>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
                                         <Link href="/login" className="text-primary font-bold hover:text-blue-500 transition-colors">
                                             {t("signIn")}
                                         </Link>
-                                    )}
-                                </>
-                            ) : (
-                                <>
-                                    <Link href="/login" className="text-primary font-bold hover:text-blue-500 transition-colors">
-                                        {t("signIn")}
-                                    </Link>
-                                </>
-                            )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </CardFooter>
                 </form>

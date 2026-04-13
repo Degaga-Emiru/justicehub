@@ -28,7 +28,7 @@ from .serializers import (
 from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
 from .permissions import IsAdmin
-from .utils import send_otp_email
+from .utils import send_otp_email, send_admin_reset_email
 from .utils import send_password_change_notification, send_password_reset_confirmation
 
 class CitizenRegistrationView(generics.CreateAPIView):
@@ -481,6 +481,12 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         user.set_password(temp_password)
         user.is_password_set = False
         user.save()
+        
+        if serializer.validated_data['send_email']:
+            try:
+                send_admin_reset_email(user, temp_password)
+            except Exception as e:
+                print(f"Failed to send admin reset email: {e}")
         
         return Response({
             "message": "Password reset successfully",

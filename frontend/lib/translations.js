@@ -160,7 +160,7 @@ export const translations = {
         fullName: "Full Name",
         email: "Email",
         password: "Password",
-        forgotDetails: "Forgot details?",
+        forgotDetails: "Forgot Password?",
         role: "Role",
         selectRole: "Select a role",
         signIn: "Sign In",

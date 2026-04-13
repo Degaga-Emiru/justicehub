@@ -124,6 +124,69 @@ export const useAuthStore = create((set) => ({
     },
 
 
+    forgotPassword: async (email) => {
+        try {
+            const res = await fetch(`${getApiUrl()}/auth/forgot-password/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                return { success: false, error: errorData.detail || errorData.email?.[0] || "Failed to send reset code" };
+            }
+
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: "Network error. Please try again later." };
+        }
+    },
+
+    resetPassword: async (email, otp, new_password, confirm_password) => {
+        try {
+            const res = await fetch(`${getApiUrl()}/auth/reset-password/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, otp, new_password, confirm_password }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const message = typeof errorData === "object"
+                    ? Object.entries(errorData).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(" ") : v}`).join(" | ")
+                    : "Password reset failed";
+                return { success: false, error: message };
+            }
+
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: "Network error. Please try again later." };
+        }
+    },
+
+    setupAdminAccount: async (email, otp, new_password, confirm_password) => {
+        try {
+            const res = await fetch(`${getApiUrl()}/auth/set-password/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, otp, new_password, confirm_password }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const message = typeof errorData === "object"
+                    ? Object.entries(errorData).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(" ") : v}`).join(" | ")
+                    : "Account setup failed";
+                return { success: false, error: message };
+            }
+
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: "Network error. Please try again later." };
+        }
+    },
+
     logout: () => {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
+import { AuthContainer } from "@/components/auth/auth-container";
 import { useLanguage } from "@/components/language-provider";
 import { Scale } from "lucide-react";
 
@@ -63,9 +64,9 @@ export default function LoginPage() {
 
             {/* Right Form Panel */}
             <div className="flex items-center justify-center p-8 lg:p-16 relative">
-                <div className="w-full animate-fade-up relative z-10" style={{ animationDelay: '100ms' }}>
+                <AuthContainer>
                     <AuthForm key={authType} type={authType} onTypeChange={setAuthType} />
-                </div>
+                </AuthContainer>
             </div>
         </div>
     );

@@ -108,8 +108,9 @@ class VerifyOTPSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError({"email": "User not found"})
         
-        # Verify OTP
-        is_valid, message = verify_otp(user, attrs['otp'], attrs['purpose'])
+        # Verify OTP (don't mark as used for multi-step flows like password reset/setup)
+        mark_used = (attrs['purpose'] == 'VERIFICATION')
+        is_valid, message = verify_otp(user, attrs['otp'], attrs['purpose'], mark_used=mark_used)
         if not is_valid:
             raise serializers.ValidationError({"otp": message})
         
@@ -165,6 +166,10 @@ class SetPasswordAfterOTPSerializer(serializers.Serializer):
         is_valid, message = verify_otp(user, attrs['otp'], 'ACCOUNT_SETUP')
         if not is_valid:
             raise serializers.ValidationError({"otp": message})
+        
+        # Ensure new password is not the same as old password
+        if user.check_password(attrs['new_password']):
+            raise serializers.ValidationError({"new_password": "New password cannot be the same as your current password"})
         
         attrs['user'] = user
         return attrs
@@ -255,6 +260,10 @@ class ResetPasswordSerializer(serializers.Serializer):
         if not is_valid:
             raise serializers.ValidationError({"otp": message})
         
+        # Ensure new password is not the same as old password
+        if user.check_password(attrs['new_password']):
+            raise serializers.ValidationError({"new_password": "New password cannot be the same as your current password"})
+            
         attrs['user'] = user
         return attrs
     
@@ -293,6 +302,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         is_valid, message = validate_password_strength(attrs['new_password'])
         if not is_valid:
             raise serializers.ValidationError({"new_password": message})
+        
+        # Ensure new password is not the same as old password
+        if user.check_password(attrs['new_password']):
+            raise serializers.ValidationError({"new_password": "New password cannot be the same as your current password"})
         
         return attrs
     
