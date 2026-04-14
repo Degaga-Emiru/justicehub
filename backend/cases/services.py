@@ -57,14 +57,7 @@ class JudgeAssignmentService:
             is_active=True
         ).select_related('judge_profile')
         
-        # 2. Fallback: If no specialized judges, find ANY active judge with a profile
-        if not judges.exists():
-            logging.getLogger(__name__).info(f"No specialized judges for category {category.name}. Falling back to any active judge.")
-            judges = User.objects.filter(
-                role='JUDGE',
-                judge_profile__is_active=True,
-                is_active=True
-            ).select_related('judge_profile')
+        # Note: General fallback removed to ensure strict category-based assignment.
             
         available_judges = []
         for judge in judges:

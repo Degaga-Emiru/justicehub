@@ -316,13 +316,13 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         serializer = CaseDocumentSerializer(document, context={'request': request})
         
-        # Notify relevant parties
-        create_notification(
-            user=case.created_by,
-            type='DOCUMENT_UPLOADED',
-            title='Document Uploaded',
-            message=f"A new document has been uploaded to your case: {document.file_name}",
-            case=case
+        # Log Document Upload
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_UPLOADED,
+            obj=document,
+            description=f"New document {document.get_document_type_display()} uploaded to case {case.file_number}",
+            entity_name=document.get_active_version().file_name if document.get_active_version() else "Document"
         )
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -373,13 +373,14 @@ class CaseViewSet(viewsets.ModelViewSet):
             )
         
         # Log Document Uploads
-        for doc in uploaded_docs:
+        for doc_data in uploaded_docs:
+            doc_obj = CaseDocument.objects.get(id=doc_data['document_id'])
             create_audit_log(
                 request=request,
                 action_type=AuditLog.ActionType.DOCUMENT_UPLOADED,
-                obj=CaseDocument.objects.get(id=doc['id']),
-                description=f"Document {doc['file_name']} uploaded to case {case.file_number}",
-                entity_name=doc['file_name']
+                obj=doc_obj,
+                description=f"Document {doc_obj.get_document_type_display()} uploaded to case {case.file_number}",
+                entity_name=doc_obj.get_active_version().file_name if doc_obj.get_active_version() else "Document"
             )
 
         return Response(uploaded_docs, status=status.HTTP_201_CREATED)
@@ -539,7 +540,17 @@ class CitizenDocumentViewSet(viewsets.ViewSet):
             
         serializer = CaseDocumentSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
-        serializer.save(case=case)
+        document = serializer.save(case=case)
+        
+        # Log Document Upload
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_UPLOADED,
+            obj=document,
+            description=f"New document {document.get_document_type_display()} uploaded to case {case.file_number}",
+            entity_name=document.get_active_version().file_name if document.get_active_version() else "Document"
+        )
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'], url_path='versions')
@@ -572,6 +583,15 @@ class CitizenDocumentViewSet(viewsets.ViewSet):
             uploaded_by=request.user,
             is_active=True,
             status='PENDING'
+        )
+        
+        # Log Version Upload
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_UPLOADED,
+            obj=document,
+            description=f"New version (v{new_version_num}) uploaded for {document.get_document_type_display()}",
+            entity_name=version.file_name
         )
         
         serializer = CaseDocumentVersionSerializer(version)

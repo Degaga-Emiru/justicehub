@@ -67,7 +67,7 @@ class CaseDocumentSerializer(serializers.ModelSerializer):
     Serializer for CaseDocument to return all versions.
     """
     document_id = serializers.UUIDField(source='id', read_only=True)
-    document_type = serializers.CharField(source='get_document_type_display', read_only=True)
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
     versions = serializers.SerializerMethodField()
     
     # Fields for initial upload
@@ -76,10 +76,10 @@ class CaseDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseDocument
         fields = [
-            'document_id', 'document_type', 'description', 
-            'is_confidential', 'uploaded_by', 'versions', 'file'
+            'document_id', 'document_type', 'document_type_display', 
+            'description', 'is_confidential', 'uploaded_by', 'versions', 'file'
         ]
-        read_only_fields = ['document_id', 'document_type', 'versions']
+        read_only_fields = ['document_id', 'document_type_display', 'versions', 'uploaded_by']
 
     def get_versions(self, obj):
         # Retrieve all document versions as requested
