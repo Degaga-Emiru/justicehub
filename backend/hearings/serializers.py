@@ -40,11 +40,12 @@ class HearingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hearing
         fields = [
-            'id', 'case', 'case_details', 'hearing_number',
+            'id', 'case', 'case_details', 'hearing_number', 'previous_hearing',
             'title', 'hearing_type', 'hearing_format', 'status',
             'scheduled_date', 'duration_minutes', 'location', 'virtual_meeting_link',
-            'agenda', 'notes', 'cancellation_reason', 'is_public',
-            'participants', 'recording_url', 'transcript_url', 'minutes',
+            'agenda', 'notes', 'summary', 'action', 'judge_comment', 
+            'next_hearing_date', 'cancellation_reason', 'is_public',
+            'participants', 'minutes',
             'created_at', 'conducted_at', 'completed_at', 'cancelled_at'
         ]
         read_only_fields = ['id', 'status', 'created_at', 'hearing_number']
@@ -63,38 +64,39 @@ class HearingSerializer(serializers.ModelSerializer):
 
 
 class HearingCompleteSerializer(serializers.Serializer):
-    recording_url = serializers.URLField(required=False, allow_null=True)
-    transcript_url = serializers.URLField(required=False, allow_null=True)
-    minutes = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    notes = serializers.JSONField()
+    summary = serializers.CharField(required=True)
+    action = serializers.ChoiceField(choices=Hearing.HearingAction.choices, required=True)
+    judge_comment = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    minutes = serializers.CharField(required=False, allow_blank=True, allow_null=True) # Proceedings text
     next_hearing_date = serializers.DateTimeField(required=False, allow_null=True)
 
-    def validate_notes(self, value):
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("Notes must be a JSON object.")
-        
-        required_fields = ['summary', 'action']
-        for field in required_fields:
-            if field not in value or not value[field]:
-                raise serializers.ValidationError(f"'{field}' is required in notes.")
-        
-        valid_actions = ['postponed', 'continued', 'resolved']
-        if value['action'] not in valid_actions:
-            raise serializers.ValidationError(f"Invalid action. Must be one of: {', '.join(valid_actions)}")
-            
-        return value
-
     def validate(self, data):
-        notes = data.get('notes', {})
-        action = notes.get('action')
+        action = data.get('action')
         next_date = data.get('next_hearing_date')
 
-        if action == 'postponed' and not next_date:
+        if action == 'POSTPONED' and not next_date:
             raise serializers.ValidationError({
-                "next_hearing_date": "Next hearing date is required when action is 'postponed'."
+                "next_hearing_date": "Next hearing date is required when action is 'POSTPONED'."
             })
             
         return data
+
+
+class NextHearingSerializer(serializers.Serializer):
+    """Serializer for creating a follow-up hearing based on an existing one"""
+    scheduled_date = serializers.DateTimeField(required=True)
+    duration_minutes = serializers.IntegerField(required=False, default=60)
+    location = serializers.CharField(required=False)
+    hearing_format = serializers.ChoiceField(choices=Hearing.HearingFormat.choices, required=False)
+    hearing_type = serializers.ChoiceField(choices=Hearing.HearingType.choices, required=False)
+    title = serializers.CharField(required=False)
+    agenda = serializers.CharField(required=False)
+    judge_comment = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_scheduled_date(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError("Scheduled date must be in the future.")
+        return value
 
 
 class HearingCreateSerializer(serializers.ModelSerializer):

@@ -76,3 +76,59 @@ def send_hearing_notification(hearing, notification_type):
             message=f'Hearing for case {hearing.case.file_number} has been {notification_type.lower()}',
             case=hearing.case
         )
+
+
+class HearingService:
+    @staticmethod
+    def update_hearing(hearing, update_data):
+        """
+        Dynamically update hearing attributes.
+        Protects sensitive fields from being modified via dynamic PATCH.
+        """
+        protected_fields = ['id', 'case', 'hearing_number', 'created_at']
+        
+        for key, value in update_data.items():
+            if key not in protected_fields and hasattr(hearing, key):
+                setattr(hearing, key, value)
+        
+        hearing.save()
+        return hearing
+
+    @staticmethod
+    def create_next_hearing(current_hearing, next_data):
+        """
+        Create a follow-up hearing linked to the current one.
+        Automatically copies context and participants.
+        """
+        from .models import HearingParticipant
+        
+        # Clone relevant fields from current hearing if not provided in next_data
+        defaults = {
+            'case': current_hearing.case,
+            'judge': current_hearing.judge,
+            'location': current_hearing.location,
+            'hearing_format': current_hearing.hearing_format,
+            'hearing_type': current_hearing.hearing_type,
+            'previous_hearing': current_hearing,
+            'status': 'SCHEDULED',
+            'duration_minutes': current_hearing.duration_minutes,
+        }
+        
+        # Clean next_data
+        for field in ['id', 'case', 'previous_hearing']:
+            next_data.pop(field, None)
+            
+        final_data = {**defaults, **next_data}
+        
+        # Create the new hearing
+        new_hearing = Hearing.objects.create(**final_data)
+        
+        # Copy participants
+        for participant in current_hearing.participant_list.all():
+            HearingParticipant.objects.get_or_create(
+                hearing=new_hearing,
+                user=participant.user,
+                defaults={'role_in_hearing': participant.role_in_hearing}
+            )
+            
+        return new_hearing

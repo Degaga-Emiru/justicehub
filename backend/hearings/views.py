@@ -14,8 +14,10 @@ from .serializers import (
     HearingSerializer, HearingCreateSerializer, HearingParticipantSerializer,
     HearingConfirmAttendanceSerializer, HearingRescheduleSerializer,
     HearingReminderSerializer, HearingCalendarSerializer,
-    BulkScheduleHearingSerializer, HearingCompleteSerializer
+    BulkScheduleHearingSerializer, HearingCompleteSerializer,
+    NextHearingSerializer
 )
+from .services import HearingService
 from .permissions import (
     IsHearingJudge, IsHearingParticipant, CanScheduleHearings,
     CanConfirmAttendance, CanViewHearing
@@ -83,11 +85,27 @@ class HearingViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create']:
             self.permission_classes = [IsAuthenticated, CanScheduleHearings]
-        elif self.action in ['update', 'partial_update', 'destroy']:
+        elif self.action in ['update', 'partial_update', 'destroy', 'complete', 'next_hearing']:
             self.permission_classes = [IsAuthenticated, IsHearingJudge]
         elif self.action in ['retrieve']:
             self.permission_classes = [IsAuthenticated, CanViewHearing]
         return super().get_permissions()
+
+    def partial_update(self, request, *args, **kwargs):
+        """Flexible PATCH: dynamically update allowed attributes via service layer"""
+        instance = self.get_object()
+        updated_instance = HearingService.update_hearing(instance, request.data)
+        serializer = self.get_serializer(updated_instance)
+        
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.HEARING_UPDATED,
+            obj=updated_instance,
+            description=f"Hearing {updated_instance.file_number if hasattr(updated_instance, 'file_number') else updated_instance.id} updated dynamically",
+            entity_name=updated_instance.case.file_number
+        )
+        
+        return Response(serializer.data)
     
     def perform_create(self, serializer):
         hearing = serializer.save()
@@ -108,7 +126,7 @@ class HearingViewSet(viewsets.ModelViewSet):
         
         logger.info(f"Hearing {hearing.id} scheduled for case {hearing.case.id}")
     
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, CanConfirmAttendance])
+    @action(detail=True, methods=['post'], url_path='confirm-attendance', permission_classes=[IsAuthenticated, CanConfirmAttendance])
     def confirm_attendance(self, request, pk=None):
         """Confirm attendance for hearing"""
         logger.debug(f"confirm_attendance called for pk={pk}, user={request.user}")
@@ -159,7 +177,7 @@ class HearingViewSet(viewsets.ModelViewSet):
             "confirmation_status": "confirmed"
         })
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, CanConfirmAttendance])
+    @action(detail=True, methods=['post'], url_path='decline-attendance', permission_classes=[IsAuthenticated, CanConfirmAttendance])
     def decline_attendance(self, request, pk=None):
         """Decline attendance for hearing"""
         hearing = self.get_object()
@@ -240,56 +258,51 @@ class HearingViewSet(viewsets.ModelViewSet):
         # Update current hearing
         hearing.status = 'CONDUCTED'
         hearing.conducted_at = timezone.now()
-        hearing.recording_url = data.get('recording_url')
-        hearing.transcript_url = data.get('transcript_url')
+        hearing.summary = data.get('summary')
+        hearing.action = data.get('action')
+        hearing.judge_comment = data.get('judge_comment')
         hearing.minutes = data.get('minutes')
-        hearing.notes = data.get('notes')
+        hearing.next_hearing_date = data.get('next_hearing_date')
         hearing.save()
         
-        # Handle next hearing creation if date is provided
-        next_hearing_created = False
-        next_date = data.get('next_hearing_date')
-        if next_date:
-            # Create new hearing
-            new_hearing = Hearing.objects.create(
-                case=hearing.case,
-                judge=hearing.judge,
-                title=f"Follow-up: {hearing.title}",
-                hearing_type=hearing.hearing_type, # Default to same type, or could be INITIAL/STATUS
-                scheduled_date=next_date,
-                duration_minutes=hearing.duration_minutes,
-                location=hearing.location,
-                hearing_format=hearing.hearing_format,
-                agenda=f"Follow-up from hearing on {hearing.conducted_at.strftime('%Y-%m-%d')}",
-                status='SCHEDULED'
-            )
-            
-            # Copy participants
-            for participant in hearing.participant_list.all():
-                HearingParticipant.objects.create(
-                    hearing=new_hearing,
-                    user=participant.user,
-                    role_in_hearing=participant.role_in_hearing
-                )
-            
-            # Schedule reminders for new hearing
-            self._schedule_reminders(new_hearing)
-            next_hearing_created = True
-
         # Log Completion
         create_audit_log(
             request=request,
             action_type=AuditLog.ActionType.HEARING_COMPLETED,
             obj=hearing,
-            description=f"Hearing for case {hearing.case.file_number} conducted. Action: {data['notes']['action']}",
+            description=f"Hearing for case {hearing.case.file_number} conducted. Action: {hearing.action}",
             entity_name=hearing.case.file_number
         )
 
         return Response({
             "message": "Hearing completed successfully",
-            "hearing_status": "CONDUCTED",
-            "next_hearing_created": next_hearing_created
+            "hearing_status": "CONDUCTED"
         })
+
+    @action(detail=True, methods=['post'], url_path='next-hearing', permission_classes=[IsAuthenticated, IsHearingJudge])
+    def next_hearing(self, request, pk=None):
+        """Dedicated endpoint to schedule a follow-up hearing linked to this one"""
+        hearing = self.get_object()
+        serializer = NextHearingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        new_hearing = HearingService.create_next_hearing(
+            current_hearing=hearing, 
+            next_data=serializer.validated_data
+        )
+        
+        # Schedule reminders and notify
+        self._schedule_reminders(new_hearing)
+        notify_case_participants(
+            case=new_hearing.case,
+            type='HEARING_SCHEDULED',
+            title='Follow-up Hearing Scheduled',
+            message=f'A follow-up hearing has been scheduled for {new_hearing.scheduled_date.strftime("%B %d, %Y at %I:%M %p")}',
+            exclude_users=[request.user]
+        )
+        
+        response_serializer = HearingSerializer(new_hearing, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsHearingJudge])
     def reschedule(self, request, pk=None):
@@ -369,7 +382,7 @@ class HearingViewSet(viewsets.ModelViewSet):
         serializer = HearingParticipantSerializer(participants, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsHearingJudge])
+    @action(detail=True, methods=['post'], url_path='record-attendance', permission_classes=[IsAuthenticated, IsHearingJudge])
     def record_attendance(self, request, pk=None):
         """Record attendance for hearing"""
         hearing = self.get_object()

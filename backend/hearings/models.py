@@ -23,6 +23,12 @@ class Hearing(SoftDeleteModel):
         TRIAL = 'TRIAL', 'Trial'
         OTHER = 'OTHER', 'Other'
 
+    class HearingAction(models.TextChoices):
+        RESOLVED = 'RESOLVED', 'Resolved'
+        POSTPONED = 'POSTPONED', 'Postponed'
+        CONTINUED = 'CONTINUED', 'Continued'
+        ADJOURNED = 'ADJOURNED', 'Adjourned'
+
     class HearingStatus(models.TextChoices):
         SCHEDULED = 'SCHEDULED', 'Scheduled'
         CONFIRMED = 'CONFIRMED', 'Confirmed'
@@ -40,6 +46,13 @@ class Hearing(SoftDeleteModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='hearings')
     judge = models.ForeignKey(User, on_delete=models.PROTECT, related_name='presiding_hearings')
+    previous_hearing = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='next_hearings'
+    )
     
     hearing_number = models.IntegerField(null=True, blank=True, help_text="Sequence number of the hearing for this case")
     
@@ -58,6 +71,10 @@ class Hearing(SoftDeleteModel):
     # Details
     agenda = models.TextField()
     notes = models.JSONField(blank=True, null=True)
+    summary = models.TextField(blank=True, null=True)
+    action = models.CharField(max_length=50, choices=HearingAction.choices, blank=True, null=True)
+    judge_comment = models.TextField(blank=True, null=True)
+    next_hearing_date = models.DateTimeField(blank=True, null=True)
     cancellation_reason = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)
     
@@ -68,9 +85,9 @@ class Hearing(SoftDeleteModel):
         related_name='hearings_participated'
     )
     
-    # Recording/Transcript
-    recording_url = models.URLField(blank=True, null=True)
-    transcript_url = models.URLField(blank=True, null=True)
+    # Recording/Transcript (Replaced by structured outcome fields)
+    # recording_url = models.URLField(blank=True, null=True)
+    # transcript_url = models.URLField(blank=True, null=True)
     minutes = models.TextField(blank=True, null=True)
     
     # Timestamps

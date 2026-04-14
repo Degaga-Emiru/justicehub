@@ -156,6 +156,7 @@ class HearingAPITests(APITestCase):
         
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        # 1 standard hearing created in setUp + 1 new = 2
         self.assertEqual(Hearing.objects.count(), 2)
     
     def test_create_hearing_client_forbidden(self):
@@ -182,15 +183,14 @@ class HearingAPITests(APITestCase):
         
         url = f'/api/hearings/{self.hearing.id}/confirm-attendance/'
         data = {
-            'status': 'CONFIRMED',
-            'notes': 'Will attend'
+            'participant_role': 'Plaintiff'
         }
         
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         self.participant.refresh_from_db()
-        self.assertEqual(self.participant.attendance_status, 'CONFIRMED')
+        self.assertEqual(self.participant.confirmation_status, 'CONFIRMED')
     
     def test_cancel_hearing_judge(self):
         """Test cancelling hearing as judge"""
@@ -205,13 +205,15 @@ class HearingAPITests(APITestCase):
         self.assertEqual(self.hearing.status, 'CANCELLED')
     
     def test_complete_hearing_judge(self):
-        """Test completing hearing as judge"""
+        """Test completing hearing as judge with new structured fields"""
         self.client.force_authenticate(user=self.judge)
         
         url = f'/api/hearings/{self.hearing.id}/complete/'
         data = {
-            'recording_url': 'https://example.com/recording.mp4',
-            'transcript_url': 'https://example.com/transcript.pdf'
+            'summary': 'The parties agreed to a settlement.',
+            'action': 'RESOLVED',
+            'judge_comment': 'Good progress.',
+            'minutes': 'The hearing lasted 30 minutes.'
         }
         
         response = self.client.post(url, data, format='json')
@@ -219,8 +221,9 @@ class HearingAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         self.hearing.refresh_from_db()
-        self.assertEqual(self.hearing.status, 'COMPLETED')
-        self.assertEqual(self.hearing.recording_url, 'https://example.com/recording.mp4')
+        self.assertEqual(self.hearing.status, 'CONDUCTED')
+        self.assertEqual(self.hearing.summary, 'The parties agreed to a settlement.')
+        self.assertEqual(self.hearing.action, 'RESOLVED')
     
     def test_get_participants(self):
         """Test getting hearing participants"""
