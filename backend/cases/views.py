@@ -21,7 +21,7 @@ from .serializers import (
     CaseListSerializer, CaseReviewSerializer, JudgeAssignmentSerializer,
     CaseDocumentSerializer, CaseDocumentVersionSerializer, CaseNotesSerializer, JudgeProfileSerializer,
     CaseBulkAssignSerializer, CaseStatusUpdateSerializer,
-    DashboardStatsSerializer, JudgeWorkloadSerializer
+    DashboardStatsSerializer, JudgeWorkloadSerializer, DefendantAccountCreateSerializer
 )
 from .permissions import (
     IsRegistrar, IsJudge, IsAssignedJudge, IsAdmin,
@@ -111,6 +111,88 @@ class CaseViewSet(viewsets.ModelViewSet):
             # Clients see their own cases
             return self.queryset.filter(
                 Q(created_by=user) | Q(plaintiff=user) | Q(defendant=user)
+            )
+
+    @action(detail=True, methods=['post'], url_path='create-defendant-account', permission_classes=[IsAuthenticated, IsRegistrar | IsAdmin])
+    def create_defendant_account(self, request, pk=None):
+        """Dedicated API for Registrar to create/link defendant account to case"""
+        case = self.get_object()
+        
+        if case.defendant:
+            return Response(
+                {"error": "This case already has a linked defendant."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        serializer = DefendantAccountCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        email = serializer.validated_data['email']
+        phone_number = serializer.validated_data['phone_number']
+        first_name = serializer.validated_data['first_name']
+        last_name = serializer.validated_data['last_name']
+        
+        # Use the address stored on the case record
+        address = case.defendant_address
+        
+        from accounts.models import User
+        from accounts.utils import send_otp_email
+        from django.db import transaction
+        
+        try:
+            with transaction.atomic():
+                # 1. Find or create user
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'phone_number': phone_number,
+                        'address': address,
+                        'role': 'DEFENDANT',
+                        'is_active': False,
+                        'is_password_set': False
+                    }
+                )
+                
+                # 2. If user exists, update their role to DEFENDANT as requested
+                if not created:
+                    user.role = 'DEFENDANT'
+                    # Update contact info if it was missing or provided now
+                    if not user.phone_number:
+                        user.phone_number = phone_number
+                    if address and not user.address:
+                        user.address = address
+                    user.save()
+                
+                # 3. Link user to case
+                case.defendant = user
+                # Clear the temporary address from the case as it's now on the user
+                case.defendant_address = ""
+                case.save()
+                
+                # 4. Trigger OTP for account setup
+                send_otp_email(user, purpose='ACCOUNT_SETUP')
+                
+                # 5. Log action
+                create_audit_log(
+                    request=request,
+                    action_type=AuditLog.ActionType.CASE_UPDATED,
+                    obj=case,
+                    description=f"Defendant account created/linked for {email}. OTP sent for setup.",
+                    entity_name=case.file_number or case.title
+                )
+                
+                return Response({
+                    "message": "Defendant account created and linked successfully. Activation OTP sent.",
+                    "defendant_id": str(user.id),
+                    "email": user.email
+                }, status=status.HTTP_201_CREATED)
+                
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to create defendant account: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
             )
     
     def create(self, request, *args, **kwargs):

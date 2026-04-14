@@ -134,6 +134,7 @@ class Case(SoftDeleteModel):
     )
     # Free-text fallback when the defendant is not yet a registered user
     defendant_name = models.CharField(max_length=200, blank=True, null=True)
+    defendant_address = models.TextField(blank=True, null=True)
     
     # Legal Representatives
     plaintiff_lawyer = models.ForeignKey(

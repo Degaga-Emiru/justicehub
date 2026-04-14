@@ -246,8 +246,14 @@ class CaseListSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'file_number', 'category_name', 'category_code', 'category_fee',
             'status', 'status_display', 'priority', 'priority_display',
             'client_name', 'client_email', 'assigned_judge', 'created_at', 'defendant_name',
-            'rejection_reason'
+            'defendant_address', 'rejection_reason'
         ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.defendant is None:
+            representation['defendant'] = "PENDING_DEFENDANT"
+        return representation
 
     def get_assigned_judge(self, obj):
         assignment = obj.judge_assignments.filter(is_active=True).first()
@@ -271,15 +277,16 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )
-    # Optional free-text defendant name (used when defendant is not a registered user)
+    # Optional free-text defendant info (used when defendant is not a registered user yet)
     defendant_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    defendant_address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Case
         fields = [
             'id', 'title', 'description', 'case_summary',
             'category', 'priority', 'plaintiff', 'defendant', 'defendant_name',
-            'plaintiff_lawyer', 'defendant_lawyer',
+            'defendant_address', 'plaintiff_lawyer', 'defendant_lawyer',
             'documents', 'document_types'
         ]
         read_only_fields = ['id']
@@ -298,7 +305,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         if not plaintiff:
             raise serializers.ValidationError("A case must have a Plaintiff.")
 
-        # Defendant must be provided as either a User FK or a free-text name
+        # Defendant must be provided as either a User FK or a name/address
         if not defendant and not defendant_name:
             raise serializers.ValidationError(
                 "A case must have a Defendant (either a registered user or a defendant name)."
@@ -310,6 +317,12 @@ class CaseCreateSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.defendant is None:
+            representation['defendant'] = "PENDING_DEFENDANT"
+        return representation
 
     @transaction.atomic
     def create(self, validated_data):
@@ -378,7 +391,7 @@ class CaseDetailSerializer(serializers.ModelSerializer):
             'id', 'case_number', 'title', 'description', 'case_summary',
             'category', 'status', 'status_display', 'priority', 'priority_display',
             'file_number', 'court_name', 'court_room',
-            'created_by', 'plaintiff', 'defendant', 'defendant_name',
+            'created_by', 'plaintiff', 'defendant', 'defendant_name', 'defendant_address',
             'plaintiff_lawyer', 'defendant_lawyer',
             'reviewed_by', 'reviewed_at', 'rejection_reason',
             'filing_date', 'closed_date', 'created_at', 'updated_at',
@@ -405,6 +418,12 @@ class CaseDetailSerializer(serializers.ModelSerializer):
         if obj.closed_date:
             return (obj.closed_date - obj.filing_date).days
         return (timezone.now() - obj.filing_date).days
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.defendant is None:
+            representation['defendant'] = "PENDING_DEFENDANT"
+        return representation
 
 
 class DefendantCaseListSerializer(CaseListSerializer):
@@ -454,6 +473,17 @@ class CaseReviewSerializer(serializers.Serializer):
                 {"court_name": "Court name is required when accepting a case."}
             )
         return attrs
+
+
+class DefendantAccountCreateSerializer(serializers.Serializer):
+    """Serializer for registrar to create/link defendant account"""
+    email = serializers.EmailField(required=True)
+    phone_number = serializers.CharField(required=True)
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+
+    def validate_email(self, value):
+        return value.lower().strip()
 
 
 class CaseBulkAssignSerializer(serializers.Serializer):
