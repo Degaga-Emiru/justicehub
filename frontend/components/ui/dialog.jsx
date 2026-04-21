@@ -35,6 +35,22 @@ const DialogContent = React.forwardRef(({ className, children, ...props }, ref) 
                 e.preventDefault();
                 if (props.onCloseAutoFocus) props.onCloseAutoFocus(e);
             }}
+            onPointerDownOutside={(e) => {
+                // Prevent dialog from closing when interacting with portaled Select dropdowns
+                const target = e.target;
+                if (target?.closest?.('[data-radix-select-content]') || target?.closest?.('[role="listbox"]') || target?.closest?.('[role="option"]')) {
+                    e.preventDefault();
+                }
+                if (props.onPointerDownOutside) props.onPointerDownOutside(e);
+            }}
+            onInteractOutside={(e) => {
+                // Prevent dialog from closing when interacting with portaled Select dropdowns
+                const target = e.target;
+                if (target?.closest?.('[data-radix-select-content]') || target?.closest?.('[role="listbox"]') || target?.closest?.('[role="option"]')) {
+                    e.preventDefault();
+                }
+                if (props.onInteractOutside) props.onInteractOutside(e);
+            }}
             {...props}
         >
             {children}

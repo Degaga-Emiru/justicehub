@@ -5,7 +5,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     fetchJudgeDashboard, fetchJudgeCases, fetchJudgeCaseHearings,
     fetchNotifications, scheduleHearing, updateCaseStatus,
-    cancelHearing, completeHearing, fetchHearings
+    cancelHearing, completeHearing, fetchHearings,
+    rescheduleHearing, updateHearing, scheduleNextHearing,
+    recordHearingAttendance, fetchCaseTimeline, downloadJudgeDocument
 } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { statusColors, priorityColors } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { Clock, MapPin, FileText, Gavel, CalendarDays, Briefcase, Scale, AlertCircle, ArrowRight, Bell, CheckCircle, Play, XCircle, RotateCcw, Search, PlusCircle } from "lucide-react";
+import { Clock, MapPin, FileText, Gavel, CalendarDays, Briefcase, Scale, AlertCircle, ArrowRight, Bell, CheckCircle, Play, XCircle, RotateCcw, Search, PlusCircle, Pencil, Users, History, Download } from "lucide-react";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -32,10 +34,18 @@ export default function JudgeDashboard() {
     const [isScheduling, setIsScheduling] = useState(false);
     const [caseFilter, setCaseFilter] = useState("all");
     const [completingHearing, setCompletingHearing] = useState(null);
-    const [completeNotes, setCompleteNotes] = useState({ summary: "", action: "continued", details: "" });
+    const [completeNotes, setCompleteNotes] = useState({ summary: "", action: "CONTINUED", judge_comment: "", minutes: "" });
     const [nextHearingDate, setNextHearingDate] = useState("");
     const [cancelReason, setCancelReason] = useState("");
     const [cancellingHearing, setCancellingHearing] = useState(null);
+    const [reschedulingHearing, setReschedulingHearing] = useState(null);
+    const [rescheduleData, setRescheduleData] = useState({ new_date: "", new_time: "", reason: "" });
+    const [editingHearing, setEditingHearing] = useState(null);
+    const [editData, setEditData] = useState({ title: "", location: "", agenda: "", hearing_type: "" });
+    const [attendanceHearing, setAttendanceHearing] = useState(null);
+    const [attendanceData, setAttendanceData] = useState([]);
+    const [caseTimeline, setCaseTimeline] = useState([]);
+    const [showTimeline, setShowTimeline] = useState(false);
     const [scheduleData, setScheduleData] = useState({
         case: "",
         title: "",
@@ -108,7 +118,7 @@ export default function JudgeDashboard() {
             queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
             queryClient.invalidateQueries({ queryKey: ["judge-dashboard-stats"] });
             setCompletingHearing(null);
-            setCompleteNotes({ summary: "", action: "continued", details: "" });
+            setCompleteNotes({ summary: "", action: "CONTINUED", judge_comment: "", minutes: "" });
             setNextHearingDate("");
             alert("Hearing completed successfully!");
         },
@@ -128,6 +138,52 @@ export default function JudgeDashboard() {
         onError: (err) => alert(err.message || "Failed to cancel hearing")
     });
 
+    // Reschedule hearing mutation
+    const rescheduleMutation = useMutation({
+        mutationFn: ({ hearingId, data }) => rescheduleHearing(hearingId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
+            setReschedulingHearing(null);
+            setRescheduleData({ new_date: "", new_time: "", reason: "" });
+            alert("Hearing rescheduled successfully!");
+        },
+        onError: (err) => alert(err.message || "Failed to reschedule hearing")
+    });
+
+    // Edit hearing mutation
+    const editHearingMutation = useMutation({
+        mutationFn: ({ hearingId, data }) => updateHearing(hearingId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
+            setEditingHearing(null);
+            alert("Hearing updated successfully!");
+        },
+        onError: (err) => alert(err.message || "Failed to update hearing")
+    });
+
+    // Record attendance mutation
+    const recordAttendanceMutation = useMutation({
+        mutationFn: ({ hearingId, data }) => recordHearingAttendance(hearingId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
+            setAttendanceHearing(null);
+            setAttendanceData([]);
+            alert("Attendance recorded successfully!");
+        },
+        onError: (err) => alert(err.message || "Failed to record attendance")
+    });
+
+    // Schedule next hearing mutation
+    const nextHearingMutation = useMutation({
+        mutationFn: ({ hearingId, data }) => scheduleNextHearing(hearingId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
+            queryClient.invalidateQueries({ queryKey: ["judge-dashboard-stats"] });
+            alert("Follow-up hearing scheduled!");
+        },
+        onError: (err) => alert(err.message || "Failed to schedule next hearing")
+    });
+
     const handleScheduleSubmit = (e) => {
         e.preventDefault();
         scheduleMutation.mutate({
@@ -141,11 +197,10 @@ export default function JudgeDashboard() {
         completeHearingMutation.mutate({
             hearingId: completingHearing.id,
             data: {
-                notes: {
-                    summary: completeNotes.summary,
-                    action: completeNotes.action,
-                    details: completeNotes.details,
-                },
+                summary: completeNotes.summary,
+                action: completeNotes.action.toUpperCase(),
+                judge_comment: completeNotes.judge_comment || "",
+                minutes: completeNotes.minutes || "",
                 ...(nextHearingDate ? { next_hearing_date: new Date(nextHearingDate).toISOString() } : {})
             }
         });
@@ -640,9 +695,9 @@ export default function JudgeDashboard() {
                                         {selectedCase.documents.map((doc, i) => {
                                             const activeVersion = doc.versions?.find(v => v.is_active) || doc.versions?.[0];
                                             const fileName = activeVersion?.file_name || doc.description || doc.document_type || "Document";
-                                            const fileUrl = activeVersion?.file_url;
+                                            const docId = doc.document_id || doc.id;
                                             return (
-                                                <div key={doc.document_id || i} className="flex items-center justify-between text-sm p-2 border rounded hover:bg-muted/30 transition-colors">
+                                                <div key={docId || i} className="flex items-center justify-between text-sm p-2 border rounded hover:bg-muted/30 transition-colors">
                                                     <div className="flex items-center gap-2">
                                                         <FileText className="h-4 w-4 text-muted-foreground" />
                                                         <div>
@@ -650,10 +705,19 @@ export default function JudgeDashboard() {
                                                             <span className="text-xs text-muted-foreground ml-2">{doc.document_type}</span>
                                                         </div>
                                                     </div>
-                                                    {fileUrl && (
-                                                        <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline" onClick={(e) => e.stopPropagation()}>
+                                                    {docId && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-primary text-xs h-7 px-2"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                downloadJudgeDocument(docId).catch(err => alert(err.message));
+                                                            }}
+                                                        >
+                                                            <Download className="h-3 w-3 mr-1" />
                                                             Download
-                                                        </a>
+                                                        </Button>
                                                     )}
                                                 </div>
                                             );
@@ -755,6 +819,52 @@ export default function JudgeDashboard() {
                         {selectedHearing && !["CONDUCTED", "CANCELLED", "COMPLETED"].includes(selectedHearing.status) && (
                             <>
                                 <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setEditData({
+                                            title: selectedHearing.title || "",
+                                            location: selectedHearing.location || "",
+                                            agenda: selectedHearing.agenda || "",
+                                            hearing_type: selectedHearing.hearing_type || ""
+                                        });
+                                        setEditingHearing(selectedHearing);
+                                        setSelectedHearing(null);
+                                    }}
+                                >
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setReschedulingHearing(selectedHearing);
+                                        setSelectedHearing(null);
+                                    }}
+                                >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reschedule
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        const participants = selectedHearing.participants?.map(p => ({
+                                            user_id: p.user?.id || p.id,
+                                            name: p.user?.full_name || p.user_name || p.name || "Unknown",
+                                            role: p.role_in_hearing || p.role || "Participant",
+                                            attendance_status: p.attendance_status || "PENDING"
+                                        })) || [];
+                                        setAttendanceData(participants);
+                                        setAttendanceHearing(selectedHearing);
+                                        setSelectedHearing(null);
+                                    }}
+                                >
+                                    <Users className="mr-2 h-4 w-4" />
+                                    Attendance
+                                </Button>
+                                <Button
                                     variant="destructive"
                                     size="sm"
                                     onClick={() => { setCancellingHearing(selectedHearing); setSelectedHearing(null); }}
@@ -767,7 +877,7 @@ export default function JudgeDashboard() {
                                     onClick={() => { setCompletingHearing(selectedHearing); setSelectedHearing(null); }}
                                 >
                                     <CheckCircle className="mr-2 h-4 w-4" />
-                                    Complete
+                                    Conduct
                                 </Button>
                             </>
                         )}
@@ -786,7 +896,7 @@ export default function JudgeDashboard() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label>Summary</Label>
+                            <Label>Summary *</Label>
                             <Textarea
                                 placeholder="Brief summary of what occurred..."
                                 value={completeNotes.summary}
@@ -794,41 +904,50 @@ export default function JudgeDashboard() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Action Taken</Label>
+                            <Label>Action Taken *</Label>
                             <Select value={completeNotes.action} onValueChange={(v) => setCompleteNotes({ ...completeNotes, action: v })}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="postponed">Postponed</SelectItem>
-                                    <SelectItem value="continued">Continued</SelectItem>
-                                    <SelectItem value="resolved">Resolved</SelectItem>
+                                    <SelectItem value="CONTINUED">Continued</SelectItem>
+                                    <SelectItem value="POSTPONED">Postponed</SelectItem>
+                                    <SelectItem value="ADJOURNED">Adjourned</SelectItem>
+                                    <SelectItem value="RESOLVED">Resolved</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>Additional Details</Label>
+                            <Label>Judge Comment</Label>
                             <Textarea
-                                placeholder="Any additional notes..."
-                                value={completeNotes.details}
-                                onChange={(e) => setCompleteNotes({ ...completeNotes, details: e.target.value })}
+                                placeholder="Judge's observations or comments..."
+                                value={completeNotes.judge_comment}
+                                onChange={(e) => setCompleteNotes({ ...completeNotes, judge_comment: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Schedule Follow-up Hearing {completeNotes.action === "postponed" ? "(Required)" : "(Optional)"}</Label>
+                            <Label>Meeting Minutes / Proceedings</Label>
+                            <Textarea
+                                placeholder="Record of proceedings..."
+                                value={completeNotes.minutes}
+                                onChange={(e) => setCompleteNotes({ ...completeNotes, minutes: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Schedule Follow-up Hearing {completeNotes.action === "POSTPONED" ? "(Required)" : "(Optional)"}</Label>
                             <Input
                                 type="datetime-local"
                                 value={nextHearingDate}
                                 onChange={(e) => setNextHearingDate(e.target.value)}
                             />
-                            {completeNotes.action === "postponed" && !nextHearingDate && (
+                            {completeNotes.action === "POSTPONED" && !nextHearingDate && (
                                 <p className="text-xs text-red-500 font-medium">Next hearing date is required when action is &quot;Postponed&quot;.</p>
                             )}
                         </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setCompletingHearing(null)}>Cancel</Button>
-                        <Button onClick={handleCompleteHearing} disabled={completeHearingMutation.isPending || !completeNotes.summary || (completeNotes.action === "postponed" && !nextHearingDate)}>
+                        <Button onClick={handleCompleteHearing} disabled={completeHearingMutation.isPending || !completeNotes.summary || (completeNotes.action === "POSTPONED" && !nextHearingDate)}>
                             {completeHearingMutation.isPending ? "Saving..." : "Complete Hearing"}
                         </Button>
                     </DialogFooter>
@@ -879,13 +998,13 @@ export default function JudgeDashboard() {
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
                                 <Label htmlFor="case">Case</Label>
-                                <Select required value={scheduleData.case} onValueChange={(val) => setScheduleData({ ...scheduleData, case: val })}>
+                                <Select required value={scheduleData.case || undefined} onValueChange={(val) => setScheduleData({ ...scheduleData, case: val })}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a case" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {cases?.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(c.status)).map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.file_number} - {c.title}</SelectItem>
+                                        {cases?.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(String(c.status).toUpperCase())).map(c => (
+                                            <SelectItem key={c.id} value={String(c.id)}>{c.file_number || "PENDING"} - {c.title}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -973,6 +1092,195 @@ export default function JudgeDashboard() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reschedule Hearing Dialog */}
+            <Dialog open={!!reschedulingHearing} onOpenChange={(open) => !open && setReschedulingHearing(null)}>
+                <DialogContent className="sm:max-w-[450px]">
+                    <DialogHeader>
+                        <DialogTitle>Reschedule Hearing</DialogTitle>
+                        <DialogDescription>
+                            Move this hearing to a new date and time. A new hearing will be created and participants notified.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>New Date *</Label>
+                            <Input
+                                type="date"
+                                value={rescheduleData.new_date}
+                                onChange={(e) => setRescheduleData({ ...rescheduleData, new_date: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>New Time *</Label>
+                            <Input
+                                type="time"
+                                value={rescheduleData.new_time}
+                                onChange={(e) => setRescheduleData({ ...rescheduleData, new_time: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Reason for Rescheduling</Label>
+                            <Textarea
+                                placeholder="Provide a reason..."
+                                value={rescheduleData.reason}
+                                onChange={(e) => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setReschedulingHearing(null)}>Cancel</Button>
+                        <Button
+                            onClick={() => rescheduleMutation.mutate({ hearingId: reschedulingHearing.id, data: rescheduleData })}
+                            disabled={rescheduleMutation.isPending || !rescheduleData.new_date || !rescheduleData.new_time}
+                        >
+                            {rescheduleMutation.isPending ? "Rescheduling..." : "Reschedule"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Hearing Dialog */}
+            <Dialog open={!!editingHearing} onOpenChange={(open) => !open && setEditingHearing(null)}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit Hearing</DialogTitle>
+                        <DialogDescription>
+                            Update hearing details. Changes will be applied immediately.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={editData.title}
+                                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                                placeholder="Hearing title"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Hearing Type</Label>
+                            <Select value={editData.hearing_type} onValueChange={(v) => setEditData({ ...editData, hearing_type: v })}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="INITIAL">Initial Hearing</SelectItem>
+                                    <SelectItem value="INTRO">Case Introduction</SelectItem>
+                                    <SelectItem value="EVIDENCE">Evidence Hearing</SelectItem>
+                                    <SelectItem value="WITNESS">Witness Hearing</SelectItem>
+                                    <SelectItem value="ARGUMENT">Argument Hearing</SelectItem>
+                                    <SelectItem value="FINAL">Final Hearing</SelectItem>
+                                    <SelectItem value="FINAL_ARGUMENT">Final Argument</SelectItem>
+                                    <SelectItem value="JUDGMENT">Judgment</SelectItem>
+                                    <SelectItem value="STATUS">Status Conference</SelectItem>
+                                    <SelectItem value="EVIDENTIARY">Evidentiary Hearing</SelectItem>
+                                    <SelectItem value="MOTION">Motion Hearing</SelectItem>
+                                    <SelectItem value="TRIAL">Trial</SelectItem>
+                                    <SelectItem value="OTHER">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Location / Courtroom</Label>
+                            <Input
+                                value={editData.location}
+                                onChange={(e) => setEditData({ ...editData, location: e.target.value })}
+                                placeholder="Courtroom 3B"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Agenda</Label>
+                            <Textarea
+                                value={editData.agenda}
+                                onChange={(e) => setEditData({ ...editData, agenda: e.target.value })}
+                                placeholder="Updated agenda..."
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditingHearing(null)}>Cancel</Button>
+                        <Button
+                            onClick={() => {
+                                const payload = {};
+                                if (editData.title) payload.title = editData.title;
+                                if (editData.hearing_type) payload.hearing_type = editData.hearing_type;
+                                if (editData.location) payload.location = editData.location;
+                                if (editData.agenda) payload.agenda = editData.agenda;
+                                editHearingMutation.mutate({ hearingId: editingHearing.id, data: payload });
+                            }}
+                            disabled={editHearingMutation.isPending}
+                        >
+                            {editHearingMutation.isPending ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Record Attendance Dialog */}
+            <Dialog open={!!attendanceHearing} onOpenChange={(open) => !open && setAttendanceHearing(null)}>
+                <DialogContent className="sm:max-w-[550px]">
+                    <DialogHeader>
+                        <DialogTitle>Record Attendance</DialogTitle>
+                        <DialogDescription>
+                            Mark each participant as Present, Absent, or Late for this hearing session.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-4 max-h-[400px] overflow-y-auto">
+                        {attendanceData.length > 0 ? attendanceData.map((p, i) => (
+                            <div key={p.user_id || i} className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-background/40">
+                                <div className="space-y-0.5">
+                                    <p className="font-bold text-sm">{p.name}</p>
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider">{p.role}</p>
+                                </div>
+                                <Select
+                                    value={p.attendance_status}
+                                    onValueChange={(v) => {
+                                        const updated = [...attendanceData];
+                                        updated[i] = { ...updated[i], attendance_status: v };
+                                        setAttendanceData(updated);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-[130px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="PRESENT">
+                                            <span className="flex items-center gap-2"><CheckCircle className="h-3 w-3 text-green-500" /> Present</span>
+                                        </SelectItem>
+                                        <SelectItem value="ABSENT">
+                                            <span className="flex items-center gap-2"><XCircle className="h-3 w-3 text-red-500" /> Absent</span>
+                                        </SelectItem>
+                                        <SelectItem value="LATE">
+                                            <span className="flex items-center gap-2"><Clock className="h-3 w-3 text-yellow-500" /> Late</span>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">No participants found for this hearing.</p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setAttendanceHearing(null)}>Cancel</Button>
+                        <Button
+                            onClick={() => {
+                                const payload = {
+                                    participants: attendanceData.map(p => ({
+                                        user_id: p.user_id,
+                                        role: p.role,
+                                        attendance_status: p.attendance_status
+                                    }))
+                                };
+                                recordAttendanceMutation.mutate({ hearingId: attendanceHearing.id, data: payload });
+                            }}
+                            disabled={recordAttendanceMutation.isPending || attendanceData.length === 0}
+                        >
+                            {recordAttendanceMutation.isPending ? "Saving..." : "Save Attendance"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

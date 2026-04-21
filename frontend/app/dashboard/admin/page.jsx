@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUsers, adminCreateUser, adminUpdateUser, adminDeleteUser, fetchCategories } from "@/lib/api";
+import { fetchUsers, adminCreateUser, adminUpdateUser, adminDeleteUser, fetchCategories, adminToggleUserStatus, adminResetPassword, getAdminUsersExportUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -115,10 +115,24 @@ export default function UserManagementPage() {
 
     const handleToggleActive = async (user) => {
         try {
-            await adminUpdateUser(user.id, { is_active: !user.is_active });
+            await adminToggleUserStatus(user.id, { 
+                action: user.is_active ? 'deactivate' : 'activate',
+                reason: 'Administrative action'
+            });
             refetch();
         } catch (err) {
             console.error("Toggle active error:", err);
+        }
+    };
+
+    const handleResetPassword = async (user) => {
+        if (!window.confirm(`Force password reset for ${user.email}? They will receive an email with their new password.`)) return;
+        try {
+            await adminResetPassword(user.id, true);
+            alert("Password reset successfully. Temp password sent via email.");
+        } catch (err) {
+            console.error("Reset password error:", err);
+            alert("Failed to reset password: " + err.message);
         }
     };
 
@@ -133,12 +147,20 @@ export default function UserManagementPage() {
                         {t("manageSystemAccess")}
                     </p>
                 </div>
-                <Button 
-                    onClick={() => setIsCreateOpen(true)}
-                    className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 text-white"
-                >
-                    <UserPlus className="mr-2 h-4 w-4" /> {t("addUser")}
-                </Button>
+                <div className="flex gap-3">
+                    <Button 
+                        onClick={() => window.open(getAdminUsersExportUrl(), '_blank')}
+                        className="h-12 px-6 rounded-xl font-bold bg-muted/50 border border-white/5 hover:bg-muted transition-all duration-300 text-foreground"
+                    >
+                        Export CSV
+                    </Button>
+                    <Button 
+                        onClick={() => setIsCreateOpen(true)}
+                        className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 text-white"
+                    >
+                        <UserPlus className="mr-2 h-4 w-4" /> {t("addUser")}
+                    </Button>
+                </div>
             </div>
 
             {/* Controls */}
@@ -257,6 +279,16 @@ export default function UserManagementPage() {
                                                         >
                                                             <Power className={cn("h-4 w-4", user.is_active !== false ? "text-rose-500" : "text-emerald-500")} />
                                                             {user.is_active !== false ? "Suspend Access" : "Restore Access"}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-3 cursor-pointer transition-colors"
+                                                            onSelect={() => {
+                                                                setTimeout(() => {
+                                                                    handleResetPassword(user);
+                                                                }, 0);
+                                                            }}
+                                                        >
+                                                            <Shield className="h-4 w-4 text-amber-500" /> Force Password Reset
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-3 cursor-pointer focus:bg-rose-500/10 focus:text-rose-500 transition-colors"

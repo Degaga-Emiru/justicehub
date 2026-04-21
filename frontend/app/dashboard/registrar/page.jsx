@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchCases, fetchUsers, assignJudge, fetchRegistrarStatistics, fetchPendingCases, reviewCase, fetchCaseById } from "@/lib/api";
+import { fetchCases, fetchUsers, assignJudge, fetchRegistrarStatistics, fetchPendingCases, reviewCase, fetchCaseById, createDefendantAccount } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, ShieldCheck, Search, UserCheck, FileCheck, XCircle, FileText, Download, Scale, ClipboardList, AlertCircle, Loader2 } from "lucide-react";
+import { MoreHorizontal, ShieldCheck, Search, UserCheck, FileCheck, XCircle, FileText, Download, Scale, ClipboardList, AlertCircle, Loader2, UserPlus, Mail, Phone } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,6 +51,16 @@ export default function RegistrarDashboardPage() {
     const [reviewTarget, setReviewTarget] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const [reviewAction, setReviewAction] = useState(""); // "approve" or "reject"
+
+    // Create Defendant Account Modal State
+    const [isDefendantOpen, setIsDefendantOpen] = useState(false);
+    const [defendantTarget, setDefendantTarget] = useState(null);
+    const [defendantForm, setDefendantForm] = useState({
+        email: "",
+        phone_number: "",
+        first_name: "",
+        last_name: "",
+    });
 
     // Queries
     const { data: cases = [], isLoading: casesLoading } = useQuery({
@@ -105,6 +115,18 @@ export default function RegistrarDashboardPage() {
         }
     });
 
+    const defendantMutation = useMutation({
+        mutationFn: ({ caseId, data }) => createDefendantAccount(caseId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries(["cases"]);
+            queryClient.invalidateQueries(["pendingIntake"]);
+            queryClient.invalidateQueries(["caseDetails"]);
+            setIsDefendantOpen(false);
+            setDefendantTarget(null);
+            setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "" });
+        }
+    });
+
     // Filters
     const judges = users.filter(user => user.role === "JUDGE" && user.is_active !== false);
 
@@ -131,6 +153,17 @@ export default function RegistrarDashboardPage() {
         setRejectionReason("");
         setReviewAction("");
         setIsReviewOpen(true);
+    };
+
+    const handleDefendantClick = (caseItem) => {
+        setDefendantTarget(caseItem);
+        setDefendantForm({
+            email: "",
+            phone_number: "",
+            first_name: caseItem.defendant_name?.split(' ')[0] || "",
+            last_name: caseItem.defendant_name?.split(' ').slice(1).join(' ') || "",
+        });
+        setIsDefendantOpen(true);
     };
 
     return (
@@ -346,9 +379,16 @@ export default function RegistrarDashboardPage() {
                                                         </TableCell>
                                                         <TableCell className="text-xs font-bold">{new Date(c.created_at).toLocaleDateString()}</TableCell>
                                                         <TableCell className="text-right pr-8">
-                                                            <Button size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20" onClick={() => handleAssignClick(c)}>
-                                                                <UserCheck className="mr-2 h-4 w-4" /> Assign Judge
-                                                            </Button>
+                                                            <div className="flex justify-end gap-2">
+                                                                {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
+                                                                    <Button size="sm" variant="outline" className="rounded-xl font-bold text-xs border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 gap-1.5" onClick={() => handleDefendantClick(c)}>
+                                                                        <UserPlus className="h-3.5 w-3.5" /> Defendant
+                                                                    </Button>
+                                                                )}
+                                                                <Button size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20" onClick={() => handleAssignClick(c)}>
+                                                                    <UserCheck className="mr-2 h-4 w-4" /> Assign Judge
+                                                                </Button>
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
@@ -423,10 +463,15 @@ export default function RegistrarDashboardPage() {
                                                                         <MoreHorizontal className="h-5 w-5" />
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[160px]">
+                                                                <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[180px]">
                                                                     {(c.status === "PAID" || c.status === "APPROVED") && (
-                                                                        <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors" onClick={() => handleAssignClick(c)}>
+                                                                        <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors" onSelect={(e) => { e.preventDefault(); handleAssignClick(c); }}>
                                                                             <UserCheck className="h-4 w-4" /> Assign Judge
+                                                                        </DropdownMenuItem>
+                                                                    )}
+                                                                    {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
+                                                                        <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-indigo-500/10 focus:text-indigo-500 transition-colors" onSelect={(e) => { e.preventDefault(); handleDefendantClick(c); }}>
+                                                                            <UserPlus className="h-4 w-4" /> Create Defendant
                                                                         </DropdownMenuItem>
                                                                     )}
                                                                 </DropdownMenuContent>
@@ -543,6 +588,25 @@ export default function RegistrarDashboardPage() {
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Defendant</p>
                                         <p className="font-bold">{activeReviewCase.defendant?.first_name || activeReviewCase.defendant_name || "Unknown"}</p>
+                                        {(!activeReviewCase.defendant || activeReviewCase.defendant === "PENDING_DEFENDANT") && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="mt-1 rounded-xl font-bold text-xs border-primary/20 text-primary hover:bg-primary/10 gap-1.5"
+                                                onClick={() => {
+                                                    setDefendantTarget(activeReviewCase);
+                                                    setDefendantForm({
+                                                        email: "",
+                                                        phone_number: "",
+                                                        first_name: activeReviewCase.defendant_name?.split(' ')[0] || "",
+                                                        last_name: activeReviewCase.defendant_name?.split(' ').slice(1).join(' ') || "",
+                                                    });
+                                                    setIsDefendantOpen(true);
+                                                }}
+                                            >
+                                                <UserPlus className="h-3.5 w-3.5" /> Create Account
+                                            </Button>
+                                        )}
                                     </div>
                                     <div className="col-span-2 space-y-1">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Description</p>
@@ -642,6 +706,93 @@ export default function RegistrarDashboardPage() {
                             <AlertDescription className="font-bold">Target case not found.</AlertDescription>
                         </Alert>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Create Defendant Account Dialog */}
+            <Dialog open={isDefendantOpen} onOpenChange={(open) => !defendantMutation.isPending && setIsDefendantOpen(open)}>
+                <DialogContent className="sm:max-w-[480px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl font-black font-display">
+                            <div className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                <UserPlus className="h-5 w-5" />
+                            </div>
+                            Create Defendant Account
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground font-medium">
+                            Create and link a defendant account for <span className="font-bold text-foreground">{defendantTarget?.title}</span>. An activation OTP will be sent to the provided email.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        {defendantMutation.isError && (
+                            <Alert variant="destructive" className="glass border-destructive/50">
+                                <AlertDescription className="font-bold">
+                                    {defendantMutation.error?.message || "Failed to create defendant account."}
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">First Name *</label>
+                                <Input
+                                    placeholder="First name"
+                                    value={defendantForm.first_name}
+                                    onChange={(e) => setDefendantForm({...defendantForm, first_name: e.target.value})}
+                                    className="h-11 bg-background/50 border-white/20 rounded-xl"
+                                    disabled={defendantMutation.isPending}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Last Name *</label>
+                                <Input
+                                    placeholder="Last name"
+                                    value={defendantForm.last_name}
+                                    onChange={(e) => setDefendantForm({...defendantForm, last_name: e.target.value})}
+                                    className="h-11 bg-background/50 border-white/20 rounded-xl"
+                                    disabled={defendantMutation.isPending}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
+                                <Mail className="h-3 w-3" /> Email Address *
+                            </label>
+                            <Input
+                                type="email"
+                                placeholder="defendant@email.com"
+                                value={defendantForm.email}
+                                onChange={(e) => setDefendantForm({...defendantForm, email: e.target.value})}
+                                className="h-11 bg-background/50 border-white/20 rounded-xl"
+                                disabled={defendantMutation.isPending}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
+                                <Phone className="h-3 w-3" /> Phone Number *
+                            </label>
+                            <Input
+                                type="tel"
+                                placeholder="+251900000000"
+                                value={defendantForm.phone_number}
+                                onChange={(e) => setDefendantForm({...defendantForm, phone_number: e.target.value})}
+                                className="h-11 bg-background/50 border-white/20 rounded-xl"
+                                disabled={defendantMutation.isPending}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" className="rounded-xl" onClick={() => setIsDefendantOpen(false)} disabled={defendantMutation.isPending}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => defendantMutation.mutate({ caseId: defendantTarget.id, data: defendantForm })}
+                            disabled={!defendantForm.email || !defendantForm.phone_number || !defendantForm.first_name || !defendantForm.last_name || defendantMutation.isPending}
+                            className="rounded-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-lg shadow-indigo-500/20"
+                        >
+                            {defendantMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {defendantMutation.isPending ? "Creating..." : "Create & Send OTP"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

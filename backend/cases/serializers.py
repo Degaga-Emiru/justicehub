@@ -239,6 +239,7 @@ class CaseListSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
     client_email = serializers.CharField(source='created_by.email', read_only=True)
     assigned_judge = serializers.SerializerMethodField()
+    defendant = UserProfileSerializer(read_only=True)
     
     class Meta:
         model = Case
@@ -246,7 +247,7 @@ class CaseListSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'file_number', 'category_name', 'category_code', 'category_fee',
             'status', 'status_display', 'priority', 'priority_display',
             'client_name', 'client_email', 'assigned_judge', 'created_at', 'defendant_name',
-            'defendant_address', 'rejection_reason'
+            'defendant_address', 'rejection_reason', 'defendant'
         ]
 
     def to_representation(self, instance):
