@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import {
     LayoutDashboard,
     FileText,
+    FolderOpen,
     Calendar,
     Upload,
     Search,
@@ -25,7 +26,8 @@ import {
     ChevronLeft,
     ChevronRight,
     MessageSquare,
-    Globe
+    Globe,
+    Bell
 } from "lucide-react";
 import { useState } from "react";
 import { useLanguage } from "@/components/language-provider";
@@ -37,7 +39,9 @@ const menuKeys = {
         { key: "navDashboard", href: "/dashboard/client", icon: LayoutDashboard },
         { key: "navRegister", href: "/dashboard/client/register-case", icon: FilePlus },
         { key: "navCases", href: "/dashboard/client/cases", icon: FileText },
+        { key: "navDocuments", href: "/dashboard/client/documents", icon: FolderOpen },
         { key: "navSchedule", href: "/dashboard/client/schedule", icon: Calendar },
+        { key: "navNotifications", href: "/dashboard/client/notifications", icon: Bell },
     ],
     judge: [
         { key: "navDashboard", href: "/dashboard/judge", icon: LayoutDashboard },
@@ -62,9 +66,11 @@ const menuKeys = {
         { key: "navPayments", href: "/dashboard/registrar/payments", icon: CreditCard },
     ],
     defendant: [
-        { key: "navDashboard", href: "/dashboard/defendant", icon: LayoutDashboard },
-        { key: "navCases", href: "/dashboard/defendant/cases", icon: FileText },
-        { key: "navSchedule", href: "/dashboard/defendant/schedule", icon: Calendar },
+        { key: "navDashboard", href: "/dashboard/client", icon: LayoutDashboard },
+        { key: "navCases", href: "/dashboard/client/cases", icon: FileText },
+        { key: "navDocuments", href: "/dashboard/client/documents", icon: FolderOpen },
+        { key: "navSchedule", href: "/dashboard/client/schedule", icon: Calendar },
+        { key: "navNotifications", href: "/dashboard/client/notifications", icon: Bell },
     ],
 };
 
@@ -88,6 +94,8 @@ export function Sidebar({ className }) {
         'ADMIN': 'admin',
         'REGISTRAR': 'registrar'
     };
+    // Defendant uses client pages, so settings path should be /dashboard/client/settings
+    const settingsRole = user.role?.toUpperCase() === 'DEFENDANT' ? 'client' : null;
     
     const normalizedRole = roleMap[user.role?.toUpperCase()] || user.role?.toLowerCase() || "client";
     const menuItems = (menuKeys[normalizedRole] || []).map(item => ({
@@ -116,7 +124,7 @@ export function Sidebar({ className }) {
                 roleLabel={roleLabel}
                 menuItems={menuItems}
                 pathname={pathname}
-                menuRole={normalizedRole}
+                menuRole={settingsRole || normalizedRole}
             />
 
             {/* Collapse toggle - Enhanced */}

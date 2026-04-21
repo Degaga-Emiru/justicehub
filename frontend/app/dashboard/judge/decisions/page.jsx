@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     fetchJudgeCases, createDecision, updateDecision,
-    finalizeDecision, fetchDecisionsByCase, createImmediateDecision
+    finalizeDecision, fetchDecisionsByCase, createImmediateDecision,
+    downloadDecisionPdf, publishDecision, fetchDecisionVersions,
+    fetchDecisionComments, addDecisionComment, uploadDecisionDocument
 } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -15,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Save, Gavel, CheckCircle2, AlertCircle, FileText, Zap, Clock, History, Scale } from "lucide-react";
+import { Save, Gavel, CheckCircle2, AlertCircle, FileText, Zap, Clock, History, Scale, Download, Send, MessageSquare, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -57,6 +59,8 @@ export default function DecisionsPage() {
     const [showImmediateDialog, setShowImmediateDialog] = useState(false);
     const [immediateReason, setImmediateReason] = useState("");
     const [immediateDescription, setImmediateDescription] = useState("");
+    const [commentText, setCommentText] = useState("");
+    const [uploadingDoc, setUploadingDoc] = useState(false);
 
     // Content fields — exactly matching backend Decision model fields
     const [introduction, setIntroduction] = useState("");
@@ -119,6 +123,41 @@ export default function DecisionsPage() {
             alert("Immediate decision issued. Case has been closed.");
         },
         onError: (err) => alert(err.message || "Failed to issue immediate decision"),
+    });
+
+    // Publish decision mutation
+    const publishMutation = useMutation({
+        mutationFn: (id) => publishDecision(id),
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
+            queryClient.invalidateQueries({ queryKey: ["judge-cases-decisions"] });
+            alert(`Decision published! ${data.message || ""}`);
+        },
+        onError: (err) => alert(err.message || "Failed to publish decision"),
+    });
+
+    // Fetch version history
+    const { data: decisionVersions } = useQuery({
+        queryKey: ["decision-versions", currentDecisionId],
+        queryFn: () => fetchDecisionVersions(currentDecisionId),
+        enabled: !!currentDecisionId,
+    });
+
+    // Fetch comments
+    const { data: decisionComments, refetch: refetchComments } = useQuery({
+        queryKey: ["decision-comments", currentDecisionId],
+        queryFn: () => fetchDecisionComments(currentDecisionId),
+        enabled: !!currentDecisionId,
+    });
+
+    // Add comment mutation
+    const commentMutation = useMutation({
+        mutationFn: ({ id, text }) => addDecisionComment(id, text),
+        onSuccess: () => {
+            refetchComments();
+            setCommentText("");
+        },
+        onError: (err) => alert(err.message || "Failed to add comment"),
     });
 
     const clearForm = () => {
@@ -319,6 +358,10 @@ export default function DecisionsPage() {
                                         <History className="mr-1.5 h-3.5 w-3.5" />
                                         Versions
                                     </TabsTrigger>
+                                    <TabsTrigger value="comments" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300">
+                                        <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+                                        Comments
+                                    </TabsTrigger>
                                 </TabsList>
 
                                 <TabsContent value="draft" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -476,7 +519,34 @@ export default function DecisionsPage() {
                                 </TabsContent>
 
                                 <TabsContent value="history" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    {existingDecisions?.length > 0 ? (
+                                    {currentDecisionId && decisionVersions?.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {decisionVersions.map((v, i) => (
+                                                <div key={v.id || i} className="p-6 border border-white/5 rounded-2xl bg-muted/10 hover:bg-white/5 transition-colors">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="space-y-1">
+                                                            <h4 className="font-bold text-lg">Version {v.version_number || (decisionVersions.length - i)}</h4>
+                                                            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">
+                                                                {v.is_major_change ? "Major Change" : "Minor Edit"} · by {v.created_by_name || v.author_name || "Judge"}
+                                                            </p>
+                                                        </div>
+                                                        <Badge className={cn("px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border-none", v.is_major_change ? "bg-orange-500/10 text-orange-600" : "bg-slate-500/10 text-slate-500")}>
+                                                            {v.is_major_change ? "MAJOR" : "MINOR"}
+                                                        </Badge>
+                                                    </div>
+                                                    {v.snapshot_summary && (
+                                                        <p className="text-sm font-medium text-muted-foreground leading-relaxed line-clamp-2 mt-3">{v.snapshot_summary}</p>
+                                                    )}
+                                                    <div className="flex items-center gap-6 mt-4 pt-4 border-t border-white/5">
+                                                        <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                                            <Clock className="h-3 w-3" />
+                                                            {v.created_at ? format(new Date(v.created_at), "MMM d, yyyy 'at' h:mm a") : "N/A"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : existingDecisions?.length > 0 ? (
                                         <div className="space-y-4">
                                             {existingDecisions.map(d => (
                                                 <div key={d.id} className="p-6 border border-white/5 rounded-2xl bg-muted/10 hover:bg-white/5 transition-colors">
@@ -492,7 +562,6 @@ export default function DecisionsPage() {
                                                             {d.status}
                                                         </Badge>
                                                     </div>
-                                                    {/* Use backend field 'analysis' for preview text */}
                                                     {d.analysis && (
                                                         <p className="text-sm font-medium text-muted-foreground leading-relaxed line-clamp-2 mt-3">{d.analysis}</p>
                                                     )}
@@ -513,9 +582,58 @@ export default function DecisionsPage() {
                                             <div className="h-16 w-16 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 mb-4">
                                                 <History className="h-8 w-8 text-muted-foreground/30" />
                                             </div>
-                                            <p className="text-sm font-bold text-muted-foreground">No previous decisions recorded for this case.</p>
+                                            <p className="text-sm font-bold text-muted-foreground">No version history. Save a draft first to start tracking versions.</p>
                                         </div>
                                     )}
+                                </TabsContent>
+
+                                {/* COMMENTS TAB */}
+                                <TabsContent value="comments" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="space-y-6">
+                                        {/* Add comment */}
+                                        {currentDecisionId && (
+                                            <div className="flex gap-3">
+                                                <Textarea
+                                                    className="flex-1 min-h-[80px] bg-background/50 border-white/20 rounded-xl focus:ring-primary/20 font-medium p-4"
+                                                    placeholder="Add a review comment or note..."
+                                                    value={commentText}
+                                                    onChange={(e) => setCommentText(e.target.value)}
+                                                />
+                                                <Button
+                                                    className="self-end rounded-xl font-bold bg-primary hover:bg-primary/90 h-10 px-5"
+                                                    disabled={!commentText.trim() || commentMutation.isPending}
+                                                    onClick={() => commentMutation.mutate({ id: currentDecisionId, text: commentText })}
+                                                >
+                                                    <Send className="h-4 w-4 mr-1.5" />
+                                                    {commentMutation.isPending ? "..." : "Post"}
+                                                </Button>
+                                            </div>
+                                        )}
+
+                                        {/* Comment list */}
+                                        {decisionComments?.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {decisionComments.map((c, i) => (
+                                                    <div key={c.id || i} className="p-5 rounded-2xl border border-white/5 bg-muted/10">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <span className="font-bold text-sm">{c.author_name || c.author?.full_name || "Unknown"}</span>
+                                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">
+                                                                {c.created_at ? format(new Date(c.created_at), "MMM d, h:mm a") : ""}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-muted-foreground leading-relaxed">{c.text || c.content}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-16 border border-white/5 rounded-2xl bg-muted/5">
+                                                <div className="h-16 w-16 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 mb-4">
+                                                    <MessageSquare className="h-8 w-8 text-muted-foreground/30" />
+                                                </div>
+                                                <p className="text-sm font-bold text-muted-foreground">{currentDecisionId ? "No comments yet. Start a discussion above." : "Select or save a draft to enable comments."}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </TabsContent>
                             </Tabs>
                         ) : (
@@ -530,9 +648,51 @@ export default function DecisionsPage() {
                     
                     {selectedCase && (
                         <CardFooter className="flex flex-col sm:flex-row justify-between bg-muted/20 p-6 md:px-8 border-t border-white/5 gap-4">
-                            <Button variant="ghost" className="rounded-xl font-bold text-muted-foreground hover:text-foreground" onClick={clearForm}>
-                                Discard Draft
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button variant="ghost" className="rounded-xl font-bold text-muted-foreground hover:text-foreground" onClick={clearForm}>
+                                    Discard Draft
+                                </Button>
+                                {currentDecisionId && (
+                                    <Button
+                                        variant="ghost"
+                                        className="rounded-xl font-bold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                                        onClick={() => downloadDecisionPdf(currentDecisionId).catch(err => alert(err.message))}
+                                    >
+                                        <Download className="mr-2 h-4 w-4" />
+                                        PDF
+                                    </Button>
+                                )}
+                                {currentDecisionId && (
+                                    <label className="cursor-pointer">
+                                        <input
+                                            type="file"
+                                            accept=".pdf,.docx"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                setUploadingDoc(true);
+                                                try {
+                                                    await uploadDecisionDocument(currentDecisionId, file);
+                                                    alert("Decision document uploaded.");
+                                                    queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
+                                                } catch (err) {
+                                                    alert(err.message);
+                                                } finally {
+                                                    setUploadingDoc(false);
+                                                    e.target.value = "";
+                                                }
+                                            }}
+                                        />
+                                        <Button variant="ghost" asChild className="rounded-xl font-bold text-muted-foreground hover:text-foreground">
+                                            <span>
+                                                <Upload className="mr-2 h-4 w-4" />
+                                                {uploadingDoc ? "Uploading..." : "Upload Doc"}
+                                            </span>
+                                        </Button>
+                                    </label>
+                                )}
+                            </div>
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <Button
                                     variant="outline"

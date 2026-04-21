@@ -275,6 +275,46 @@ export async function adminUpdateUser(userId, data) {
     }
 }
 
+export async function adminToggleUserStatus(userId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/admin/users/${userId}/toggle-status/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data) // e.g. { action: 'activate' | 'deactivate', reason: '' }
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || JSON.stringify(errData) || "Failed to toggle status");
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("adminToggleUserStatus error:", error);
+        throw error;
+    }
+}
+
+export async function adminResetPassword(userId, sendEmail = true) {
+    try {
+        const res = await fetch(`${getApiUrl()}/admin/users/${userId}/reset-password/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ send_email: sendEmail })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || JSON.stringify(errData) || "Failed to reset password");
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("adminResetPassword error:", error);
+        throw error;
+    }
+}
+
+export function getAdminUsersExportUrl() {
+    return `${getApiUrl()}/admin/users/export/`;
+}
+
 export async function adminDeleteUser(userId) {
     try {
         const res = await fetch(`${getApiUrl()}/admin/users/${userId}/`, {
@@ -413,10 +453,22 @@ export async function scheduleHearing(data) {
 
 export async function rescheduleHearing(id, data) {
     try {
+        // Backend expects { new_date: "YYYY-MM-DD", new_time: "HH:MM", reason: "..." }
+        const payload = {};
+        if (data.new_date) payload.new_date = data.new_date;
+        if (data.new_time) payload.new_time = data.new_time;
+        if (data.reason) payload.reason = data.reason;
+        // Fallback: if caller sends scheduled_date as ISO, split it
+        if (data.scheduled_date && !data.new_date) {
+            const dt = new Date(data.scheduled_date);
+            payload.new_date = dt.toISOString().split('T')[0];
+            payload.new_time = dt.toTimeString().slice(0, 5);
+        }
+        if (data.reason) payload.reason = data.reason;
         const res = await fetch(`${getApiUrl()}/hearings/${id}/reschedule/`, {
             method: "POST",
             headers: getAuthHeaders(),
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -852,3 +904,726 @@ export async function createImmediateDecision(caseId, data) {
     } catch (e) { throw e; }
 }
 
+// ======================================
+// JUDGE DOCUMENT & DECISION EXTENDED APIs
+// ======================================
+
+export async function downloadJudgeDocument(documentId) {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const res = await fetch(`${getApiUrl()}/judge/documents/${documentId}/download`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) throw new Error("Failed to download document");
+    const blob = await res.blob();
+    const contentDisp = res.headers.get("content-disposition");
+    const match = contentDisp && contentDisp.match(/filename="?(.+?)"?$/);
+    const filename = match ? match[1] : `document_${documentId}`;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(url);
+}
+
+export async function downloadDecisionPdf(decisionId) {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/download-pdf/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "PDF not available");
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `Decision_${decisionId}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(url);
+}
+
+export async function publishDecision(decisionId, data = {}) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/publish/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to publish decision");
+    }
+    return await res.json();
+}
+
+export async function fetchDecisionVersions(decisionId) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/versions/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+export async function fetchDecisionComments(decisionId) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/comments/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+export async function addDecisionComment(decisionId, text) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/comments/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ text })
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to add comment");
+    }
+    return await res.json();
+}
+
+export async function uploadDecisionDocument(decisionId, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/upload-decision-document/`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to upload decision document");
+    }
+    return await res.json();
+}
+
+// ======================================
+// HEARING MANAGEMENT (Extended)
+// ======================================
+
+export async function updateHearing(hearingId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/`, {
+            method: "PATCH", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to update hearing");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function scheduleNextHearing(hearingId, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/next-hearing/`, {
+            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to schedule next hearing");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function fetchHearingAttendance(hearingId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/attendance/`, { headers: getAuthHeaders() });
+        if (!res.ok) return { participants: [] };
+        return await res.json();
+    } catch (e) {
+        console.error("fetchHearingAttendance error:", e);
+        return { participants: [] };
+    }
+}
+
+// ==========================================
+// User Profile & Settings APIs
+// ==========================================
+
+export async function changePassword(data) {
+    const res = await fetch(`${getApiUrl()}/auth/change-password/`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to change password");
+    }
+    return await res.json();
+}
+
+export async function updateUserProfile(data) {
+    const res = await fetch(`${getApiUrl()}/profile/`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to update profile");
+    }
+    return await res.json();
+}
+
+export async function fetchUserProfile() {
+    const res = await fetch(`${getApiUrl()}/profile/`, { headers: getAuthHeaders() });
+    if (!res.ok) return null;
+    return await res.json();
+}
+
+
+// ==========================================
+// Citizen Document APIs
+// ==========================================
+
+export async function uploadCitizenDocument(caseId, data) {
+    const formData = new FormData();
+    formData.append('document_type', data.document_type || 'OTHER');
+    formData.append('description', data.description || '');
+    formData.append('file', data.file);
+    
+    // We don't use getAuthHeaders() here because we can't set Content-Type to application/json for FormData.
+    // The browser automatically sets Content-Type to multipart/form-data with the correct boundary.
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+
+    const res = await fetch(`${getApiUrl()}/cases/citizen/cases/${caseId}/documents/`, {
+        method: "POST",
+        headers: headers,
+        body: formData,
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to upload document");
+    }
+    return await res.json();
+}
+
+export async function fetchCitizenCaseDocuments(caseId) {
+    const res = await fetch(`${getApiUrl()}/cases/citizen/cases/${caseId}/documents/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+export async function downloadCitizenDocumentVersion(versionId) {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+    const res = await fetch(`${getApiUrl()}/cases/citizen/documents/versions/${versionId}/download/`, { headers });
+    if (!res.ok) {
+        throw new Error("Failed to download document");
+    }
+    return res;
+}
+
+export async function deleteCitizenDocument(docId) {
+    const res = await fetch(`${getApiUrl()}/cases/citizen/documents/${docId}/`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+    });
+    if (!res.ok && res.status !== 204) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to delete document");
+    }
+    return true;
+}
+
+export async function uploadProfilePicture(file) {
+    const formData = new FormData();
+    formData.append("profile_picture", file);
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+    const res = await fetch(`${getApiUrl()}/profile/upload-picture/`, {
+        method: "POST",
+        headers,
+        body: formData,
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to upload profile picture");
+    }
+    return await res.json();
+}
+
+export async function initiatePayment(caseId) {
+    const res = await fetch(`${getApiUrl()}/payments/initiate/${caseId}/`, {
+        method: "POST",
+        headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to initiate payment");
+    }
+    return await res.json();
+}
+
+
+// ==========================================
+// Notification APIs
+// ==========================================
+
+export async function markNotificationRead(notificationIds, markAll = false) {
+    const payload = {};
+    if (markAll) {
+        payload.mark_all = true;
+    } else if (notificationIds && notificationIds.length > 0) {
+        payload.notification_ids = notificationIds;
+    }
+    
+    const res = await fetch(`${getApiUrl()}/notifications/mark_read/`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to mark notifications read");
+    }
+    return await res.json();
+}
+
+export async function archiveNotification(notificationId) {
+    const res = await fetch(`${getApiUrl()}/notifications/${notificationId}/archive/`, {
+        method: "POST", headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to archive notification");
+    }
+    return await res.json();
+}
+
+export async function updateNotificationPreferences(data) {
+    const res = await fetch(`${getApiUrl()}/notifications/preferences/`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to update notification preferences");
+    }
+    return await res.json();
+}
+
+
+// ==========================================
+// Citizen Hearing APIs
+// ==========================================
+
+export async function fetchCitizenHearings() {
+    const res = await fetch(`${getApiUrl()}/citizen/hearings/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+}
+
+export async function confirmCitizenAttendance(hearingId) {
+    const res = await fetch(`${getApiUrl()}/citizen/hearings/${hearingId}/confirm-attendance/`, {
+        method: "POST", headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to confirm attendance");
+    }
+    return await res.json();
+}
+
+export async function declineCitizenAttendance(hearingId, reason) {
+    const res = await fetch(`${getApiUrl()}/citizen/hearings/${hearingId}/decline-attendance/`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ reason })
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to decline attendance");
+    }
+    return await res.json();
+}
+
+// ==========================================
+// DEFENDANT EXTENDED APIs
+// ==========================================
+
+export async function submitDefendantEvidence(caseId, formData) {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/evidence/`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to submit evidence");
+    }
+    return await res.json();
+}
+
+export async function fetchDefendantDecision(caseId) {
+    const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/decision/`, { headers: getAuthHeaders() });
+    if (!res.ok) return null;
+    return await res.json();
+}
+
+export async function acknowledgeDefendantService(caseId, data = {}) {
+    const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/acknowledge-service/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to acknowledge service");
+    }
+    return await res.json();
+}
+
+export async function fetchDefendantActions(caseId) {
+    const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/actions/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+}
+
+export async function respondToDefendantAction(caseId, actionId, data) {
+    const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/respond-to-action/${actionId}/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to respond to action");
+    }
+    return await res.json();
+}
+
+// ==========================================
+// NOTIFICATION EXTENDED APIs
+// ==========================================
+
+export async function markAllNotificationsRead() {
+    const res = await fetch(`${getApiUrl()}/notifications/mark-all-read/`, {
+        method: "POST", headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to mark all read");
+    }
+    return await res.json();
+}
+
+export async function archiveAllNotifications() {
+    const res = await fetch(`${getApiUrl()}/notifications/archive-all/`, {
+        method: "POST", headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to archive all");
+    }
+    return await res.json();
+}
+
+export async function deleteReadNotifications() {
+    const res = await fetch(`${getApiUrl()}/notifications/delete-read/`, {
+        method: "DELETE", headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to delete read notifications");
+    }
+    return true;
+}
+
+export async function fetchNotificationStats() {
+    const res = await fetch(`${getApiUrl()}/notifications/statistics/`, { headers: getAuthHeaders() });
+    if (!res.ok) return { total: 0, unread: 0, read_percentage: 0, by_type: [], by_priority: [] };
+    return await res.json();
+}
+
+export async function fetchUnreadNotificationCount() {
+    const res = await fetch(`${getApiUrl()}/notifications/unread_count/`, { headers: getAuthHeaders() });
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.count ?? data.unread_count ?? 0;
+}
+
+// ==========================================
+// AUDIT LOG EXTENDED APIs
+// ==========================================
+
+export async function fetchUserAuditTrail(days) {
+    const params = days ? `?days=${days}` : '';
+    const res = await fetch(`${getApiUrl()}/audit/logs/user_trail/${params}`, { headers: getAuthHeaders() });
+    if (!res.ok) return { results: [], count: 0 };
+    return await res.json();
+}
+
+export async function fetchRecentAuditLogs(limit = 10, actionTypes = []) {
+    const params = new URLSearchParams({ limit });
+    actionTypes.forEach(t => params.append('action_types', t));
+    const res = await fetch(`${getApiUrl()}/audit/logs/recent/?${params}`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+export async function fetchAuditStatistics(days = 7) {
+    const res = await fetch(`${getApiUrl()}/audit/logs/statistics/?days=${days}`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function exportAuditLogsCSV() {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const res = await fetch(`${getApiUrl()}/audit/logs/export_csv/`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!res.ok) throw new Error("Failed to export audit logs");
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "audit_logs.csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    window.URL.revokeObjectURL(url);
+}
+
+// ==========================================
+// ADMIN / CORE SYSTEM APIs
+// ==========================================
+
+export async function fetchAdminUsersDashboard() {
+    const res = await fetch(`${getApiUrl()}/admin/users/dashboard/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function fetchSystemMetrics() {
+    const res = await fetch(`${getApiUrl()}/admin/system/metrics/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function fetchSystemErrors() {
+    const res = await fetch(`${getApiUrl()}/admin/system/errors/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+export async function fetchAuditDashboard() {
+    const res = await fetch(`${getApiUrl()}/admin/audit/dashboard/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function purgeAuditLogs(days) {
+    const res = await fetch(`${getApiUrl()}/admin/audit/purge/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ days })
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to purge logs");
+    }
+    return await res.json();
+}
+
+export async function adminBulkCreateUsers(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const res = await fetch(`${getApiUrl()}/admin/users/bulk/`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to bulk create users");
+    }
+    return await res.json();
+}
+
+export async function adminBulkAction(userIds, action) {
+    const res = await fetch(`${getApiUrl()}/admin/users/bulk-action/`, {
+        method: "POST", headers: getAuthHeaders(),
+        body: JSON.stringify({ user_ids: userIds, action })
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to perform bulk action");
+    }
+    return await res.json();
+}
+
+export async function fetchAdminRoles() {
+    const res = await fetch(`${getApiUrl()}/admin/roles/`, { headers: getAuthHeaders() });
+    if (!res.ok) return { roles: [] };
+    return await res.json();
+}
+
+// ==========================================
+// CASES EXTENDED APIs
+// ==========================================
+
+export async function fetchCaseHearingTimeline(caseId) {
+    const res = await fetch(`${getApiUrl()}/cases/${caseId}/hearing-timeline/`, { headers: getAuthHeaders() });
+    if (!res.ok) return { timeline: [] };
+    return await res.json();
+}
+
+export async function createDefendantAccount(caseId, data) {
+    const res = await fetch(`${getApiUrl()}/cases/${caseId}/create-defendant-account/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to create defendant account");
+    }
+    return await res.json();
+}
+
+export async function requestDefendantAction(caseId, actionDescription) {
+    const res = await fetch(`${getApiUrl()}/cases/${caseId}/request_defendant_action/`, {
+        method: "POST", headers: getAuthHeaders(),
+        body: JSON.stringify({ action_description: actionDescription })
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to request defendant action");
+    }
+    return await res.json();
+}
+
+// ==========================================
+// DECISIONS EXTENDED APIs
+// ==========================================
+
+export async function fetchPublishedDecisions() {
+    const res = await fetch(`${getApiUrl()}/decisions/published/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+}
+
+export async function fetchRecentDecisions() {
+    const res = await fetch(`${getApiUrl()}/decisions/recent/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+}
+
+export async function signDecision(decisionId, data = {}) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/signature/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to sign decision");
+    }
+    return await res.json();
+}
+
+export async function verifyDecisionSignature(decisionId) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/verify-signature/`, { headers: getAuthHeaders() });
+    if (!res.ok) return { valid: false };
+    return await res.json();
+}
+
+export async function fetchDecisionDeliveries(decisionId) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/deliveries/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+export async function acknowledgeDecision(decisionId, data = {}) {
+    const res = await fetch(`${getApiUrl()}/decisions/${decisionId}/acknowledge/`, {
+        method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to acknowledge decision");
+    }
+    return await res.json();
+}
+
+export async function bulkPublishDecisions(decisionIds) {
+    const res = await fetch(`${getApiUrl()}/decisions/bulk/publish/`, {
+        method: "POST", headers: getAuthHeaders(),
+        body: JSON.stringify({ decision_ids: decisionIds })
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to bulk publish");
+    }
+    return await res.json();
+}
+
+export async function fetchMonthlyDecisionsReport() {
+    const res = await fetch(`${getApiUrl()}/decisions/reports/monthly/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function fetchJudgeDecisionPerformance() {
+    const res = await fetch(`${getApiUrl()}/decisions/reports/judge-performance/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+// ==========================================
+// HEARINGS EXTENDED APIs
+// ==========================================
+
+export async function fetchHearingParticipants(hearingId) {
+    const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/participants/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+export async function updateSingleAttendance(hearingId, userId, data) {
+    const res = await fetch(`${getApiUrl()}/judge/hearings/${hearingId}/attendance/${userId}/`, {
+        method: "PATCH", headers: getAuthHeaders(), body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(formatError(errData) || "Failed to update attendance");
+    }
+    return await res.json();
+}
+
+export async function fetchHearingStatus(hearingId) {
+    const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/status/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function fetchUpcomingHearings() {
+    const res = await fetch(`${getApiUrl()}/hearings/upcoming/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+}
+
+export async function fetchHearingsCalendar() {
+    const res = await fetch(`${getApiUrl()}/hearings/calendar/`, { headers: getAuthHeaders() });
+    if (!res.ok) return [];
+    return await res.json();
+}
+
+// ==========================================
+// REPORTS EXTENDED APIs
+// ==========================================
+
+export async function fetchJudgeReport() {
+    const res = await fetch(`${getApiUrl()}/reports/judge/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function fetchAdminJudgeReport(judgeId) {
+    const res = await fetch(`${getApiUrl()}/reports/admin/judge/${judgeId}/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function fetchAdminReportsStatistics() {
+    const res = await fetch(`${getApiUrl()}/admin/reports/statistics/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
+
+export async function fetchAdminReportsPerformance() {
+    const res = await fetch(`${getApiUrl()}/admin/reports/performance/`, { headers: getAuthHeaders() });
+    if (!res.ok) return {};
+    return await res.json();
+}
