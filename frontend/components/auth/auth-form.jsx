@@ -75,7 +75,6 @@ export function AuthForm({ type = "login", onTypeChange }) {
                 const result = await login(data.email, data.password);
                 if (result.success) {
                     const roleRouteMap = {
-                        // Backend uppercase roles
                         CITIZEN: "client",
                         JUDGE: "judge",
                         ADMIN: "admin",
@@ -83,16 +82,9 @@ export function AuthForm({ type = "login", onTypeChange }) {
                         CLERK: "clerk",
                         DEFENDANT: "defendant",
                         REGISTRAR: "registrar",
-                        // Lowercase fallbacks
-                        citizen: "client",
-                        judge: "judge",
-                        admin: "admin",
-                        lawyer: "client",
-                        clerk: "clerk",
-                        defendant: "defendant",
-                        registrar: "registrar",
                     };
-                    const route = roleRouteMap[result.role] || "client";
+                    const normalizedRole = typeof result.role === 'string' ? result.role.toUpperCase() : "CITIZEN";
+                    const route = roleRouteMap[normalizedRole] || "client";
                     router.push(`/dashboard/${route}`);
                 } else {
                     setError(result.error || t("invalidCredentials"));

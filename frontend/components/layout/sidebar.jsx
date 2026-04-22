@@ -66,11 +66,11 @@ const menuKeys = {
         { key: "navPayments", href: "/dashboard/registrar/payments", icon: CreditCard },
     ],
     defendant: [
-        { key: "navDashboard", href: "/dashboard/client", icon: LayoutDashboard },
-        { key: "navCases", href: "/dashboard/client/cases", icon: FileText },
-        { key: "navDocuments", href: "/dashboard/client/documents", icon: FolderOpen },
-        { key: "navSchedule", href: "/dashboard/client/schedule", icon: Calendar },
-        { key: "navNotifications", href: "/dashboard/client/notifications", icon: Bell },
+        { key: "navDashboard", href: "/dashboard/defendant", icon: LayoutDashboard },
+        { key: "navCases", href: "/dashboard/defendant/cases", icon: FileText },
+        { key: "navDocuments", href: "/dashboard/defendant/documents", icon: FolderOpen },
+        { key: "navSchedule", href: "/dashboard/defendant/schedule", icon: Calendar },
+        { key: "navNotifications", href: "/dashboard/defendant/notifications", icon: Bell },
     ],
 };
 
@@ -92,10 +92,10 @@ export function Sidebar({ className }) {
         'JUDGE': 'judge',
         'CLERK': 'clerk',
         'ADMIN': 'admin',
-        'REGISTRAR': 'registrar'
+        'REGISTRAR': 'clerk'
     };
-    // Defendant uses client pages, so settings path should be /dashboard/client/settings
-    const settingsRole = user.role?.toUpperCase() === 'DEFENDANT' ? 'client' : null;
+    // Differentiate settings paths by role
+    const settingsRole = roleMap[user.role?.toUpperCase()] || user.role?.toLowerCase() || "client";
     
     const normalizedRole = roleMap[user.role?.toUpperCase()] || user.role?.toLowerCase() || "client";
     const menuItems = (menuKeys[normalizedRole] || []).map(item => ({

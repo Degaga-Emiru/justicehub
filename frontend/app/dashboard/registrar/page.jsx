@@ -293,7 +293,11 @@ export default function RegistrarDashboardPage() {
                                         <TableBody>
                                             {filteredIntake.length > 0 ? (
                                                 filteredIntake.map((c) => (
-                                                    <TableRow key={c.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                                    <TableRow 
+                                                        key={c.id} 
+                                                        className="border-white/5 hover:bg-white/5 transition-colors group cursor-pointer" 
+                                                        onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
+                                                    >
                                                         <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">PENDING</TableCell>
                                                         <TableCell className="py-6">
                                                             <div className="flex flex-col gap-1">
@@ -311,7 +315,11 @@ export default function RegistrarDashboardPage() {
                                                         </TableCell>
                                                         <TableCell className="text-xs font-bold">{new Date(c.created_at).toLocaleDateString()}</TableCell>
                                                         <TableCell className="text-right pr-8">
-                                                            <Button size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest" onClick={() => handleReviewClick(c)}>
+                                                            <Button 
+                                                                size="sm" 
+                                                                className="rounded-xl font-bold text-xs uppercase tracking-widest" 
+                                                                onClick={(e) => { e.stopPropagation(); handleReviewClick(c); }}
+                                                            >
                                                                 <FileText className="mr-2 h-4 w-4" /> Review
                                                             </Button>
                                                         </TableCell>
@@ -367,7 +375,11 @@ export default function RegistrarDashboardPage() {
                                         <TableBody>
                                             {pendingAssignment.length > 0 ? (
                                                 pendingAssignment.map((c) => (
-                                                    <TableRow key={c.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                                    <TableRow 
+                                                        key={c.id} 
+                                                        className="border-white/5 hover:bg-white/5 transition-colors group cursor-pointer" 
+                                                        onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
+                                                    >
                                                         <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number}</TableCell>
                                                         <TableCell className="py-6">
                                                             <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{c.title}</span>
@@ -379,13 +391,13 @@ export default function RegistrarDashboardPage() {
                                                         </TableCell>
                                                         <TableCell className="text-xs font-bold">{new Date(c.created_at).toLocaleDateString()}</TableCell>
                                                         <TableCell className="text-right pr-8">
-                                                            <div className="flex justify-end gap-2">
+                                                            <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                                 {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
-                                                                    <Button size="sm" variant="outline" className="rounded-xl font-bold text-xs border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 gap-1.5" onClick={() => handleDefendantClick(c)}>
+                                                                    <Button size="sm" variant="outline" className="rounded-xl font-bold text-xs border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 gap-1.5" onClick={(e) => { e.stopPropagation(); handleDefendantClick(c); }}>
                                                                         <UserPlus className="h-3.5 w-3.5" /> Defendant
                                                                     </Button>
                                                                 )}
-                                                                <Button size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20" onClick={() => handleAssignClick(c)}>
+                                                                <Button size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20" onClick={(e) => { e.stopPropagation(); handleAssignClick(c); }}>
                                                                     <UserCheck className="mr-2 h-4 w-4" /> Assign Judge
                                                                 </Button>
                                                             </div>
@@ -443,7 +455,11 @@ export default function RegistrarDashboardPage() {
                                         <TableBody>
                                             {filteredCases.length > 0 ? (
                                                 filteredCases.map((c) => (
-                                                    <TableRow key={c.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+                                                    <TableRow 
+                                                        key={c.id} 
+                                                        className="border-white/5 hover:bg-white/5 transition-colors group cursor-pointer" 
+                                                        onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
+                                                    >
                                                         <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number || "—"}</TableCell>
                                                         <TableCell className="py-6">
                                                             <span className="font-black font-display text-sm tracking-tight group-hover:text-primary transition-colors truncate max-w-[280px] block">{c.title}</span>
@@ -455,27 +471,41 @@ export default function RegistrarDashboardPage() {
                                                                 {STATUS_LABELS[c.status] || c.status}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell className="text-right pr-8">
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
-                                                                    <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                                                        <span className="sr-only">Open menu</span>
-                                                                        <MoreHorizontal className="h-5 w-5" />
+                                                        <TableCell className="text-right pr-8" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="flex justify-end gap-2">
+                                                                {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (c.status === "PAID" || c.status === "APPROVED") ? (
+                                                                    <Button size="sm" variant="outline" className="rounded-xl font-bold text-[10px] uppercase tracking-tight border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 gap-1.5" onClick={(e) => { e.stopPropagation(); handleDefendantClick(c); }}>
+                                                                        <UserPlus className="h-3.5 w-3.5" /> Defendant
                                                                     </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[180px]">
-                                                                    {(c.status === "PAID" || c.status === "APPROVED") && (
-                                                                        <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors" onSelect={(e) => { e.preventDefault(); handleAssignClick(c); }}>
-                                                                            <UserCheck className="h-4 w-4" /> Assign Judge
+                                                                ) : null}
+                                                                
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="ghost" className="h-10 w-10 p-0 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                                                            <span className="sr-only">Open menu</span>
+                                                                            <MoreHorizontal className="h-5 w-5" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[180px]">
+                                                                        <DropdownMenuItem 
+                                                                            className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors"
+                                                                            onSelect={(e) => { e.preventDefault(); router.push(`/dashboard/clerk/cases/${c.id}`); }}
+                                                                        >
+                                                                            <FileSearch className="h-4 w-4 text-primary" /> View Details
                                                                         </DropdownMenuItem>
-                                                                    )}
-                                                                    {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
-                                                                        <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-indigo-500/10 focus:text-indigo-500 transition-colors" onSelect={(e) => { e.preventDefault(); handleDefendantClick(c); }}>
-                                                                            <UserPlus className="h-4 w-4" /> Create Defendant
-                                                                        </DropdownMenuItem>
-                                                                    )}
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
+                                                                        {(c.status === "PAID" || c.status === "APPROVED") && (
+                                                                            <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors" onSelect={(e) => { e.preventDefault(); handleAssignClick(c); }}>
+                                                                                <UserCheck className="h-4 w-4" /> Assign Judge
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                        {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
+                                                                            <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-indigo-500/10 focus:text-indigo-500 transition-colors" onSelect={(e) => { e.preventDefault(); handleDefendantClick(c); }}>
+                                                                                <UserPlus className="h-4 w-4" /> Create Defendant
+                                                                            </DropdownMenuItem>
+                                                                        )}
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))
@@ -557,10 +587,10 @@ export default function RegistrarDashboardPage() {
                             <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
                                 <FileText className="h-5 w-5" />
                             </div>
-                            Case Intake Review
+                            Case Details
                         </DialogTitle>
                         <DialogDescription className="text-muted-foreground font-medium">
-                            Review the plaintiff&apos;s filing details and inspect uploaded evidence.
+                            Review the filing details and inspect uploaded evidence.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -585,27 +615,50 @@ export default function RegistrarDashboardPage() {
                                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plaintiff</p>
                                         <p className="font-bold">{activeReviewCase.plaintiff?.first_name || activeReviewCase.plaintiff_name || "Unknown"}</p>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Defendant</p>
-                                        <p className="font-bold">{activeReviewCase.defendant?.first_name || activeReviewCase.defendant_name || "Unknown"}</p>
-                                        {(!activeReviewCase.defendant || activeReviewCase.defendant === "PENDING_DEFENDANT") && (
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="mt-1 rounded-xl font-bold text-xs border-primary/20 text-primary hover:bg-primary/10 gap-1.5"
-                                                onClick={() => {
-                                                    setDefendantTarget(activeReviewCase);
-                                                    setDefendantForm({
-                                                        email: "",
-                                                        phone_number: "",
-                                                        first_name: activeReviewCase.defendant_name?.split(' ')[0] || "",
-                                                        last_name: activeReviewCase.defendant_name?.split(' ').slice(1).join(' ') || "",
-                                                    });
-                                                    setIsDefendantOpen(true);
-                                                }}
-                                            >
-                                                <UserPlus className="h-3.5 w-3.5" /> Create Account
-                                            </Button>
+                                    <div className="space-y-4 col-span-2 bg-muted/20 p-4 rounded-xl border border-white/5">
+                                        {(!activeReviewCase.defendant || activeReviewCase.defendant === "PENDING_DEFENDANT") ? (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Defendant (Filing Name)</p>
+                                                    <p className="font-bold">{activeReviewCase.defendant_name || "Unknown"}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">System Link</p>
+                                                    <div className="flex flex-col gap-1">
+                                                        <p className="font-bold text-xs text-amber-500 italic">Account Required</p>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="link"
+                                                            className="h-auto p-0 text-[11px] font-bold text-primary hover:text-primary/70 justify-start"
+                                                            onClick={() => {
+                                                                setDefendantTarget(activeReviewCase);
+                                                                setDefendantForm({
+                                                                    email: "",
+                                                                    phone_number: "",
+                                                                    first_name: activeReviewCase.defendant_name?.split(' ')[0] || "",
+                                                                    last_name: activeReviewCase.defendant_name?.split(' ').slice(1).join(' ') || "",
+                                                                });
+                                                                setIsDefendantOpen(true);
+                                                            }}
+                                                        >
+                                                            <UserPlus className="h-3.5 w-3.5 mr-1" /> Setup System Account
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Defendant Name</p>
+                                                    <p className="font-bold text-base">{activeReviewCase.defendant?.first_name} {activeReviewCase.defendant?.last_name || ""}</p>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Address</p>
+                                                    <p className="text-sm font-medium italic text-muted-foreground leading-relaxed">
+                                                        {activeReviewCase.defendant?.address || "No address on file"}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                     <div className="col-span-2 space-y-1">
@@ -651,54 +704,82 @@ export default function RegistrarDashboardPage() {
                                 )}
                             </div>
 
-                            <div className="border-t border-white/5 pt-6 space-y-4">
-                                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Registrar Action</h4>
-                                {reviewAction === "reject" && (
-                                    <Textarea
-                                        placeholder="Provide a clear reason for rejecting this filing..."
-                                        className="bg-background/50 border-white/20 rounded-xl focus:ring-primary/20"
-                                        value={rejectionReason}
-                                        onChange={(e) => setRejectionReason(e.target.value)}
-                                        disabled={reviewMutation.isPending}
-                                    />
-                                )}
-                                <div className="flex gap-3">
-                                    {reviewAction !== "reject" && (
-                                        <Button
-                                            variant="destructive"
-                                            className="w-full rounded-xl font-bold"
-                                            onClick={() => setReviewAction("reject")}
-                                            disabled={reviewMutation.isPending}
-                                        >
-                                            <XCircle className="mr-2 h-4 w-4" /> Reject Filing
-                                        </Button>
-                                    )}
-                                    {reviewAction === "reject" ? (
-                                        <div className="flex w-full gap-3">
-                                            <Button variant="outline" className="w-full rounded-xl" onClick={() => setReviewAction("")} disabled={reviewMutation.isPending}>
-                                                Cancel
-                                            </Button>
+                            <div className="pt-6 border-t border-white/5 space-y-4">
+                                {activeReviewCase.status === "PENDING_REVIEW" ? (
+                                    <div className="space-y-4">
+                                        <div className="flex gap-4">
                                             <Button
-                                                variant="destructive"
+                                                variant="outline"
                                                 className="w-full rounded-xl font-bold"
-                                                onClick={() => reviewMutation.mutate({ caseId: activeReviewCase.id, action: "reject", notes: rejectionReason })}
-                                                disabled={!rejectionReason.trim() || reviewMutation.isPending}
+                                                onClick={() => setReviewAction("reject")}
+                                                disabled={reviewMutation.isPending}
                                             >
-                                                {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Confirm Rejection
+                                                <XCircle className="mr-2 h-4 w-4" /> Reject Filing
                                             </Button>
+                                            {reviewAction !== "reject" && (
+                                                <Button
+                                                    className="w-full rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20"
+                                                    onClick={() => reviewMutation.mutate({ caseId: activeReviewCase.id, action: "approve", notes: "" })}
+                                                    disabled={reviewMutation.isPending}
+                                                >
+                                                    {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    <FileCheck className="mr-2 h-4 w-4" /> Accept Filing
+                                                </Button>
+                                            )}
                                         </div>
-                                    ) : (
-                                        <Button
-                                            className="w-full rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20"
-                                            onClick={() => reviewMutation.mutate({ caseId: activeReviewCase.id, action: "approve", notes: "" })}
-                                            disabled={reviewMutation.isPending}
-                                        >
-                                            {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            <FileCheck className="mr-2 h-4 w-4" /> Accept Filing
-                                        </Button>
-                                    )}
-                                </div>
+
+                                        {reviewAction === "reject" && (
+                                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Reason for Rejection</label>
+                                                    <Textarea
+                                                        placeholder="Describe why this filing is being rejected..."
+                                                        className="min-h-[100px] bg-background/50 border-white/20 rounded-xl focus:ring-primary/20"
+                                                        value={rejectionReason}
+                                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="flex w-full gap-3">
+                                                    <Button variant="outline" className="w-full rounded-xl" onClick={() => setReviewAction("")} disabled={reviewMutation.isPending}>
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        className="w-full rounded-xl font-bold"
+                                                        onClick={() => reviewMutation.mutate({ caseId: activeReviewCase.id, action: "reject", notes: rejectionReason })}
+                                                        disabled={!rejectionReason.trim() || reviewMutation.isPending}
+                                                    >
+                                                        {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                        Confirm Rejection
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex justify-between items-center bg-primary/5 p-4 rounded-xl border border-primary/10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                <Badge className={cn("rounded-full h-8 w-8", STATUS_COLORS[activeReviewCase.status])}>
+                                                    <Scale className="h-4 w-4" />
+                                                </Badge>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Current Status</p>
+                                                <p className="font-bold text-sm">{STATUS_LABELS[activeReviewCase.status]}</p>
+                                            </div>
+                                        </div>
+                                        {(activeReviewCase.status === "PAID" || activeReviewCase.status === "APPROVED") && (
+                                            <Button 
+                                                size="sm" 
+                                                className="rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20"
+                                                onClick={() => { setIsReviewOpen(false); handleAssignClick(activeReviewCase); }}
+                                            >
+                                                <UserCheck className="mr-2 h-4 w-4" /> Assign Judge
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : (

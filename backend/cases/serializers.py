@@ -442,7 +442,7 @@ class DefendantCaseDetailSerializer(CaseDetailSerializer):
 class DefendantResponseUploadSerializer(serializers.Serializer):
     """Serializer for uploading defendant response"""
     description = serializers.CharField(required=True)
-    file = serializers.FileField(required=True)
+    file = serializers.FileField(required=False, allow_null=True)
     document_type = serializers.ChoiceField(
         choices=['EVIDENCE', 'AFFIDAVIT', 'OTHER'],
         default='EVIDENCE'

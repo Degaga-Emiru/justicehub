@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -27,12 +28,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 
 export default function JudgeDashboard() {
+    const router = useRouter();
     const { user } = useAuthStore();
-    const [date, setDate] = useState(new Date());
+    const [date, setDate] = useState(null);
     const [selectedHearing, setSelectedHearing] = useState(null);
-    const [selectedCase, setSelectedCase] = useState(null);
     const [isScheduling, setIsScheduling] = useState(false);
     const [caseFilter, setCaseFilter] = useState("all");
+    const [hearingStatusFilter, setHearingStatusFilter] = useState("all");
+    const [hearingSearch, setHearingSearch] = useState("");
     const [completingHearing, setCompletingHearing] = useState(null);
     const [completeNotes, setCompleteNotes] = useState({ summary: "", action: "CONTINUED", judge_comment: "", minutes: "" });
     const [nextHearingDate, setNextHearingDate] = useState("");
@@ -44,6 +47,10 @@ export default function JudgeDashboard() {
     const [editData, setEditData] = useState({ title: "", location: "", agenda: "", hearing_type: "" });
     const [attendanceHearing, setAttendanceHearing] = useState(null);
     const [attendanceData, setAttendanceData] = useState([]);
+    const [showFollowUpPrompt, setShowFollowUpPrompt] = useState(false);
+    const [lastCompletedHearing, setLastCompletedHearing] = useState(null);
+    const [isFollowUp, setIsFollowUp] = useState(false);
+    const [previousHearingId, setPreviousHearingId] = useState(null);
     const [caseTimeline, setCaseTimeline] = useState([]);
     const [showTimeline, setShowTimeline] = useState(false);
     const [scheduleData, setScheduleData] = useState({
@@ -83,16 +90,23 @@ export default function JudgeDashboard() {
 
     // Schedule hearing mutation
     const scheduleMutation = useMutation({
-        mutationFn: scheduleHearing,
+        mutationFn: (data) => {
+            if (isFollowUp && previousHearingId) {
+                return scheduleNextHearing(previousHearingId, data);
+            }
+            return scheduleHearing(data);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
             queryClient.invalidateQueries({ queryKey: ["judge-dashboard-stats"] });
             setIsScheduling(false);
+            setIsFollowUp(false);
+            setPreviousHearingId(null);
             setScheduleData({
                 case: "", title: "", hearing_type: "INITIAL", scheduled_date: "",
                 duration_minutes: 60, location: "", agenda: ""
             });
-            alert("Hearing scheduled successfully!");
+            alert(isFollowUp ? "Follow-up hearing scheduled successfully!" : "Hearing scheduled successfully!");
         },
         onError: (err) => {
             alert(err.message || "Failed to schedule hearing");
@@ -105,7 +119,6 @@ export default function JudgeDashboard() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["judge-cases"] });
             queryClient.invalidateQueries({ queryKey: ["judge-dashboard-stats"] });
-            setSelectedCase(null);
             alert("Case marked as In Progress.");
         },
         onError: (err) => alert(err.message || "Failed to start case")
@@ -120,7 +133,8 @@ export default function JudgeDashboard() {
             setCompletingHearing(null);
             setCompleteNotes({ summary: "", action: "CONTINUED", judge_comment: "", minutes: "" });
             setNextHearingDate("");
-            alert("Hearing completed successfully!");
+            setLastCompletedHearing(completingHearing);
+            setShowFollowUpPrompt(true);
         },
         onError: (err) => alert(err.message || "Failed to complete hearing")
     });
@@ -200,10 +214,25 @@ export default function JudgeDashboard() {
                 summary: completeNotes.summary,
                 action: completeNotes.action.toUpperCase(),
                 judge_comment: completeNotes.judge_comment || "",
-                minutes: completeNotes.minutes || "",
                 ...(nextHearingDate ? { next_hearing_date: new Date(nextHearingDate).toISOString() } : {})
             }
         });
+    };
+
+    const handleScheduleFollowUp = () => {
+        if (!lastCompletedHearing) return;
+        const caseId = lastCompletedHearing.case?.id || lastCompletedHearing.caseId;
+        setScheduleData({
+            ...scheduleData,
+            case: String(caseId),
+            title: `Follow-up: ${lastCompletedHearing.title || 'Previous Session'}`,
+            location: lastCompletedHearing.location || "",
+            hearing_type: lastCompletedHearing.hearing_type || "CONTINUATION"
+        });
+        setPreviousHearingId(lastCompletedHearing.id);
+        setIsFollowUp(true);
+        setShowFollowUpPrompt(false);
+        setIsScheduling(true);
     };
 
     // Statistics from backend
@@ -221,15 +250,38 @@ export default function JudgeDashboard() {
         return true;
     }) || [];
 
-    // Filter hearings for the selected date
-    const selectedDateHearings = hearings?.filter(h => {
-        const hearingDate = new Date(h.scheduled_date || h.date);
-        return (
-            hearingDate.getDate() === date?.getDate() &&
-            hearingDate.getMonth() === date?.getMonth() &&
-            hearingDate.getFullYear() === date?.getFullYear()
-        );
+    // Filter hearings based on multiple criteria
+    const displayedHearings = hearings?.filter(h => {
+        // 1. Date Filter (if a date is selected on calendar)
+        if (date) {
+            const hearingDate = new Date(h.scheduled_date || h.date);
+            const isSameDate = 
+                hearingDate.getDate() === date.getDate() &&
+                hearingDate.getMonth() === date.getMonth() &&
+                hearingDate.getFullYear() === date.getFullYear();
+            if (!isSameDate) return false;
+        }
+
+        // 2. Status Filter
+        if (hearingStatusFilter !== "all" && h.status !== hearingStatusFilter) {
+            return false;
+        }
+
+        // 3. Search Filter (Title, File Number, or Location)
+        if (hearingSearch.trim()) {
+            const searchLower = hearingSearch.toLowerCase();
+            const titleMatch = (h.title || h.case?.title || "").toLowerCase().includes(searchLower);
+            const fileMatch = (h.case?.file_number || "").toLowerCase().includes(searchLower);
+            const locationMatch = (h.location || "").toLowerCase().includes(searchLower);
+            if (!titleMatch && !fileMatch && !locationMatch) return false;
+        }
+
+        return true;
     }) || [];
+
+    // Separate selected date hearings for specific logic if needed, 
+    // but we use displayedHearings for the main list now.
+    const selectedDateHearings = displayedHearings;
 
     // Get dates that have hearings for highlighting in calendar
     const hearingDates = hearings?.map(h => new Date(h.scheduled_date || h.date)) || [];
@@ -386,7 +438,7 @@ export default function JudgeDashboard() {
                                         <div
                                             key={caseItem.id}
                                             className="group relative p-6 rounded-3xl border border-white/5 bg-background/40 hover:bg-white/5 transition-all duration-500 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl"
-                                            onClick={() => setSelectedCase(caseItem)}
+                                            onClick={() => router.push(`/dashboard/judge/cases/${caseItem.id}`)}
                                         >
                                             {/* Hover Active Indicator */}
                                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-gradient-to-b from-primary to-blue-600 rounded-r-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -477,17 +529,67 @@ export default function JudgeDashboard() {
                                     <div className="flex justify-between items-center">
                                         <div className="space-y-1">
                                             <CardTitle className="text-2xl font-black font-display tracking-tight flex items-center gap-3">
-                                                Session: {date ? format(date, "MMM do") : "Today"}
+                                                {date ? `Session: ${format(date, "MMM do")}` : "Direct Portfolio"}
                                                 <Badge className="bg-primary/20 text-primary border-none text-[10px] font-black uppercase px-2 h-6">
-                                                    {selectedDateHearings.length}
+                                                    {displayedHearings.length}
                                                 </Badge>
                                             </CardTitle>
-                                            <CardDescription className="text-muted-foreground font-medium">Court proceedings scheduled for the selected date.</CardDescription>
+                                            <CardDescription className="text-muted-foreground font-medium">
+                                                {date ? "Proceedings for selected date." : "Complete overview of your judicial schedule."}
+                                            </CardDescription>
                                         </div>
-                                        <Button className="h-11 px-5 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" onClick={() => setIsScheduling(true)}>
-                                            <PlusCircle className="mr-2 h-4 w-4" />
-                                            Schedule
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            {date && (
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    className="h-9 px-3 rounded-xl font-bold text-xs uppercase tracking-tighter text-rose-500 hover:bg-rose-500/10"
+                                                    onClick={() => setDate(null)}
+                                                >
+                                                    <XCircle className="mr-1.5 h-3.5 w-3.5" /> Clear Date
+                                                </Button>
+                                            )}
+                                            <Button 
+                                                className="h-11 px-6 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" 
+                                                onClick={() => setIsScheduling(true)}
+                                            >
+                                                <PlusCircle className="mr-2 h-4 w-4" /> Schedule Session
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* New Advanced Filter Bar */}
+                                    <div className="mt-8 flex flex-col md:flex-row gap-4">
+                                        <div className="relative flex-1 group">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                            <Input 
+                                                placeholder="Search by docket or title..." 
+                                                className="pl-11 h-12 bg-muted/20 border-white/5 rounded-2xl focus:ring-primary/20 transition-all font-medium"
+                                                value={hearingSearch}
+                                                onChange={(e) => setHearingSearch(e.target.value)}
+                                            />
+                                        </div>
+                                        <Select value={hearingStatusFilter} onValueChange={setHearingStatusFilter}>
+                                            <SelectTrigger className="w-full md:w-[180px] h-12 bg-muted/20 border-white/5 rounded-2xl font-bold text-xs uppercase tracking-widest">
+                                                <SelectValue placeholder="All Status" />
+                                            </SelectTrigger>
+                                            <SelectContent className="glass-card border-white/5">
+                                                <SelectItem value="all" className="font-bold text-xs uppercase tracking-widest">All Events</SelectItem>
+                                                <SelectItem value="SCHEDULED" className="font-bold text-xs uppercase tracking-widest">Scheduled</SelectItem>
+                                                <SelectItem value="IN_PROGRESS" className="font-bold text-xs uppercase tracking-widest">In Progress</SelectItem>
+                                                <SelectItem value="COMPLETED" className="font-bold text-xs uppercase tracking-widest">Completed</SelectItem>
+                                                <SelectItem value="CANCELLED" className="font-bold text-xs uppercase tracking-widest text-rose-500">Cancelled</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {(hearingSearch || hearingStatusFilter !== "all") && (
+                                            <Button 
+                                                variant="ghost" 
+                                                className="h-12 px-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
+                                                onClick={() => { setHearingSearch(""); setHearingStatusFilter("all"); }}
+                                            >
+                                                Reset Filters
+                                            </Button>
+                                        )}
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-8 flex-1 overflow-y-auto max-h-[600px] no-scrollbar">
@@ -495,9 +597,9 @@ export default function JudgeDashboard() {
                                         <div className="space-y-4">
                                             {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted/20 rounded-2xl animate-pulse" />)}
                                         </div>
-                                    ) : selectedDateHearings.length > 0 ? (
+                                    ) : displayedHearings.length > 0 ? (
                                         <div className="space-y-4">
-                                            {selectedDateHearings.map((hearing) => (
+                                            {displayedHearings.map((hearing) => (
                                                 <div
                                                     key={hearing.id}
                                                     className="group relative p-6 rounded-3xl border border-white/5 bg-background/40 hover:bg-white/5 transition-all duration-500 cursor-pointer shadow-sm hover:shadow-xl"
@@ -545,8 +647,14 @@ export default function JudgeDashboard() {
                                                 <CalendarDays className="h-12 w-12 text-muted-foreground/20" />
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="text-xl font-black font-display text-foreground">Clear Session</p>
-                                                <p className="text-sm font-medium text-muted-foreground">No hearings recorded for this date.</p>
+                                            <p className="text-xl font-black font-display text-foreground">
+                                                {date || hearingSearch || hearingStatusFilter !== "all" ? "No matches found" : "Court Closed"}
+                                            </p>
+                                            <p className="text-sm font-medium text-muted-foreground">
+                                                {date || hearingSearch || hearingStatusFilter !== "all" 
+                                                    ? "Try adjusting your current filters or selection." 
+                                                    : "You have no upcoming hearings in your current docket."}
+                                            </p>
                                             </div>
                                         </div>
                                     )}
@@ -620,136 +728,6 @@ export default function JudgeDashboard() {
                 </TabsContent>
             </Tabs>
 
-            {/* Case Detail Dialog */}
-            <Dialog open={!!selectedCase} onOpenChange={(open) => !open && setSelectedCase(null)}>
-                <DialogContent className="sm:max-w-[650px]">
-                    <DialogHeader>
-                        <DialogTitle>Case Details</DialogTitle>
-                        <DialogDescription>
-                            {selectedCase?.file_number || "Pending"} — {selectedCase?.title}
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {selectedCase && (
-                        <div className="space-y-6 py-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">File Number</span>
-                                    <p className="font-medium">{selectedCase.file_number || "Pending"}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Status</span>
-                                    <div>
-                                        <Badge className={statusColors[selectedCase.status] || ""}>
-                                            {selectedCase.status?.replace("_", " ")}
-                                        </Badge>
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Category</span>
-                                    <p className="font-medium">{selectedCase.category?.name || selectedCase.category || "N/A"}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Priority</span>
-                                    <div>
-                                        <Badge variant="outline" className={priorityColors[selectedCase.priority] || ""}>
-                                            {selectedCase.priority}
-                                        </Badge>
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Filed Date</span>
-                                    <p className="font-medium">
-                                        {selectedCase.filing_date ? format(new Date(selectedCase.filing_date), "PPP") : "N/A"}
-                                    </p>
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Court</span>
-                                    <p className="font-medium">{selectedCase.court_name || "Not assigned"}</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Description</span>
-                                <p className="text-sm leading-relaxed border rounded-lg p-3 bg-muted/50">
-                                    {selectedCase.description || "No description provided."}
-                                </p>
-                            </div>
-
-                            {/* Parties */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Plaintiff</span>
-                                    <p className="font-medium text-sm">{selectedCase.plaintiff_name || selectedCase.created_by_name || "N/A"}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Defendant</span>
-                                    <p className="font-medium text-sm">{selectedCase.defendant_name || "N/A"}</p>
-                                </div>
-                            </div>
-
-                            {selectedCase.documents?.length > 0 && (
-                                <div className="space-y-2">
-                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Documents ({selectedCase.documents.length})</span>
-                                    <div className="space-y-1">
-                                        {selectedCase.documents.map((doc, i) => {
-                                            const activeVersion = doc.versions?.find(v => v.is_active) || doc.versions?.[0];
-                                            const fileName = activeVersion?.file_name || doc.description || doc.document_type || "Document";
-                                            const docId = doc.document_id || doc.id;
-                                            return (
-                                                <div key={docId || i} className="flex items-center justify-between text-sm p-2 border rounded hover:bg-muted/30 transition-colors">
-                                                    <div className="flex items-center gap-2">
-                                                        <FileText className="h-4 w-4 text-muted-foreground" />
-                                                        <div>
-                                                            <span className="font-medium">{fileName}</span>
-                                                            <span className="text-xs text-muted-foreground ml-2">{doc.document_type}</span>
-                                                        </div>
-                                                    </div>
-                                                    {docId && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="text-primary text-xs h-7 px-2"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                downloadJudgeDocument(docId).catch(err => alert(err.message));
-                                                            }}
-                                                        >
-                                                            <Download className="h-3 w-3 mr-1" />
-                                                            Download
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    <DialogFooter className="gap-2 sm:gap-0">
-                        <Button variant="outline" onClick={() => setSelectedCase(null)}>Close</Button>
-                        {selectedCase?.status === "ASSIGNED" && (
-                            <Button
-                                onClick={() => startCaseMutation.mutate({ caseId: selectedCase.id })}
-                                disabled={startCaseMutation.isPending}
-                            >
-                                <Play className="mr-2 h-4 w-4" />
-                                {startCaseMutation.isPending ? "Starting..." : "Start Case"}
-                            </Button>
-                        )}
-                        {["ASSIGNED", "IN_PROGRESS"].includes(selectedCase?.status) && (
-                            <Link href="/dashboard/judge/decisions">
-                                <Button variant="secondary">
-                                    <Gavel className="mr-2 h-4 w-4" />
-                                    Issue Decision
-                                </Button>
-                            </Link>
-                        )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Hearing Details Dialog */}
             <Dialog open={!!selectedHearing} onOpenChange={(open) => !open && setSelectedHearing(null)}>
@@ -985,29 +963,51 @@ export default function JudgeDashboard() {
             </Dialog>
 
             {/* Schedule Hearing Dialog */}
-            <Dialog open={isScheduling} onOpenChange={setIsScheduling}>
+            <Dialog open={isScheduling} onOpenChange={(open) => {
+                setIsScheduling(open);
+                if (!open) {
+                    setIsFollowUp(false);
+                    setPreviousHearingId(null);
+                }
+            }}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Schedule New Hearing</DialogTitle>
+                        <DialogTitle>{isFollowUp ? "Schedule Follow-up Session" : "Schedule New Hearing"}</DialogTitle>
                         <DialogDescription>
-                            Create a new hearing event and notify all parties.
+                            {isFollowUp 
+                                ? "Schedule the next sequential session for this current legal proceeding." 
+                                : "Create a new hearing event and notify all parties."}
                         </DialogDescription>
                     </DialogHeader>
 
                     <form onSubmit={handleScheduleSubmit}>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="case">Case</Label>
-                                <Select required value={scheduleData.case || undefined} onValueChange={(val) => setScheduleData({ ...scheduleData, case: val })}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a case" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {cases?.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(String(c.status).toUpperCase())).map(c => (
-                                            <SelectItem key={c.id} value={String(c.id)}>{c.file_number || "PENDING"} - {c.title}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Label htmlFor="case">{isFollowUp ? "Case Context (Locked)" : "Case"}</Label>
+                                {isFollowUp ? (
+                                    <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                                        <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                                            <Scale className="h-5 w-5" />
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Follow-up for Docket</p>
+                                            <p className="text-sm font-bold text-foreground">
+                                                {cases?.find(c => String(c.id) === scheduleData.case)?.title || "Selected Case"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Select required value={scheduleData.case || undefined} onValueChange={(val) => setScheduleData({ ...scheduleData, case: val })}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a case" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {cases?.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(String(c.status).toUpperCase())).map(c => (
+                                                <SelectItem key={c.id} value={String(c.id)}>{c.file_number || "PENDING"} - {c.title}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -1281,6 +1281,60 @@ export default function JudgeDashboard() {
                             {recordAttendanceMutation.isPending ? "Saving..." : "Save Attendance"}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Post-Hearing Follow-up Suggestion */}
+            <Dialog open={showFollowUpPrompt} onOpenChange={setShowFollowUpPrompt}>
+                <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-emerald-500/20 bg-[#020617] shadow-2xl shadow-emerald-500/10">
+                    <div className="bg-emerald-500/10 p-8 flex flex-col items-center text-center space-y-4 border-b border-emerald-500/20">
+                        <div className="h-20 w-20 rounded-[2.5rem] bg-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-inner group">
+                            <CheckCircle className="h-10 w-10 animate-fade-in group-hover:scale-110 transition-transform" />
+                        </div>
+                        <div className="space-y-1">
+                            <h2 className="text-2xl font-black font-display tracking-tight text-white uppercase tracking-wider">Session Conducted</h2>
+                            <p className="text-sm font-medium text-emerald-500/80 uppercase tracking-widest font-bold">Judicial Record Finalized</p>
+                        </div>
+                    </div>
+                    
+                    <div className="p-8 space-y-6">
+                        <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                            <div className="flex items-center gap-3">
+                                <Scale className="h-4 w-4 text-emerald-500" />
+                                <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Linked Case File</p>
+                            </div>
+                            <p className="text-sm font-bold text-slate-200 leading-relaxed">
+                                {lastCompletedHearing?.case?.title || "Active Legal Proceeding"}
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <p className="text-sm font-medium text-muted-foreground leading-relaxed text-center px-4">
+                                The hearing has been successfully recorded. Would you like to schedule the 
+                                <span className="text-white font-bold ml-1">next follow-up session</span> for this docket now?
+                            </p>
+                            
+                            <div className="flex flex-col gap-3">
+                                <Button 
+                                    onClick={handleScheduleFollowUp}
+                                    className="w-full h-12 rounded-2xl font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                                >
+                                    Yes, Schedule Next Session
+                                </Button>
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={() => setShowFollowUpPrompt(false)}
+                                    className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-muted-foreground hover:text-white hover:bg-white/5"
+                                >
+                                    Maybe Later
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-emerald-500/5 p-4 flex justify-center border-t border-emerald-500/10">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/40">JusticeHub Judicial Workflow</p>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

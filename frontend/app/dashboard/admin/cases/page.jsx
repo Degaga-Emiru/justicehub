@@ -7,7 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, FileText, Loader2 } from "lucide-react";
+import { Search, FileText, Loader2, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 const statusStyles = {
     PENDING_REVIEW: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -29,6 +31,7 @@ const priorityStyles = {
 export default function AdminCasesPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
+    const router = useRouter();
 
     const { data: cases, isLoading } = useQuery({
         queryKey: ["admin-cases"],
@@ -44,7 +47,7 @@ export default function AdminCasesPage() {
     });
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-up">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Case Oversight</h1>
                 <p className="text-muted-foreground">
@@ -79,17 +82,17 @@ export default function AdminCasesPage() {
                 </Select>
             </div>
 
-            <div className="rounded-md border">
+            <div className="rounded-md border bg-card/30 glass overflow-hidden shadow-sm">
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/50">
                         <TableRow>
-                            <TableHead>File #</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Priority</TableHead>
-                            <TableHead>Filed By</TableHead>
-                            <TableHead>Date</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] tracking-widest">File #</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] tracking-widest">Title</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] tracking-widest">Category</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] tracking-widest">Status</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] tracking-widest">Priority</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] tracking-widest">Filed By</TableHead>
+                            <TableHead className="font-black uppercase text-[10px] tracking-widest text-right">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -108,33 +111,37 @@ export default function AdminCasesPage() {
                             </TableRow>
                         ) : (
                             filteredCases.map((c) => (
-                                <TableRow key={c.id}>
-                                    <TableCell className="font-mono text-sm">
+                                <TableRow 
+                                    key={c.id} 
+                                    className="cursor-pointer hover:bg-primary/5 transition-colors group"
+                                    onClick={() => router.push(`/dashboard/admin/cases/${c.id}`)}
+                                >
+                                    <TableCell className="font-mono text-sm font-bold opacity-70">
                                         {c.file_number || "PENDING"}
                                     </TableCell>
-                                    <TableCell className="font-medium max-w-[200px] truncate">
+                                    <TableCell className="font-bold max-w-[200px] truncate group-hover:text-primary transition-colors">
                                         {c.title}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-xs font-medium">
                                         {c.category_name || c.category?.name || "—"}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className={statusStyles[c.status] || ""}>
+                                        <Badge variant="outline" className={cn("px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border-none", statusStyles[c.status] || "")}>
                                             {(c.status || "").replace(/_/g, " ")}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className={priorityStyles[c.priority] || ""}>
+                                        <Badge variant="outline" className={cn("px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider", priorityStyles[c.priority] || "")}>
                                             {c.priority}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="text-xs font-medium truncate max-w-[150px]">
                                         {c.created_by_name || c.created_by?.full_name || "—"}
                                     </TableCell>
-                                    <TableCell>
-                                        {c.filing_date
-                                            ? new Date(c.filing_date).toLocaleDateString()
-                                            : "—"}
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg group-hover:bg-primary/10 group-hover:text-primary">
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -143,8 +150,8 @@ export default function AdminCasesPage() {
                 </Table>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-                Showing {filteredCases.length} case{filteredCases.length !== 1 ? "s" : ""}
+            <p className="text-xs text-muted-foreground font-medium">
+                Showing {filteredCases.length} case{filteredCases.length !== 1 ? "s" : ""} in system index.
             </p>
         </div>
     );

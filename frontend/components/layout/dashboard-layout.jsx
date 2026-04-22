@@ -162,6 +162,11 @@ const mobileRoleMenus = {
         { key: "navCases", href: "/dashboard/admin/cases", icon: FileText },
         { key: "navReports", href: "/dashboard/admin/reports", icon: BarChart3 },
     ],
+    defendant: [
+        { key: "navDashboard", href: "/dashboard/defendant", icon: LayoutDashboard },
+        { key: "navCases", href: "/dashboard/defendant/cases", icon: FileText },
+        { key: "navSchedule", href: "/dashboard/defendant/schedule", icon: Calendar },
+    ],
 };
 
 function MobileSidebarContent({ user, logout, onClose }) {
@@ -170,11 +175,12 @@ function MobileSidebarContent({ user, logout, onClose }) {
     
     const roleMap = {
         'CITIZEN': 'client',
-        'DEFENDANT': 'client',
+        'DEFENDANT': 'defendant',
         'LAWYER': 'client',
         'JUDGE': 'judge',
         'CLERK': 'clerk',
-        'ADMIN': 'admin'
+        'ADMIN': 'admin',
+        'REGISTRAR': 'clerk'
     };
     
     const normalizedRole = roleMap[user.role?.toUpperCase()] || user.role?.toLowerCase() || "client";

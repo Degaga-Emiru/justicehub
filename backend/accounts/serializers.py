@@ -34,7 +34,8 @@ class CitizenRegistrationSerializer(serializers.ModelSerializer):
             password=password,
             role='CITIZEN',
             is_active=False,
-            is_verified=False
+            is_verified=False,
+            is_password_set=True
         )
         
         # Send verification OTP
@@ -196,6 +197,17 @@ class LoginSerializer(serializers.Serializer):
             user = authenticate(request=self.context.get('request'), email=email, password=password)
             
             if not user:
+                # Provide more helpful feedback for accounts that exist but are inactive/unverified
+                try:
+                    user_obj = User.objects.get(email=email)
+                    if not user_obj.is_active or not user_obj.is_password_set:
+                        if not user_obj.is_password_set:
+                            raise serializers.ValidationError("Account setup required. Please check your email for the activation OTP code.")
+                        if not user_obj.is_verified:
+                            raise serializers.ValidationError("Account not verified. Please verify your email first.")
+                        raise serializers.ValidationError("Your account is currently inactive. Please contact support.")
+                except User.DoesNotExist:
+                    pass
                 raise serializers.ValidationError("Invalid email or password")
             
             if not user.is_verified:

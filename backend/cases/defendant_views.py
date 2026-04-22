@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status, permissions
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -70,7 +70,7 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = CaseDocumentSerializer(docs, many=True, context={'request': request})
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], url_path='submit-response', parser_classes=[MultiPartParser, FormParser])
+    @action(detail=True, methods=['post'], url_path='submit-response', parser_classes=[MultiPartParser, FormParser, JSONParser])
     @transaction.atomic
     def submit_response(self, request, pk=None):
         """Submit a defense statement or evidence"""
@@ -78,8 +78,8 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = DefendantResponseUploadSerializer(data=request.data)
         
         if serializer.is_valid():
-            file = serializer.validated_data['file']
-            doc_type = serializer.validated_data['document_type']
+            file = serializer.validated_data.get('file')
+            doc_type = serializer.validated_data.get('document_type', 'EVIDENCE')
             description = serializer.validated_data.get('description', '')
             
             # Create CaseDocument
@@ -90,15 +90,16 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
                 description=description
             )
             
-            # Create Version
-            CaseDocumentVersion.objects.create(
-                document=document,
-                file=file,
-                uploaded_by=request.user,
-                version_number=1,
-                is_active=True,
-                status='PENDING'
-            )
+            # Create Version only if file is provided
+            if file:
+                CaseDocumentVersion.objects.create(
+                    document=document,
+                    file=file,
+                    uploaded_by=request.user,
+                    version_number=1,
+                    is_active=True,
+                    status='PENDING'
+                )
             
             # Notify Plaintiff & Judge (if assigned)
             from notifications.services import notify_case_participants
@@ -112,7 +113,8 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
             
             return Response({
                 "message": f"Defendant {doc_type.replace('_', ' ').lower()} submitted successfully.",
-                "document_id": document.id
+                "document_id": document.id,
+                "has_file": bool(file)
             }, status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -129,7 +131,7 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = DecisionSerializer(decision, context={'request': request})
         return Response(serializer.data)
 
-    @action(detail=True, methods=['patch'], url_path='acknowledge-decision')
+    @action(detail=True, methods=['post'], url_path='acknowledge-decision')
     def acknowledge_decision(self, request, pk=None):
         """Acknowledge receipt of a decision"""
         case = self.get_object()

@@ -114,6 +114,7 @@ class VerifyOTPView(APIView):
         if purpose == 'VERIFICATION':
             user.is_verified = True
             user.is_active = True
+            user.is_password_set = True
             user.save()
             return Response({"message": "Email verified successfully. You can now login."}, status=status.HTTP_200_OK)
         

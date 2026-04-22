@@ -505,10 +505,19 @@ export async function fetchDefendantHearings() {
 
 export async function submitDefendantResponse(caseId, data) {
     try {
+        const isFormData = data instanceof FormData;
+        const headers = getAuthHeaders();
+        if (isFormData) delete headers['Content-Type'];
+
         const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/submit-response/`, { 
-            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
+            method: "POST", 
+            headers, 
+            body: isFormData ? data : JSON.stringify(data)
         });
-        if (!res.ok) throw new Error("Failed to submit response");
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to submit response");
+        }
         return await res.json();
     } catch (e) { throw e; }
 }
@@ -523,12 +532,57 @@ export async function acknowledgeDefendantDecision(caseId, data) {
     } catch (e) { throw e; }
 }
 
+export async function acknowledgeDefendantService(caseId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/acknowledge-service/`, { 
+            method: "POST", headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to acknowledge service");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function confirmHearingAttendance(hearingId, role = "Defendant") {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/confirm-attendance/`, { 
+            method: "POST", 
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ participant_role: role })
+        });
+        if (!res.ok) throw new Error("Failed to confirm attendance");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function declineHearingAttendance(hearingId, reason, role = "Defendant") {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/decline-attendance/`, { 
+            method: "POST", 
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ participant_role: role, reason })
+        });
+        if (!res.ok) throw new Error("Failed to decline attendance");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
 export async function fetchDefendantDocuments(caseId) {
     try {
         const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/documents/`, { headers: getAuthHeaders() });
         if (!res.ok) throw new Error("Failed to fetch documents");
         return await res.json();
     } catch (e) { throw e; }
+}
+
+export async function fetchDefendantCaseById(id) {
+    try {
+        const res = await fetch(`${getApiUrl()}/defendant/cases/${id}/`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Failed to fetch case details");
+        return await res.json();
+    } catch (e) {
+        console.error("fetchDefendantCaseById error:", e);
+        return null;
+    }
 }
 
 export async function assignJudge(caseId, data) {
@@ -575,16 +629,6 @@ export async function recordHearingAttendance(hearingId, data) {
             method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error("Failed to record attendance");
-        return await res.json();
-    } catch (e) { throw e; }
-}
-
-export async function confirmHearingAttendance(hearingId, data) {
-    try {
-        const res = await fetch(`${getApiUrl()}/hearings/${hearingId}/confirm-attendance/`, { 
-            method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error("Failed to confirm attendance");
         return await res.json();
     } catch (e) { throw e; }
 }
@@ -1241,6 +1285,7 @@ export async function declineCitizenAttendance(hearingId, reason) {
 // DEFENDANT EXTENDED APIs
 // ==========================================
 
+
 export async function submitDefendantEvidence(caseId, formData) {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/evidence/`, {
@@ -1258,17 +1303,6 @@ export async function submitDefendantEvidence(caseId, formData) {
 export async function fetchDefendantDecision(caseId) {
     const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/decision/`, { headers: getAuthHeaders() });
     if (!res.ok) return null;
-    return await res.json();
-}
-
-export async function acknowledgeDefendantService(caseId, data = {}) {
-    const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/acknowledge-service/`, {
-        method: "POST", headers: getAuthHeaders(), body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(formatError(errData) || "Failed to acknowledge service");
-    }
     return await res.json();
 }
 

@@ -90,6 +90,13 @@ verify_*.py
 *.txt
 !requirements.txt
 
+# Web / Frontend
+node_modules/
+.next/
+dist/
+build/
+.DS_Store
+
 # Optional: ignore test outputs specifically
 test_*.txt
 *_output*.txt
