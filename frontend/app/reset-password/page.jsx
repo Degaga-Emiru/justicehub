@@ -14,6 +14,7 @@ import { useLanguage } from "@/components/language-provider";
 import { Loader2, KeyRound, AlertCircle, CheckCircle2 } from "lucide-react";
 import { AuthContainer } from "@/components/auth/auth-container";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const resetPasswordSchema = z.object({
     email: z.string().email("invalidEmail"),
@@ -164,13 +165,13 @@ function ResetPasswordContent() {
 
                         <div className="space-y-2">
                             <Label htmlFor="new_password" title="New Password" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">New Password</Label>
-                            <Input id="new_password" type="password" placeholder="Min 9 characters + 1 letter" {...register("new_password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
+                            <PasswordInput id="new_password" placeholder="Min 9 characters + 1 letter" {...register("new_password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
                             {errors.new_password && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{errors.new_password.message}</p>}
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="confirm_password" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Confirm Password</Label>
-                            <Input id="confirm_password" type="password" {...register("confirm_password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
+                            <PasswordInput id="confirm_password" {...register("confirm_password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
                             {errors.confirm_password && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.confirm_password.message) || errors.confirm_password.message}</p>}
                         </div>
                     </CardContent>

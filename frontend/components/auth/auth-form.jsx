@@ -14,7 +14,8 @@ import { useAuthStore } from "@/store/auth-store";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/language-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 const loginSchema = z.object({
     email: z.string().email("invalidEmail"),
@@ -195,7 +196,7 @@ export function AuthForm({ type = "login", onTypeChange }) {
                                         </Link>
                                     )}
                                 </div>
-                                <Input id="password" type="password" {...register("password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
+                                <PasswordInput id="password" {...register("password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
                                 {errors.password && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.password.message)}</p>}
                             </div>
                         )}
@@ -203,7 +204,7 @@ export function AuthForm({ type = "login", onTypeChange }) {
                         {type === "signup" && (
                             <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100">
                                 <Label htmlFor="confirm_password" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("confirmPassword") || "Confirm Password"}</Label>
-                                <Input id="confirm_password" type="password" {...register("confirm_password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
+                                <PasswordInput id="confirm_password" {...register("confirm_password")} className="h-12 bg-background/50 border-white/20 rounded-xl focus:ring-primary/20" />
                                 {errors.confirm_password && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.confirm_password.message)}</p>}
                             </div>
                         )}

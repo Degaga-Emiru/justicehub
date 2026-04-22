@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/components/language-provider";
 import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PasswordInput } from "@/components/ui/password-input";
 
 function SetupAccountForm() {
     const router = useRouter();
@@ -133,9 +134,8 @@ function SetupAccountForm() {
 
                 <div className="space-y-2">
                     <Label htmlFor="new_password" className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Secure Password</Label>
-                    <Input
+                    <PasswordInput
                         id="new_password"
-                        type="password"
                         value={formData.new_password}
                         onChange={(e) => setFormData({ ...formData, new_password: e.target.value })}
                         required
@@ -146,9 +146,8 @@ function SetupAccountForm() {
 
                 <div className="space-y-2">
                     <Label htmlFor="confirm_password" className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">{t("confirmPassword") || "Verify Password"}</Label>
-                    <Input
+                    <PasswordInput
                         id="confirm_password"
-                        type="password"
                         value={formData.confirm_password}
                         onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
                         required

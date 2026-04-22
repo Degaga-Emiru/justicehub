@@ -35,7 +35,7 @@ export default function LandingPage() {
             <div className="bg-gradient-to-br from-primary to-blue-500 p-2.5 rounded-xl text-white shadow-lg group-hover:shadow-primary/30 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3">
               <Scale className="h-6 w-6" />
             </div>
-            <span className="text-2xl font-black font-display tracking-tight text-foreground group-hover:text-primary transition-colors">{t("justiceHub")}</span>
+            <span className="text-2xl font-black font-display tracking-tight text-foreground group-hover:text-primary transition-colors">JusticeHub Modern</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
             <Link className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#features">
@@ -119,8 +119,8 @@ export default function LandingPage() {
                 <div className="relative rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden aspect-[4/3] border-[6px] border-white/40 dark:border-white/10 group floating-glow">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent mix-blend-overlay z-10 transition-colors duration-700"></div>
                   <img
-                    src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=1200"
-                    alt="Professional Legal Office"
+                    src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2000&v=1.1"
+                    alt="Lady Justice"
                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
                   />
                   {/* Glassmorphism overlay card */}
@@ -228,11 +228,11 @@ export default function LandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 via-transparent to-secondary/30 rounded-[3rem] transform rotate-3 scale-105 transition-transform group-hover:rotate-6 duration-1000 blur-sm opacity-50"></div>
                 <div className="relative rounded-[3rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.15)] border-[8px] border-white/50 dark:border-white/5 floating-glow">
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40 z-10 transition-opacity duration-700 opacity-60 group-hover:opacity-30"></div>
-                  <img
-                    src="https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?auto=format&fit=crop&q=80&w=1200"
-                    alt="Scales of Justice"
-                    className="object-cover aspect-square md:aspect-[4/3] w-full transform group-hover:scale-110 transition-transform duration-1000 ease-out"
-                  />
+                    <img 
+                        src="https://images.unsplash.com/photo-1589216532372-1c2a11f90d6a?q=80&w=2000&v=1.1" 
+                        alt="Legal Documents" 
+                        className="object-cover aspect-square md:aspect-[4/3] w-full transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+                    />
                   <div className="absolute bottom-10 left-10 z-20 space-y-2">
                     <Badge className="bg-white/20 backdrop-blur-md text-white border-white/30 text-xs uppercase font-black tracking-widest">{t("professional")}</Badge>
                     <h5 className="text-white text-3xl font-black font-display tracking-tight">{t("precisionResults")}</h5>

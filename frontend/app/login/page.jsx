@@ -21,7 +21,14 @@ export default function LoginPage() {
             {/* Left Branding Panel */}
             <div className="hidden lg:flex flex-col justify-center p-16 relative overflow-hidden border-r border-border/40">
                 {/* Decorative Elements */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 -z-10"></div>
+                <div className="absolute inset-0 -z-20">
+                    <img 
+                        src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2000" 
+                        alt="Lady Justice" 
+                        className="w-full h-full object-cover opacity-50"
+                    />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent -z-10"></div>
                 <div className="absolute top-20 left-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10"></div>
                 
                 <div className="relative z-10 max-w-lg animate-fade-up">
