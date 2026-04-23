@@ -76,6 +76,69 @@ export async function fetchCategories() {
     }
 }
 
+export async function createCategory(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/categories/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to create category");
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("createCategory error:", error);
+        throw error;
+    }
+}
+
+export async function fetchAvailableJudges(categoryId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/judge-profiles/available/?category=${categoryId}`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to fetch available judges");
+        return await res.json();
+    } catch (error) {
+        console.error("fetchAvailableJudges error:", error);
+        return [];
+    }
+}
+
+export async function createJudgeProfile(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/judge-profiles/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to create judge profile");
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("createJudgeProfile error:", error);
+        throw error;
+    }
+}
+
+export async function fetchAllJudgeProfiles() {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/judge-profiles/`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to fetch judge profiles");
+        const data = await res.json();
+        return Array.isArray(data) ? data : (data.results || []);
+    } catch (error) {
+        console.error("fetchAllJudgeProfiles error:", error);
+        return [];
+    }
+}
+
 export async function fetchCaseById(id) {
     try {
         const res = await fetch(`${getApiUrl()}/cases/${id}/`, {
@@ -357,6 +420,35 @@ export async function fetchAuditLogs(filters = {}) {
     } catch (error) {
         console.error("fetchAuditLogs error:", error);
         return { results: [], count: 0 };
+    }
+}
+
+export async function purgeAuditLogs(days) {
+    try {
+        const res = await fetch(`${getApiUrl()}/audit/logs/purge_old/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ days })
+        });
+        if (!res.ok) throw new Error("Failed to purge audit logs");
+        return await res.json();
+    } catch (error) {
+        console.error("purgeAuditLogs error:", error);
+        throw error;
+    }
+}
+
+export async function deleteAuditLog(logId) {
+    try {
+        const res = await fetch(`${getApiUrl()}/audit/logs/${logId}/`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to delete audit log");
+        return true;
+    } catch (error) {
+        console.error("deleteAuditLog error:", error);
+        throw error;
     }
 }
 
@@ -1437,17 +1529,6 @@ export async function fetchSystemErrors() {
 export async function fetchAuditDashboard() {
     const res = await fetch(`${getApiUrl()}/admin/audit/dashboard/`, { headers: getAuthHeaders() });
     if (!res.ok) return {};
-    return await res.json();
-}
-
-export async function purgeAuditLogs(days) {
-    const res = await fetch(`${getApiUrl()}/admin/audit/purge/`, {
-        method: "POST", headers: getAuthHeaders(), body: JSON.stringify({ days })
-    });
-    if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(formatError(errData) || "Failed to purge logs");
-    }
     return await res.json();
 }
 

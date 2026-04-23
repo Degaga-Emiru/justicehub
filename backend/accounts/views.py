@@ -153,7 +153,7 @@ class SetPasswordAfterOTPView(APIView):
             "message": "Password set successfully. You are now logged in.",
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "user": UserProfileSerializer(user).data
+            "user": UserProfileSerializer(user, context={'request': request}).data
         }, status=status.HTTP_200_OK)
 
 
@@ -184,7 +184,7 @@ class LoginView(APIView):
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
-            "user": UserProfileSerializer(user).data
+            "user": UserProfileSerializer(user, context={'request': request}).data
         }, status=status.HTTP_200_OK)
 
 
@@ -283,7 +283,7 @@ class ProfilePictureUploadView(APIView):
         
         return Response({
             "message": "Profile picture updated successfully.",
-            "profile_picture": request.user.profile_picture.url if request.user.profile_picture else None
+            "profile_picture": request.build_absolute_uri(request.user.profile_picture.url) if request.user.profile_picture else None
         }, status=status.HTTP_200_OK)
 
 

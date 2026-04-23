@@ -21,6 +21,7 @@ import { Save, Gavel, CheckCircle2, AlertCircle, FileText, Zap, Clock, History, 
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const STATUS_STYLES = {
     PENDING_REVIEW: "bg-amber-500/10 text-amber-600",
@@ -87,18 +88,18 @@ export default function DecisionsPage() {
         onSuccess: (data) => {
             setCurrentDecisionId(data.id);
             queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
-            alert("Decision draft created successfully.");
+            toast.success("Decision draft created successfully.");
         },
-        onError: (err) => alert(err.message || "Failed to create decision"),
+        onError: (err) => toast.error(err.message || "Failed to create decision"),
     });
 
     const updateMutation = useMutation({
         mutationFn: ({ id, data }) => updateDecision(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
-            alert("Decision draft saved.");
+            toast.success("Decision draft saved.");
         },
-        onError: (err) => alert(err.message || "Failed to save decision"),
+        onError: (err) => toast.error(err.message || "Failed to save decision"),
     });
 
     const finalizeMutation = useMutation({
@@ -106,10 +107,10 @@ export default function DecisionsPage() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
             queryClient.invalidateQueries({ queryKey: ["judge-cases-decisions"] });
-            alert(`Decision finalized! ${data.message || "Case has been closed."}`);
+            toast.success(`Decision finalized! ${data.message || "Case has been closed."}`);
             clearForm();
         },
-        onError: (err) => alert(err.message || "Failed to finalize decision"),
+        onError: (err) => toast.error(err.message || "Failed to finalize decision"),
     });
 
     const immediateMutation = useMutation({
@@ -120,9 +121,9 @@ export default function DecisionsPage() {
             setShowImmediateDialog(false);
             setImmediateReason("");
             setImmediateDescription("");
-            alert("Immediate decision issued. Case has been closed.");
+            toast.success("Immediate decision issued. Case has been closed.");
         },
-        onError: (err) => alert(err.message || "Failed to issue immediate decision"),
+        onError: (err) => toast.error(err.message || "Failed to issue immediate decision"),
     });
 
     // Publish decision mutation
@@ -131,9 +132,9 @@ export default function DecisionsPage() {
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
             queryClient.invalidateQueries({ queryKey: ["judge-cases-decisions"] });
-            alert(`Decision published! ${data.message || ""}`);
+            toast.success(`Decision published! ${data.message || ""}`);
         },
-        onError: (err) => alert(err.message || "Failed to publish decision"),
+        onError: (err) => toast.error(err.message || "Failed to publish decision"),
     });
 
     // Fetch version history
@@ -157,7 +158,7 @@ export default function DecisionsPage() {
             refetchComments();
             setCommentText("");
         },
-        onError: (err) => alert(err.message || "Failed to add comment"),
+        onError: (err) => toast.error(err.message || "Failed to add comment"),
     });
 
     const clearForm = () => {
@@ -197,7 +198,7 @@ export default function DecisionsPage() {
 
     const handleFinalize = () => {
         if (!currentDecisionId) {
-            alert("Please save the draft first before finalizing.");
+            toast.error("Please save the draft first before finalizing.");
             return;
         }
         if (confirm("Are you sure you want to finalize this decision? This will close the case and notify all parties.")) {

@@ -5,10 +5,10 @@ from . import views
 router = DefaultRouter()
 # 1. Give cases a specific prefix "cases" instead of an empty string
 router.register(r'categories', views.CaseCategoryViewSet, basename='case-category')
-router.register(r'', views.CaseViewSet, basename='case')
 router.register(r'judge-profiles', views.JudgeProfileViewSet, basename='judge-profile')
 router.register(r'citizen/documents', views.CitizenDocumentViewSet, basename='citizen-document')
 router.register(r'judge/documents', views.JudgeDocumentViewSet, basename='judge-document')
+router.register(r'', views.CaseViewSet, basename='case')
 
 urlpatterns = [
     # Citizen Documents (Explicit patterns for nested paths)

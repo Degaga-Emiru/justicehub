@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
     LayoutDashboard,
@@ -27,7 +27,9 @@ import {
     ChevronRight,
     MessageSquare,
     Globe,
-    Bell
+    Bell,
+    Layers,
+    Shield
 } from "lucide-react";
 import { useState } from "react";
 import { useLanguage } from "@/components/language-provider";
@@ -54,9 +56,11 @@ const menuKeys = {
         { key: "navFiles", href: "/dashboard/clerk/file-creation", icon: FilePlus },
     ],
     admin: [
-        { key: "navDashboard", href: "/dashboard/admin/overview", icon: LayoutDashboard },
-        { key: "navUsers", href: "/dashboard/admin", icon: Users },
-        { key: "navCases", href: "/dashboard/admin/cases", icon: FileText },
+        { key: "navDashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+        { key: "navUsers", href: "/dashboard/admin/users", icon: Users },
+        { key: "navAllCases", href: "/dashboard/admin/cases", icon: FileText },
+        { key: "navCategories", href: "/dashboard/admin/categories", icon: Layers },
+        { key: "navJudges", href: "/dashboard/admin/judges", icon: Shield },
         { key: "navAuditLogs", href: "/dashboard/admin/audit-logs", icon: ClipboardList },
         { key: "navReports", href: "/dashboard/admin/reports", icon: BarChart3 },
     ],
@@ -221,6 +225,7 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
                     collapsed ? "justify-center px-2" : ""
                 )}>
                     <Avatar className="h-10 w-10 border-2 border-primary/20 shadow-lg shrink-0">
+                        {user.profile_picture && <AvatarImage src={user.profile_picture} alt={user.name} />}
                         <AvatarFallback className="bg-gradient-to-br from-primary to-blue-700 text-white text-xs font-black">
                             {user.first_name?.charAt(0) || user.full_name?.charAt(0) || user.name?.charAt(0) || "U"}
                         </AvatarFallback>

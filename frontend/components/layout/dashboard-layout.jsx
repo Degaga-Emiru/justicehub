@@ -3,6 +3,7 @@
 import { Sidebar, SidebarContent } from "@/components/layout/sidebar";
 import { useAuthStore } from "@/store/auth-store";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Bell, Search, Menu, X, Scale } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,18 @@ export function DashboardLayout({ children }) {
         }
     }, [isAuthenticated, router]);
 
+    const roleMap = {
+        'CITIZEN': 'client',
+        'DEFENDANT': 'defendant',
+        'LAWYER': 'client',
+        'JUDGE': 'judge',
+        'CLERK': 'clerk',
+        'ADMIN': 'admin',
+        'REGISTRAR': 'clerk'
+    };
+    
+    const normalizedRole = user?.role ? (roleMap[user.role.toUpperCase()] || user.role.toLowerCase()) : "client";
+
     if (!isAuthenticated || !user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -70,7 +83,7 @@ export function DashboardLayout({ children }) {
                         onClick={() => setMobileMenuOpen(false)}
                     />
                     <div className="fixed inset-y-0 left-0 z-50 w-72 bg-[#0f172a] shadow-2xl animate-in slide-in-from-left duration-500">
-                        <MobileSidebarContent user={user} logout={logout} onClose={() => setMobileMenuOpen(false)} />
+                        <MobileSidebarContent user={user} logout={logout} onClose={() => setMobileMenuOpen(false)} normalizedRole={normalizedRole} />
                     </div>
                 </div>
             )}
@@ -106,15 +119,21 @@ export function DashboardLayout({ children }) {
 
                         <div className="h-10 w-px bg-border/40 hidden sm:block" />
 
-                        <div className="flex items-center gap-3">
+                        <Link href={`/dashboard/${normalizedRole}/settings`} className="flex items-center gap-3 group cursor-pointer">
                             <div className="text-right hidden sm:block">
-                                <p className="text-xs font-black text-foreground font-display uppercase tracking-wider">{user.name}</p>
+                                <p className="text-xs font-black text-foreground font-display uppercase tracking-wider group-hover:text-primary transition-colors">{user.name}</p>
                                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{user.role}</p>
                             </div>
-                            <Badge variant="outline" className="h-10 w-10 p-0 flex items-center justify-center rounded-2xl border-primary/20 bg-primary/5 text-primary text-xs font-black shadow-sm transform hover:scale-105 transition-transform cursor-default">
-                                {user.avatar || user.name?.charAt(0)}
-                            </Badge>
-                        </div>
+                            {user.profile_picture ? (
+                                <div className="h-10 w-10 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-sm transform group-hover:scale-105 transition-transform">
+                                    <img src={user.profile_picture} alt={user.name} className="h-full w-full object-cover" />
+                                </div>
+                            ) : (
+                                <Badge variant="outline" className="h-10 w-10 p-0 flex items-center justify-center rounded-2xl border-primary/20 bg-primary/5 text-primary text-xs font-black shadow-sm transform group-hover:scale-105 transition-transform">
+                                    {user.name?.charAt(0) || "U"}
+                                </Badge>
+                            )}
+                        </Link>
                     </div>
                 </header>
 
@@ -136,7 +155,7 @@ export function DashboardLayout({ children }) {
 // Mobile sidebar logic integration
 import { usePathname as usePathnameHook } from "next/navigation";
 import {
-    LayoutDashboard, FileText, Calendar, Gavel, Users, BarChart3, ClipboardList, CreditCard, FilePlus
+    LayoutDashboard, FileText, Calendar, Gavel, Users, BarChart3, ClipboardList, CreditCard, FilePlus, Layers
 } from "lucide-react";
 
 const mobileRoleMenus = {
@@ -157,9 +176,10 @@ const mobileRoleMenus = {
         { key: "navFiles", href: "/dashboard/clerk/file-creation", icon: FilePlus },
     ],
     admin: [
-        { key: "navDashboard", href: "/dashboard/admin/overview", icon: LayoutDashboard },
-        { key: "navUsers", href: "/dashboard/admin", icon: Users },
+        { key: "navDashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+        { key: "navUsers", href: "/dashboard/admin/users", icon: Users },
         { key: "navCases", href: "/dashboard/admin/cases", icon: FileText },
+        { key: "navCategories", href: "/dashboard/admin/categories", icon: Layers },
         { key: "navReports", href: "/dashboard/admin/reports", icon: BarChart3 },
     ],
     defendant: [

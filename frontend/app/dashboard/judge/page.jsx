@@ -35,6 +35,7 @@ export default function JudgeDashboard() {
     const [isScheduling, setIsScheduling] = useState(false);
     const [caseFilter, setCaseFilter] = useState("all");
     const [hearingStatusFilter, setHearingStatusFilter] = useState("all");
+    const [activeTab, setActiveTab] = useState("cases");
     const [hearingSearch, setHearingSearch] = useState("");
     const [completingHearing, setCompletingHearing] = useState(null);
     const [completeNotes, setCompleteNotes] = useState({ summary: "", action: "CONTINUED", judge_comment: "", minutes: "" });
@@ -344,7 +345,13 @@ export default function JudgeDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="glass-card hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
+                <Card 
+                    className="glass-card hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group cursor-pointer active:scale-95"
+                    onClick={() => {
+                        setActiveTab("hearings");
+                        setHearingStatusFilter("SCHEDULED");
+                    }}
+                >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                         <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Coming Hearings</CardTitle>
@@ -354,7 +361,7 @@ export default function JudgeDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-4xl font-black font-display text-foreground">{upcomingHearings}</div>
-                        <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-tight mt-1">Scheduled Session</p>
+                        <p className="text-xs font-bold text-muted-foreground/60 uppercase tracking-tight mt-1 group-hover:text-emerald-500 transition-colors">Click to view scheduled sessions</p>
                     </CardContent>
                 </Card>
 
@@ -374,7 +381,7 @@ export default function JudgeDashboard() {
             </div>
 
             {/* Navigation Tabs - Modern Styled */}
-            <Tabs defaultValue="cases" className="w-full space-y-8">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
                 <TabsList className="h-14 p-1.5 bg-muted/30 border border-white/5 rounded-2xl glass backdrop-blur-xl w-full lg:max-w-2xl mx-auto flex">
                     <TabsTrigger value="cases" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
                         <Briefcase className="h-4 w-4" />

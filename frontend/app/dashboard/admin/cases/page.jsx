@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCases } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,7 @@ export default function AdminCasesPage() {
     return (
         <div className="space-y-6 animate-fade-up">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Case Oversight</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Cases</h1>
                 <p className="text-muted-foreground">
                     View and monitor all cases across the system.
                 </p>

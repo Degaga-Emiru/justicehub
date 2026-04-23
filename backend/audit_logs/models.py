@@ -133,6 +133,7 @@ class AuditLog(models.Model):
 
     def delete(self, *args, **kwargs):
         # Individual deletion is blocked by policy unless explicitly allowed via purge
-        if not kwargs.get('force_purge', False):
+        force_purge = kwargs.pop('force_purge', False)
+        if not force_purge:
             raise PermissionError("Audit logs cannot be deleted individually.")
         super().delete(*args, **kwargs)

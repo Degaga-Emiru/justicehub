@@ -108,6 +108,9 @@ export const translations = {
         navSearch: "Case Search",
         navHearings: "Hearings",
         navAuditLogs: "Audit Logs",
+        navAllCases: "Cases",
+        navCategories: "Categories",
+        navJudges: "Judges",
 
         // Dashboard - Client Cases
         myCasesTitle: "My Cases",
@@ -375,6 +378,9 @@ export const translations = {
         navSearch: "ጉዳይ ፍለጋ",
         navHearings: "ችሎቶች",
         navAuditLogs: "የኦዲት ምዝግቦች",
+        navAllCases: "ጉዳዮች",
+        navJudges: "ዳኞች",
+        navCategories: "ምድቦች",
 
         // Dashboard - Client Cases
         myCasesTitle: "የእኔ ጉዳዮች",

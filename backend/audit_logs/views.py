@@ -42,6 +42,12 @@ class AuditLogViewSet(viewsets.ModelViewSet):
         # Default: Users see only their own trail
         return qs.filter(user=user)
 
+    def destroy(self, request, *args, **kwargs):
+        """Allow administrative deletion of individual logs"""
+        instance = self.get_object()
+        instance.delete(force_purge=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def list(self, request, *args, **kwargs):
         """Standard paginated list with admin filters"""
         if request.user.role != 'ADMIN':
@@ -178,7 +184,7 @@ class AuditLogViewSet(viewsets.ModelViewSet):
             
         return response
 
-    @action(detail=False, methods=['delete'], permission_classes=[IsAdminUser])
+    @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
     def purge_old(self, request):
         """Permanently delete logs older than X days"""
         days = request.data.get('days')

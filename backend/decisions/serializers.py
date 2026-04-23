@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Q
 from django.utils import timezone
 from .models import Decision, DecisionDelivery, DecisionVersion, DecisionComment
 from cases.serializers import CaseListSerializer
@@ -183,10 +184,13 @@ class ImmediateDecisionSerializer(serializers.Serializer):
         if not case:
             raise serializers.ValidationError("Case context is missing.")
             
-        # Check for conducted hearing
+        # Check for any hearing that has been conducted or completed
         conducted_hearing_exists = Hearing.objects.filter(
-            case=case,
-            status=Hearing.HearingStatus.CONDUCTED
+            case_id=case.id
+        ).filter(
+            Q(status__in=['CONDUCTED', 'COMPLETED', Hearing.HearingStatus.CONDUCTED, Hearing.HearingStatus.COMPLETED]) |
+            Q(conducted_at__isnull=False) |
+            Q(completed_at__isnull=False)
         ).exists()
         
         if not conducted_hearing_exists:

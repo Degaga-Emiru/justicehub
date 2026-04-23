@@ -1,4 +1,5 @@
-from django.db import transaction
+from django.db import transaction, models
+from django.db.models import Q
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.files.base import ContentFile
@@ -56,14 +57,26 @@ class DecisionWorkflowService:
         if decision.status != Decision.DecisionStatus.DRAFT:
             raise BusinessLogicError("Only draft decisions can be finalized.")
 
-        # Check for conducted hearing
-        conducted_hearing_exists = Hearing.objects.filter(
-            case=decision.case,
-            status=Hearing.HearingStatus.CONDUCTED
+        # Debug logging with case_id (using warning to ensure visibility in terminal)
+        case_id = decision.case_id
+        hearings = Hearing.objects.filter(case_id=case_id)
+        logger.warning(f"DEBUG: Checking finalization for case {decision.case.file_number} (ID: {case_id}). Total hearings found: {hearings.count()}")
+        
+        for h in hearings:
+            logger.warning(f"DEBUG: Hearing {h.id}: status='{h.status}', conducted_at={h.conducted_at}, completed_at={h.completed_at}")
+
+        # Check for any hearing that has been conducted or completed using both string literals and TextChoices
+        conducted_hearing_exists = hearings.filter(
+            Q(status__in=['CONDUCTED', 'COMPLETED', Hearing.HearingStatus.CONDUCTED, Hearing.HearingStatus.COMPLETED]) |
+            Q(conducted_at__isnull=False) |
+            Q(completed_at__isnull=False)
         ).exists()
         
         if not conducted_hearing_exists:
-            raise BusinessLogicError("A decision cannot be finalized unless at least one hearing for the case has been conducted.")
+            # Include more info in the error to help debug
+            error_msg = "A decision cannot be finalized unless at least one hearing for the case has been conducted."
+            logger.warning(f"Validation failed for case {case_id}: {error_msg}")
+            raise BusinessLogicError(error_msg)
 
         with transaction.atomic():
             decision.status = Decision.DecisionStatus.FINALIZED
@@ -279,10 +292,13 @@ class DecisionWorkflowService:
         """
         Creates an immediate decision, closes the case, and notifies parties.
         """
-        # 1. Validation for conducted hearing (already done in serializer but double check)
+        # 1. Validation for any hearing that has been conducted or completed
         conducted_hearing_exists = Hearing.objects.filter(
-            case=case,
-            status=Hearing.HearingStatus.CONDUCTED
+            case=case
+        ).filter(
+            Q(status__in=[Hearing.HearingStatus.CONDUCTED, Hearing.HearingStatus.COMPLETED]) |
+            Q(conducted_at__isnull=False) |
+            Q(completed_at__isnull=False)
         ).exists()
         
         if not conducted_hearing_exists:

@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, F
 from django.utils import timezone
 from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
@@ -1116,52 +1116,63 @@ class DashboardStatsView(generics.GenericAPIView):
         user = request.user
         stats = {}
         
-        if user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
-            stats = {
-                'total_cases': Case.objects.count(),
-                'pending_review': Case.objects.filter(status='PENDING_REVIEW').count(),
-                'active_cases': Case.objects.filter(status__in=['ASSIGNED', 'IN_PROGRESS']).count(),
-                'closed_cases': Case.objects.filter(status='CLOSED').count(),
-                'total_judges': JudgeProfile.objects.count(),
-                'avg_processing_time': Case.objects.filter(
-                    status='CLOSED'
-                ).annotate(
-                    processing_time=Avg('closed_date - created_at')
-                ).values('processing_time')
-            }
-        elif user.role == 'JUDGE':
-            stats = {
-                'assigned_cases': Case.objects.filter(
-                    judge_assignments__judge=user,
-                    judge_assignments__is_active=True
-                ).count(),
-                'pending_decisions': Case.objects.filter(
-                    judge_assignments__judge=user,
-                    judge_assignments__is_active=True,
-                    status='IN_PROGRESS'
-                ).exclude(
-                    decisions__isnull=False
-                ).count(),
-                'completed_hearings': user.presiding_hearings.filter(
-                    status='COMPLETED'
-                ).count()
-            }
-        else:
-            stats = {
-                'my_cases': Case.objects.filter(
-                    Q(created_by=user) | Q(plaintiff=user) | Q(defendant=user)
-                ).count(),
-                'active_cases': Case.objects.filter(
-                    Q(created_by=user) | Q(plaintiff=user) | Q(defendant=user),
-                    status__in=['ASSIGNED', 'IN_PROGRESS']
-                ).count(),
-                'upcoming_hearings': user.hearings_participated.filter(
-                    hearing__scheduled_date__gte=timezone.now(),
-                    hearing__status='SCHEDULED'
-                ).count()
-            }
-        
-        return Response(stats)
+        try:
+            if user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
+                # Calculate average processing time safely
+                avg_time = Case.objects.filter(status='CLOSED').annotate(
+                    duration=F('closed_date') - F('created_at')
+                ).aggregate(avg_duration=Avg('duration'))['avg_duration']
+                
+                # Convert timedelta to days if it exists
+                avg_days = avg_time.days if avg_time else 0
+
+                stats = {
+                    'total_cases': Case.objects.count(),
+                    'pending_review': Case.objects.filter(status='PENDING_REVIEW').count(),
+                    'active_cases': Case.objects.filter(status__in=['ASSIGNED', 'IN_PROGRESS']).count(),
+                    'closed_cases': Case.objects.filter(status='CLOSED').count(),
+                    'total_judges': JudgeProfile.objects.count(),
+                    'avg_processing_time': avg_days
+                }
+            elif user.role == 'JUDGE':
+                stats = {
+                    'assigned_cases': Case.objects.filter(
+                        judge_assignments__judge=user,
+                        judge_assignments__is_active=True
+                    ).count(),
+                    'pending_decisions': Case.objects.filter(
+                        judge_assignments__judge=user,
+                        judge_assignments__is_active=True,
+                        status='IN_PROGRESS'
+                    ).exclude(
+                        decisions__isnull=False
+                    ).count(),
+                    'completed_hearings': user.presiding_hearings.filter(
+                        status='COMPLETED'
+                    ).count()
+                }
+            else:
+                stats = {
+                    'my_cases': Case.objects.filter(
+                        Q(created_by=user) | Q(plaintiff=user) | Q(defendant=user)
+                    ).count(),
+                    'active_cases': Case.objects.filter(
+                        Q(created_by=user) | Q(plaintiff=user) | Q(defendant=user),
+                        status__in=['ASSIGNED', 'IN_PROGRESS']
+                    ).count(),
+                    'upcoming_hearings': user.hearings_participated.filter(
+                        scheduled_date__gte=timezone.now(),
+                        status='SCHEDULED'
+                    ).count()
+                }
+            
+            return Response(stats)
+        except Exception as e:
+            logger.error(f"Dashboard stats error for user {user.email}: {str(e)}")
+            return Response(
+                {"error": "Failed to load dashboard statistics"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class JudgeWorkloadView(generics.GenericAPIView):
