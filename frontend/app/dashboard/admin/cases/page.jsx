@@ -137,7 +137,7 @@ export default function AdminCasesPage() {
  </Badge>
  </TableCell>
  <TableCell className="text-xs font-medium truncate max-w-[150px]">
- {c.created_by_name || c.created_by?.full_name || "—"}
+ {c.client_name || c.created_by?.full_name || "—"}
  </TableCell>
  <TableCell className="text-right">
  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg group-hover:bg-primary/10 group-hover:text-primary">
