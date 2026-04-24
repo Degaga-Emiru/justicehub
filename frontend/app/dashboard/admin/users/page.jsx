@@ -157,7 +157,7 @@ export default function UserManagementPage() {
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{t("userManagement")}</h1>
- <p className="text-slate-300 font-medium text-lg leading-relaxed flex items-center gap-2">
+ <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
  <Shield className="h-5 w-5 text-primary" />
  {t("manageSystemAccess")}
  </p>
@@ -165,7 +165,7 @@ export default function UserManagementPage() {
  <div className="flex gap-3">
  <Button 
  onClick={() => window.open(getAdminUsersExportUrl(), '_blank')}
- className="h-12 px-6 rounded-xl font-bold bg-muted/50 border border-white/5 hover:bg-muted transition-all duration-300 text-foreground"
+ className="h-12 px-6 rounded-xl font-bold bg-muted/50 border border-border hover:bg-muted transition-all duration-300 text-foreground"
  >
  Export CSV
  </Button>
@@ -187,33 +187,33 @@ export default function UserManagementPage() {
  {/* Controls */}
  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
  <div className="relative w-full md:max-w-md group">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+ <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
  <Input
  placeholder={t("searchUsers")}
- className="pl-11 h-12 bg-muted/30 border-white/5 rounded-2xl glass focus-visible:ring-primary/50 focus-visible:border-primary transition-all font-medium"
+ className="pl-11 h-12 bg-muted/30 border-border rounded-2xl bg-background shadow-sm border-border focus-visible:ring-primary/50 focus-visible:border-primary transition-all font-medium"
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
  />
  </div>
- <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/20 border border-white/5">
- <span className="text-xs font-black uppercase tracking-widest text-slate-300">Directory size:</span>
+ <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/20 border border-border">
+ <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Directory size:</span>
  <span className="text-sm font-black text-foreground">{filteredUsers.length}</span>
  </div>
  </div>
 
  {/* User Directory Table */}
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardContent className="p-0">
  <div className="overflow-x-auto">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 pl-8">Identity</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Contact Detail</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Access Level</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Security State</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Timeline</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 text-right pr-8">Actions</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Identity</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Contact Detail</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Access Level</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Security State</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Timeline</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -222,17 +222,17 @@ export default function UserManagementPage() {
  <TableCell colSpan={6} className="py-32 text-center">
  <div className="flex flex-col items-center justify-center gap-4">
  <div className="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
- <p className="text-sm font-black uppercase tracking-widest text-slate-300">{t("loadingUsers")}</p>
+ <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t("loadingUsers")}</p>
  </div>
  </TableCell>
  </TableRow>
  ) : filteredUsers.length > 0 ? (
  filteredUsers.map((user) => (
- <TableRow key={user.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+ <TableRow key={user.id} className="border-border hover:bg-muted/30 transition-colors group">
  <TableCell className="pl-8 py-6">
  <div className="flex items-center gap-4">
  <div className="relative">
- <Avatar className="h-12 w-12 rounded-2xl border-2 border-white/10 group-hover:border-primary/50 transition-colors shadow-xl">
+ <Avatar className="h-12 w-12 rounded-2xl border-2 border-border group-hover:border-primary/50 transition-colors shadow-xl">
  <AvatarFallback className="bg-gradient-to-br from-muted to-muted/50 text-foreground font-black text-lg">
  {user.first_name?.[0] || user.email?.[0]?.toUpperCase()}
  </AvatarFallback>
@@ -243,15 +243,15 @@ export default function UserManagementPage() {
  </div>
  <div className="flex flex-col">
  <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{user.full_name}</span>
- <span className="text-[10px] font-bold text-slate-200 uppercase tracking-widest">ID: #{user.id.slice(0, 8)}</span>
+ <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">ID: #{user.id.slice(0, 8)}</span>
  </div>
  </div>
  </TableCell>
  <TableCell>
- <span className="text-sm font-medium text-slate-300">{user.email}</span>
+ <span className="text-sm font-medium text-muted-foreground">{user.email}</span>
  </TableCell>
  <TableCell>
- <Badge variant="outline" className="px-3 py-1 rounded-lg border-white/10 bg-muted/30 font-black text-[10px] uppercase tracking-widest group-hover:bg-primary/10 group-hover:text-primary transition-all">
+ <Badge variant="outline" className="px-3 py-1 rounded-lg border-border bg-muted/30 font-black text-[10px] uppercase tracking-widest group-hover:bg-primary/10 group-hover:text-primary transition-all">
  {t("role" + user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()) || user.role}
  </Badge>
  </TableCell>
@@ -264,7 +264,7 @@ export default function UserManagementPage() {
  </div>
  </TableCell>
  <TableCell>
- <span className="text-xs font-bold text-slate-200">{user.date_joined ? new Date(user.date_joined).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "—"}</span>
+ <span className="text-xs font-bold text-muted-foreground">{user.date_joined ? new Date(user.date_joined).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : "—"}</span>
  </TableCell>
  <TableCell className="text-right pr-8">
  <DropdownMenu>
@@ -273,9 +273,9 @@ export default function UserManagementPage() {
  <MoreHorizontal className="h-5 w-5" />
  </Button>
  </DropdownMenuTrigger>
- <DropdownMenuContent align="end" className="glass-card border-white/10 p-2 min-w-[200px]">
- <div className="px-3 py-2 border-b border-white/5 mb-1">
- <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-200">Command Panel</p>
+ <DropdownMenuContent align="end" className="bg-card shadow-sm border-border border-border p-2 min-w-[200px]">
+ <div className="px-3 py-2 border-b border-border mb-1">
+ <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Command Panel</p>
  </div>
  <DropdownMenuItem 
  className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-3 cursor-pointer transition-colors"
@@ -332,12 +332,12 @@ export default function UserManagementPage() {
  <TableRow>
  <TableCell colSpan={6} className="py-32 text-center">
  <div className="flex flex-col items-center justify-center space-y-4">
- <div className="h-20 w-20 rounded-[2.5rem] bg-muted/10 flex items-center justify-center border border-white/5 rotate-12 shadow-inner">
- <Search className="h-10 w-10 text-slate-300/20" />
+ <div className="h-20 w-20 rounded-[2.5rem] bg-muted/10 flex items-center justify-center border border-border rotate-12 shadow-inner">
+ <Search className="h-10 w-10 text-muted-foreground/20" />
  </div>
  <div className="space-y-1">
  <p className="text-xl font-black font-display text-foreground">No matches found</p>
- <p className="text-sm font-medium text-slate-300">Try adjusting your search criteria.</p>
+ <p className="text-sm font-medium text-muted-foreground">Try adjusting your search criteria.</p>
  </div>
  </div>
  </TableCell>
@@ -442,7 +442,7 @@ export default function UserManagementPage() {
  : [...current, cat.id];
  setNewUser({ ...newUser, specialization_ids: updated });
  }}
- className="text-slate-300 hover:text-foreground flex items-center gap-2"
+ className="text-muted-foreground hover:text-foreground flex items-center gap-2"
  disabled={isSubmitting || !!createSuccess}
  >
  {newUser.specialization_ids?.includes(cat.id) ? (

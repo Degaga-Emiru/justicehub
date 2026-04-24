@@ -97,7 +97,7 @@ export default function RegistrarPaymentsPage() {
  <div className="flex justify-between items-start">
  <div>
  <h1 className="text-3xl font-bold tracking-tight">Payment Verification</h1>
- <p className="text-slate-300">Verify and manage fee payments for case filings.</p>
+ <p className="text-muted-foreground">Verify and manage fee payments for case filings.</p>
  </div>
  </div>
 
@@ -113,7 +113,7 @@ export default function RegistrarPaymentsPage() {
  </div>
  <div className="flex gap-2">
  <div className="relative w-full md:w-64">
- <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-300" />
+ <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input
  placeholder="Search Case #, Payer, Ref..."
  className="pl-8"
@@ -137,7 +137,7 @@ export default function RegistrarPaymentsPage() {
  </CardHeader>
  <CardContent>
  {isLoading ? (
- <div className="space-y-2 py-4 text-center text-slate-300">
+ <div className="space-y-2 py-4 text-center text-muted-foreground">
  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
  Loading transactions...
  </div>
@@ -199,7 +199,7 @@ export default function RegistrarPaymentsPage() {
  ))
  ) : (
  <TableRow>
- <TableCell colSpan={9} className="h-24 text-center text-slate-300">
+ <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
  No transactions found matching your filters.
  </TableCell>
  </TableRow>
@@ -236,19 +236,19 @@ export default function RegistrarPaymentsPage() {
  <div className="py-4 space-y-4">
  <div className="p-4 bg-muted/40 rounded-lg border space-y-2">
  <div className="flex justify-between text-sm">
- <span className="text-slate-300">Case Title:</span>
+ <span className="text-muted-foreground">Case Title:</span>
  <span className="font-medium text-right ml-4">{selectedPayment?.case_title}</span>
  </div>
  <div className="flex justify-between text-sm">
- <span className="text-slate-300">Amount:</span>
+ <span className="text-muted-foreground">Amount:</span>
  <span className="font-bold text-primary">{selectedPayment?.amount} ETB</span>
  </div>
  <div className="flex justify-between text-sm">
- <span className="text-slate-300">Client Ref:</span>
+ <span className="text-muted-foreground">Client Ref:</span>
  <span className="font-mono font-medium">{selectedPayment?.tx_ref}</span>
  </div>
  <div className="flex justify-between text-sm">
- <span className="text-slate-300">Method:</span>
+ <span className="text-muted-foreground">Method:</span>
  <Badge variant="outline">{selectedPayment?.payment_method || "CHAPA"}</Badge>
  </div>
  </div>
@@ -263,7 +263,7 @@ export default function RegistrarPaymentsPage() {
  value={manualTransactionId}
  onChange={(e) => setManualTransactionId(e.target.value)}
  />
- <p className="text-[10px] text-slate-300">Enter the unique ID from your bank statement for auditing.</p>
+ <p className="text-[10px] text-muted-foreground">Enter the unique ID from your bank statement for auditing.</p>
  </div>
  <div className="space-y-2">
  <Label htmlFor="manual_notes">Internal Notes (Optional)</Label>

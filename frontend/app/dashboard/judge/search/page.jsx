@@ -31,7 +31,7 @@ export default function SearchCasesPage() {
  <div className="space-y-6">
  <div>
  <h1 className="text-3xl font-bold tracking-tight">Case Search</h1>
- <p className="text-slate-300">Search and filter your assigned cases.</p>
+ <p className="text-muted-foreground">Search and filter your assigned cases.</p>
  </div>
 
  {/* Search & Filters */}
@@ -39,7 +39,7 @@ export default function SearchCasesPage() {
  <CardContent className="pt-6">
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="md:col-span-2 relative">
- <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-300" />
+ <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input
  placeholder="Search by File Number, Title, or Description..."
  className="pl-9"
@@ -103,7 +103,7 @@ export default function SearchCasesPage() {
  <TableCell>
  <div className="flex flex-col">
  <span className="font-medium">{c.title}</span>
- <span className="text-xs text-slate-300">
+ <span className="text-xs text-muted-foreground">
  {c.created_by_name || ""}{c.defendant_name ? ` vs ${c.defendant_name}` : ""}
  </span>
  </div>

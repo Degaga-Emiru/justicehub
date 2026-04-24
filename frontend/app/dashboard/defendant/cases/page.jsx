@@ -35,7 +35,7 @@ const STATUS_STYLES = {
  ASSIGNED: "bg-indigo-500/10 text-indigo-600",
  IN_PROGRESS: "bg-purple-500/10 text-purple-600",
  DECIDED: "bg-rose-500/10 text-rose-600",
- CLOSED: "bg-slate-500/10 text-slate-300",
+ CLOSED: "bg-slate-500/10 text-muted-foreground",
 };
 
 export default function DefendantCasesPage() {
@@ -74,7 +74,7 @@ export default function DefendantCasesPage() {
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Legal Standings</h1>
- <p className="text-slate-200 font-semibold text-lg leading-relaxed flex items-center gap-2">
+ <p className="text-muted-foreground font-semibold text-lg leading-relaxed flex items-center gap-2">
  <Shield className="h-5 w-5 text-primary" />
  Review all claims filed against you and manage your formal defense responses.
  </p>
@@ -83,7 +83,7 @@ export default function DefendantCasesPage() {
 
  {/* Tabs */}
  <Tabs defaultValue="all" className="w-full space-y-8">
- <TabsList className="h-14 p-1.5 bg-muted/30 border border-white/5 rounded-2xl glass backdrop-blur-xl w-full lg:max-w-xl mx-auto flex">
+ <TabsList className="h-14 p-1.5 bg-muted/30 border border-border rounded-2xl bg-background shadow-sm border-border backdrop-blur-xl w-full lg:max-w-xl mx-auto flex">
  <TabsTrigger value="all" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300">
  All Claims
  </TabsTrigger>
@@ -99,10 +99,10 @@ export default function DefendantCasesPage() {
  </TabsList>
 
  <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Dispute History</CardTitle>
- <CardDescription className="text-slate-300 font-medium">A complete record of all legal filings where you are named as defendant.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">A complete record of all legal filings where you are named as defendant.</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {isLoadingCases ? (
@@ -117,15 +117,15 @@ export default function DefendantCasesPage() {
  </TabsContent>
 
  <TabsContent value="action" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-rose-500/20 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-rose-500/20 shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
  <AlertTriangle className="h-5 w-5" />
  </div>
  <div>
  <CardTitle className="text-2xl font-black font-display tracking-tight">Defenses Required</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Cases awaiting your response or decision acknowledgment.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Cases awaiting your response or decision acknowledgment.</CardDescription>
  </div>
  </div>
  </CardHeader>
@@ -142,15 +142,15 @@ export default function DefendantCasesPage() {
  </TabsContent>
 
  <TabsContent value="active" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-indigo-500/20 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-indigo-500/20 shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0">
  <Scale className="h-5 w-5" />
  </div>
  <div>
  <CardTitle className="text-2xl font-black font-display tracking-tight">Ongoing Proceedings</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Cases currently being heard in court.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Cases currently being heard in court.</CardDescription>
  </div>
  </div>
  </CardHeader>
@@ -177,7 +177,7 @@ export default function DefendantCasesPage() {
  </div>
  Confirm Receipt of Decision
  </DialogTitle>
- <DialogDescription className="text-slate-300 font-medium leading-relaxed">
+ <DialogDescription className="text-muted-foreground font-medium leading-relaxed">
  You are legally acknowledging that you have received and reviewed the court's judgment for: <span className="font-bold text-white tracking-tight">{acknowledgingCase?.file_number || acknowledgingCase?.title}</span>.
  </DialogDescription>
  </DialogHeader>
@@ -198,10 +198,10 @@ function CaseTable({ data, router, emptyMessage, onAcknowledge }) {
  if (!data || data.length === 0) {
  return (
  <div className="flex flex-col items-center justify-center py-24 space-y-4">
- <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-white/5 shadow-inner">
- <FileText className="h-10 w-10 text-slate-300/20" />
+ <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-border shadow-inner">
+ <FileText className="h-10 w-10 text-muted-foreground/20" />
  </div>
- <p className="text-lg font-bold text-slate-300">{emptyMessage}</p>
+ <p className="text-lg font-bold text-muted-foreground">{emptyMessage}</p>
  </div>
  );
  }
@@ -209,14 +209,14 @@ function CaseTable({ data, router, emptyMessage, onAcknowledge }) {
  return (
  <div className="overflow-x-auto">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-slate-200 pl-8">File Number</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-slate-200">Dispute Title</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-slate-200">Category</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-slate-200">Last Update</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-slate-200">Standing</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-slate-200 text-right pr-8">Actions</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground pl-8">File Number</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Dispute Title</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Category</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Last Update</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Standing</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -224,25 +224,25 @@ function CaseTable({ data, router, emptyMessage, onAcknowledge }) {
  <TableRow 
  key={item.id} 
  onClick={() => router.push(`/dashboard/defendant/cases/${item.id}`)}
- className="border-white/5 hover:bg-white/5 transition-all duration-300 group cursor-pointer"
+ className="border-border hover:bg-muted/30 transition-all duration-300 group cursor-pointer"
  >
- <TableCell className="font-mono text-xs font-bold text-slate-300 pl-8">
+ <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">
  {item.file_number || "F-PENDING"}
  </TableCell>
  <TableCell className="py-6">
  <div className="flex flex-col gap-1">
  <span className="font-black font-display text-base tracking-tight text-white group-hover:text-primary transition-colors">{item.title}</span>
- <span className="text-xs text-slate-200 font-bold flex items-center gap-1.5 mt-1">
+ <span className="text-xs text-muted-foreground font-bold flex items-center gap-1.5 mt-1">
  <Clock className="h-3.5 w-3.5 text-primary/90" /> Filed {new Date(item.filing_date || item.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
  </span>
  </div>
  </TableCell>
- <TableCell className="text-[10px] font-black uppercase tracking-widest text-slate-300">{item.category?.name || "General"}</TableCell>
+ <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.category?.name || "General"}</TableCell>
  <TableCell className="text-xs font-bold">
  {new Date(item.updated_at || item.created_at).toLocaleDateString()}
  </TableCell>
  <TableCell>
- <Badge className={cn("px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] border-none shadow-sm", STATUS_STYLES[item.status] || "bg-muted/50 text-slate-300")}>
+ <Badge className={cn("px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] border-none shadow-sm", STATUS_STYLES[item.status] || "bg-muted/50 text-muted-foreground")}>
  {STATUS_LABELS[item.status] || item.status}
  </Badge>
  </TableCell>
@@ -277,7 +277,7 @@ function CaseTable({ data, router, emptyMessage, onAcknowledge }) {
  </Button>
  )
  )}
- <Button variant="ghost" size="sm" className="h-8 px-3 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-white/10 group-hover:text-primary transition-colors">
+ <Button variant="ghost" size="sm" className="h-8 px-3 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-muted/50 group-hover:text-primary transition-colors">
  View Details <ArrowRight className="ml-1.5 h-3 w-3" />
  </Button>
  </div>

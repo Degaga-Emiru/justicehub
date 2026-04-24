@@ -33,7 +33,7 @@ const STATUS_STYLES = {
  ASSIGNED: "bg-indigo-500/10 text-indigo-600",
  IN_PROGRESS: "bg-purple-500/10 text-purple-600",
  DECIDED: "bg-rose-500/10 text-rose-600",
- CLOSED: "bg-slate-500/10 text-slate-300",
+ CLOSED: "bg-slate-500/10 text-muted-foreground",
 };
 
 export default function ClientCasesPage() {
@@ -59,7 +59,7 @@ export default function ClientCasesPage() {
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">
  {t("myCasesTitle")}
  </h1>
- <p className="text-slate-300 font-medium text-lg leading-relaxed flex items-center gap-2">
+ <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
  <Scale className="h-5 w-5 text-primary" />
  {t("myCasesSubtitle")}
  </p>
@@ -74,7 +74,7 @@ export default function ClientCasesPage() {
 
  {/* Tabs */}
  <Tabs defaultValue="all" className="w-full space-y-8">
- <TabsList className="h-14 p-1.5 bg-muted/30 border border-white/5 rounded-2xl glass backdrop-blur-xl w-full lg:max-w-xl mx-auto flex">
+ <TabsList className="h-14 p-1.5 bg-muted/30 border border-border rounded-2xl bg-background shadow-sm border-border backdrop-blur-xl w-full lg:max-w-xl mx-auto flex">
  <TabsTrigger value="all" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300">
  {t("allCases") || "All Cases"}
  </TabsTrigger>
@@ -90,10 +90,10 @@ export default function ClientCasesPage() {
  </TabsList>
 
  <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">{t("cardFilingsTitle")}</CardTitle>
- <CardDescription className="text-slate-300 font-medium">{t("cardFilingsDesc")}</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">{t("cardFilingsDesc")}</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {isLoadingCases ? (
@@ -108,15 +108,15 @@ export default function ClientCasesPage() {
  </TabsContent>
 
  <TabsContent value="action" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-amber-500/20 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-amber-500/20 shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
  <AlertTriangle className="h-5 w-5" />
  </div>
  <div>
  <CardTitle className="text-2xl font-black font-display tracking-tight">Attention Required</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Cases awaiting payment or revised documents.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Cases awaiting payment or revised documents.</CardDescription>
  </div>
  </div>
  </CardHeader>
@@ -133,15 +133,15 @@ export default function ClientCasesPage() {
  </TabsContent>
 
  <TabsContent value="active" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-emerald-500/20 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-emerald-500/20 shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <div className="flex items-center gap-3">
  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
  <CheckCircle className="h-5 w-5" />
  </div>
  <div>
  <CardTitle className="text-2xl font-black font-display tracking-tight">Active Litigation</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Cases currently being processed or heard.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Cases currently being processed or heard.</CardDescription>
  </div>
  </div>
  </CardHeader>
@@ -165,10 +165,10 @@ function CaseTable({ data, router, emptyMessage = "No cases found.", t }) {
  if (!data || data.length === 0) {
  return (
  <div className="flex flex-col items-center justify-center py-24 space-y-4">
- <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-white/5 shadow-inner">
- <FileText className="h-10 w-10 text-slate-300/20" />
+ <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-border shadow-inner">
+ <FileText className="h-10 w-10 text-muted-foreground/20" />
  </div>
- <p className="text-lg font-bold text-slate-300">{emptyMessage}</p>
+ <p className="text-lg font-bold text-muted-foreground">{emptyMessage}</p>
  </div>
  );
  }
@@ -176,14 +176,14 @@ function CaseTable({ data, router, emptyMessage = "No cases found.", t }) {
  return (
  <div className="overflow-x-auto">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 pl-8">File #</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">{t("tblTitle")}</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Category</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Registered</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">{t("tblStatus")}</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 text-right pr-8">{t("tblActions")}</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">File #</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">{t("tblTitle")}</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Category</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Registered</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">{t("tblStatus")}</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">{t("tblActions")}</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -192,11 +192,11 @@ function CaseTable({ data, router, emptyMessage = "No cases found.", t }) {
  key={item.id} 
  onClick={() => router.push(`/dashboard/client/cases/${item.id}`)}
  className={cn(
- "border-white/5 hover:bg-white/5 transition-all duration-300 group cursor-pointer",
+ "border-border hover:bg-muted/30 transition-all duration-300 group cursor-pointer",
  item.status === "REJECTED" && "bg-rose-500/5 hover:bg-rose-500/10"
  )}
  >
- <TableCell className="font-mono text-xs font-bold text-slate-300 pl-8">
+ <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">
  {item.file_number || "PENDING"}
  </TableCell>
  <TableCell className="py-6">
@@ -210,12 +210,12 @@ function CaseTable({ data, router, emptyMessage = "No cases found.", t }) {
  )}
  </div>
  </TableCell>
- <TableCell className="text-[10px] font-black uppercase tracking-widest text-slate-300">{item.category?.name || "General"}</TableCell>
- <TableCell className="text-xs font-bold text-slate-300">
+ <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.category?.name || "General"}</TableCell>
+ <TableCell className="text-xs font-bold text-muted-foreground">
  {new Date(item.created_at || item.filing_date).toLocaleDateString()}
  </TableCell>
  <TableCell>
- <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none shadow-sm", STATUS_STYLES[item.status] || "bg-muted/50 text-slate-300")}>
+ <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none shadow-sm", STATUS_STYLES[item.status] || "bg-muted/50 text-muted-foreground")}>
  {STATUS_LABELS[item.status] || item.status}
  </Badge>
  </TableCell>
@@ -231,7 +231,7 @@ function CaseTable({ data, router, emptyMessage = "No cases found.", t }) {
  <CreditCard className="h-3 w-3 mr-1.5" /> Pay Fee
  </Button>
  )}
- <Button variant="ghost" size="sm" className="h-8 px-3 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-white/10 group-hover:text-primary transition-colors">
+ <Button variant="ghost" size="sm" className="h-8 px-3 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-muted/50 group-hover:text-primary transition-colors">
  Details <ArrowRight className="ml-1.5 h-3 w-3" />
  </Button>
  </div>

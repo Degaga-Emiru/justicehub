@@ -51,14 +51,14 @@ export default function AdminCasesPage() {
  <div className="space-y-6 animate-fade-up">
  <div>
  <h1 className="text-3xl font-bold tracking-tight">Cases</h1>
- <p className="text-slate-300">
+ <p className="text-muted-foreground">
  View and monitor all cases across the system.
  </p>
  </div>
 
  <div className="flex flex-col sm:flex-row gap-3">
  <div className="relative flex-1 max-w-sm">
- <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-300" />
+ <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input
  placeholder="Search by title or file number..."
  className="pl-8"
@@ -83,7 +83,7 @@ export default function AdminCasesPage() {
  </Select>
  </div>
 
- <div className="rounded-md border bg-card/30 glass overflow-hidden shadow-sm">
+ <div className="rounded-md border bg-card/30 bg-background shadow-sm border-border overflow-hidden shadow-sm">
  <Table>
  <TableHeader className="bg-muted/50">
  <TableRow>
@@ -100,12 +100,12 @@ export default function AdminCasesPage() {
  {isLoading ? (
  <TableRow>
  <TableCell colSpan={7} className="h-24 text-center">
- <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-300" />
+ <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
  </TableCell>
  </TableRow>
  ) : filteredCases.length === 0 ? (
  <TableRow>
- <TableCell colSpan={7} className="h-24 text-center text-slate-300">
+ <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
  <FileText className="h-8 w-8 mx-auto mb-2 " />
  No cases found.
  </TableCell>
@@ -151,7 +151,7 @@ export default function AdminCasesPage() {
  </Table>
  </div>
 
- <p className="text-xs text-slate-300 font-medium">
+ <p className="text-xs text-muted-foreground font-medium">
  Showing {filteredCases.length} case{filteredCases.length !== 1 ? "s" : ""} in system index.
  </p>
  </div>

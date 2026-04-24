@@ -87,7 +87,7 @@ export default function AuditLogsPage() {
  <Shield className="h-10 w-10 text-primary" />
  Audit Trail
  </h1>
- <p className="text-slate-300 font-medium text-lg mt-1">
+ <p className="text-muted-foreground font-medium text-lg mt-1">
  Monitor system activity and compliance logs.
  </p>
  </div>
@@ -111,7 +111,7 @@ export default function AuditLogsPage() {
  </DialogHeader>
  <div className="py-6 space-y-4">
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-slate-300">Retention Period</label>
+ <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Retention Period</label>
  <Select value={purgeDays} onValueChange={setPurgeDays}>
  <SelectTrigger className="h-12 rounded-xl bg-muted/50">
  <SelectValue placeholder="Select period" />
@@ -144,19 +144,19 @@ export default function AuditLogsPage() {
 
  <div className="flex flex-col sm:flex-row gap-3">
  <div className="relative flex-1 max-w-sm group">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+ <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
  <Input
  placeholder="Search logs..."
- className="pl-11 h-12 bg-muted/30 border-white/5 rounded-2xl glass focus-visible:ring-primary/50 font-medium"
+ className="pl-11 h-12 bg-muted/30 border-border rounded-2xl bg-background shadow-sm border-border focus-visible:ring-primary/50 font-medium"
  value={search}
  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
  />
  </div>
  <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(1); }}>
- <SelectTrigger className="w-[240px] h-12 bg-muted/30 border-white/5 rounded-2xl glass font-medium">
+ <SelectTrigger className="w-[240px] h-12 bg-muted/30 border-border rounded-2xl bg-background shadow-sm border-border font-medium">
  <SelectValue placeholder="Filter by action" />
  </SelectTrigger>
- <SelectContent className="glass-card border-white/10">
+ <SelectContent className="bg-card shadow-sm border-border border-border">
  <SelectItem value="ALL">All System Actions</SelectItem>
  <SelectItem value="LOGIN">Auth: Login</SelectItem>
  <SelectItem value="USER_CREATED">Users: Created</SelectItem>
@@ -169,15 +169,15 @@ export default function AuditLogsPage() {
  </Select>
  </div>
 
- <div className="rounded-2xl border border-white/5 bg-card/30 glass overflow-hidden shadow-2xl">
+ <div className="rounded-2xl border border-border bg-card/30 bg-background shadow-sm border-border overflow-hidden shadow-2xl">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 pl-8 w-[180px]">Timestamp</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Identity</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Action Type</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 hidden md:table-cell">Operation Details</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 text-right pr-8">Actions</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8 w-[180px]">Timestamp</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Identity</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Action Type</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground hidden md:table-cell">Operation Details</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -186,7 +186,7 @@ export default function AuditLogsPage() {
  <TableCell colSpan={5} className="py-32 text-center">
  <div className="flex flex-col items-center justify-center gap-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-sm font-black uppercase tracking-widest text-slate-300">Decrypting logs...</p>
+ <p className="text-sm font-black uppercase tracking-widest text-muted-foreground">Decrypting logs...</p>
  </div>
  </TableCell>
  </TableRow>
@@ -194,23 +194,23 @@ export default function AuditLogsPage() {
  <TableRow>
  <TableCell colSpan={5} className="py-32 text-center">
  <div className="flex flex-col items-center justify-center space-y-4">
- <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-white/5 shadow-inner">
- <Shield className="h-10 w-10 text-slate-300/20" />
+ <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-border shadow-inner">
+ <Shield className="h-10 w-10 text-muted-foreground/20" />
  </div>
  <p className="text-xl font-black font-display text-foreground">No Logs Found</p>
- <p className="text-sm font-medium text-slate-300">Refine your search or clear filters.</p>
+ <p className="text-sm font-medium text-muted-foreground">Refine your search or clear filters.</p>
  </div>
  </TableCell>
  </TableRow>
  ) : (
  logs.map((log) => (
- <TableRow key={log.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+ <TableRow key={log.id} className="border-border hover:bg-muted/30 transition-colors group">
  <TableCell className="pl-8 py-5">
  <div className="flex flex-col">
  <span className="text-sm font-bold text-foreground">
  {log.timestamp ? new Date(log.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "—"}
  </span>
- <span className="text-[10px] font-mono text-slate-300">
+ <span className="text-[10px] font-mono text-muted-foreground">
  {log.timestamp ? new Date(log.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : ""}
  </span>
  </div>
@@ -220,7 +220,7 @@ export default function AuditLogsPage() {
  <span className="text-sm font-black font-display truncate max-w-[200px]">
  {log.user_email || log.user?.email || "System"}
  </span>
- <span className="text-[10px] font-bold text-slate-200 tracking-widest uppercase">
+ <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
  IP: {log.ip_address || "Internal"}
  </span>
  </div>
@@ -234,7 +234,7 @@ export default function AuditLogsPage() {
  </Badge>
  </TableCell>
  <TableCell className="hidden md:table-cell">
- <p className="text-sm text-slate-300 max-w-[400px] truncate group-hover:text-foreground transition-colors">
+ <p className="text-sm text-muted-foreground max-w-[400px] truncate group-hover:text-foreground transition-colors">
  {log.description || "—"}
  </p>
  </TableCell>
@@ -242,7 +242,7 @@ export default function AuditLogsPage() {
  <Button 
  variant="ghost" 
  size="sm" 
- className="h-9 w-9 p-0 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+ className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
  onClick={() => handleDelete(log.id)}
  disabled={deleteMutation.isPending}
  >
@@ -257,26 +257,26 @@ export default function AuditLogsPage() {
  </div>
 
  <div className="flex items-center justify-between px-2">
- <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
  Showing {logs.length} of {totalCount} records
  </p>
  <div className="flex items-center gap-4">
  <Button
  variant="outline"
  size="sm"
- className="h-10 w-10 rounded-xl glass border-white/5 disabled:opacity-30"
+ className="h-10 w-10 rounded-xl bg-background shadow-sm border-border border-border disabled:opacity-30"
  disabled={!hasPrev}
  onClick={() => setPage((p) => p - 1)}
  >
  <ChevronLeft className="h-5 w-5" />
  </Button>
- <div className="h-10 px-4 rounded-xl glass border border-white/5 flex items-center justify-center font-bold text-sm">
+ <div className="h-10 px-4 rounded-xl bg-background shadow-sm border-border border border-border flex items-center justify-center font-bold text-sm">
  Page {page}
  </div>
  <Button
  variant="outline"
  size="sm"
- className="h-10 w-10 rounded-xl glass border-white/5 disabled:opacity-30"
+ className="h-10 w-10 rounded-xl bg-background shadow-sm border-border border-border disabled:opacity-30"
  disabled={!hasNext}
  onClick={() => setPage((p) => p + 1)}
  >

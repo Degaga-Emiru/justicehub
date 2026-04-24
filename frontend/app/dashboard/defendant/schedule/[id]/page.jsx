@@ -32,7 +32,7 @@ export default function HearingDetailPage() {
  CONDUCTED: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
  COMPLETED: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
  CANCELLED: "bg-rose-500/10 text-rose-500 border-rose-500/20",
- RESCHEDULED: "bg-slate-500/10 text-slate-300 border-slate-500/20",
+ RESCHEDULED: "bg-slate-500/10 text-muted-foreground border-slate-500/20",
  };
 
  const getNotesText = (notes) => {
@@ -62,7 +62,7 @@ export default function HearingDetailPage() {
  return (
  <div className="flex flex-col items-center justify-center py-32 space-y-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-xs font-black uppercase tracking-widest text-slate-300">Retrieving Hearing Details...</p>
+ <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Retrieving Hearing Details...</p>
  </div>
  );
  }
@@ -74,10 +74,10 @@ export default function HearingDetailPage() {
  <AlertCircle className="h-10 w-10 text-rose-500" />
  </div>
  <div className="text-center space-y-2">
- <h2 className="text-2xl font-black text-slate-200">Hearing Not Found</h2>
- <p className="text-slate-300 max-w-md">The hearing record you are looking for might have been moved or deleted.</p>
+ <h2 className="text-2xl font-black text-muted-foreground">Hearing Not Found</h2>
+ <p className="text-muted-foreground max-w-md">The hearing record you are looking for might have been moved or deleted.</p>
  </div>
- <Button variant="outline" onClick={() => router.back()} className="rounded-xl border-white/10 glass">
+ <Button variant="outline" onClick={() => router.back()} className="rounded-xl border-border bg-background shadow-sm border-border">
  <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
  </Button>
  </div>
@@ -104,13 +104,13 @@ export default function HearingDetailPage() {
  {hearing.status}
  </Badge>
  </div>
- <p className="text-slate-200 font-semibold text-lg leading-relaxed max-w-2xl">
+ <p className="text-muted-foreground font-semibold text-lg leading-relaxed max-w-2xl">
  Official {hearing.hearing_type?.replace('_', ' ').toLowerCase()} proceedings for Case {hearing.case_details?.file_number}.
  </p>
  </div>
  
  <div className="flex gap-3 shrink-0">
- <Button variant="outline" className="rounded-xl border-white/10 glass font-bold h-12 px-6" asChild>
+ <Button variant="outline" className="rounded-xl border-border bg-background shadow-sm border-border font-bold h-12 px-6" asChild>
  <Link href={`/dashboard/defendant/cases/${hearing.case}`}>
  <FileText className="mr-2 h-4 w-4" /> View Case
  </Link>
@@ -127,34 +127,34 @@ export default function HearingDetailPage() {
  {/* Main Content */}
  <div className="lg:col-span-2 space-y-8">
  {/* Time and Location Card */}
- <Card className="glass-card border-white/5 overflow-hidden">
+ <Card className="bg-card shadow-sm border-border border-border overflow-hidden">
  <div className="grid grid-cols-1 md:grid-cols-3">
- <div className="p-8 border-b md:border-b-0 md:border-r border-white/5 bg-white/[0.02]">
+ <div className="p-8 border-b md:border-b-0 md:border-r border-border bg-white/[0.02]">
  <div className="flex items-center gap-3 mb-4 text-primary">
  <Calendar className="h-5 w-5" />
  <span className="text-xs font-black uppercase tracking-widest">Session Date</span>
  </div>
- <p className="text-2xl font-black text-slate-200">{format(scheduledDate, "MMMM dd")}</p>
- <p className="text-sm font-bold text-slate-200">{format(scheduledDate, "yyyy")}</p>
+ <p className="text-2xl font-black text-muted-foreground">{format(scheduledDate, "MMMM dd")}</p>
+ <p className="text-sm font-bold text-muted-foreground">{format(scheduledDate, "yyyy")}</p>
  </div>
- <div className="p-8 border-b md:border-b-0 md:border-r border-white/5 bg-white/[0.02]">
+ <div className="p-8 border-b md:border-b-0 md:border-r border-border bg-white/[0.02]">
  <div className="flex items-center gap-3 mb-4 text-primary">
  <Clock className="h-5 w-5" />
  <span className="text-xs font-black uppercase tracking-widest">Scheduled Time</span>
  </div>
- <p className="text-2xl font-black text-slate-200">{format(scheduledDate, "HH:mm")}</p>
- <p className="text-sm font-bold text-slate-200">{hearing.duration_minutes} Minute Duration</p>
+ <p className="text-2xl font-black text-muted-foreground">{format(scheduledDate, "HH:mm")}</p>
+ <p className="text-sm font-bold text-muted-foreground">{hearing.duration_minutes} Minute Duration</p>
  </div>
  <div className="p-8 bg-white/[0.02]">
  <div className="flex items-center gap-3 mb-4 text-primary">
  <MapPin className="h-5 w-5" />
  <span className="text-xs font-black uppercase tracking-widest">Venue / Location</span>
  </div>
- <p className="text-2xl font-black text-slate-200 truncate">{hearing.location || "Main Courtroom"}</p>
+ <p className="text-2xl font-black text-muted-foreground truncate">{hearing.location || "Main Courtroom"}</p>
  {hearing.virtual_meeting_link ? (
  <p className="text-xs font-bold text-indigo-400 truncate">Virtual Link Available Below</p>
  ) : (
- <p className="text-sm font-bold text-slate-200">Physical Attendance Required</p>
+ <p className="text-sm font-bold text-muted-foreground">Physical Attendance Required</p>
  )}
  </div>
  </div>
@@ -162,42 +162,42 @@ export default function HearingDetailPage() {
 
  {/* Agenda & Notes */}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
- <Card className="glass-card border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border">
  <CardHeader>
  <div className="flex items-center gap-3">
  <div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
  <Users className="h-4 w-4" />
  </div>
- <CardTitle className="text-lg font-black font-display tracking-tight text-slate-200">Session Agenda</CardTitle>
+ <CardTitle className="text-lg font-black font-display tracking-tight text-muted-foreground">Session Agenda</CardTitle>
  </div>
  </CardHeader>
  <CardContent className="space-y-4">
  {hearing.agenda ? (
- <p className="text-slate-300 font-medium leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
+ <p className="text-muted-foreground font-medium leading-relaxed bg-muted/30 p-4 rounded-xl border border-border">
  {hearing.agenda}
  </p>
  ) : (
- <p className="text-slate-300 italic font-medium">No formal agenda has been submitted for this session.</p>
+ <p className="text-muted-foreground italic font-medium">No formal agenda has been submitted for this session.</p>
  )}
  </CardContent>
  </Card>
 
- <Card className="glass-card border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border">
  <CardHeader>
  <div className="flex items-center gap-3">
  <div className="h-8 w-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center">
  <MessageSquare className="h-4 w-4" />
  </div>
- <CardTitle className="text-lg font-black font-display tracking-tight text-slate-200">Court Notes</CardTitle>
+ <CardTitle className="text-lg font-black font-display tracking-tight text-muted-foreground">Court Notes</CardTitle>
  </div>
  </CardHeader>
  <CardContent className="space-y-4">
  {hearing.notes ? (
- <div className="text-slate-300 font-medium leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
+ <div className="text-muted-foreground font-medium leading-relaxed bg-muted/30 p-4 rounded-xl border border-border">
  {getNotesText(hearing.notes)}
  </div>
  ) : (
- <p className="text-slate-300 italic font-medium">General administrative notes for the parties.</p>
+ <p className="text-muted-foreground italic font-medium">General administrative notes for the parties.</p>
  )}
  </CardContent>
  </Card>
@@ -205,7 +205,7 @@ export default function HearingDetailPage() {
 
  {/* Hearing Results (if conducted) */}
  {(hearing.status === 'CONDUCTED' || hearing.status === 'COMPLETED') && (
- <Card className="glass-card border-emerald-500/20 bg-emerald-500/5">
+ <Card className="bg-card shadow-sm border-border border-emerald-500/20 bg-emerald-500/5">
  <CardHeader>
  <div className="flex items-center gap-3">
  <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
@@ -218,7 +218,7 @@ export default function HearingDetailPage() {
  {hearing.summary && (
  <div className="space-y-2">
  <span className="text-xs font-black uppercase tracking-widest text-emerald-400">Executive Summary</span>
- <div className="text-slate-200 font-medium leading-relaxed">
+ <div className="text-muted-foreground font-medium leading-relaxed">
  {typeof hearing.summary === 'string' ? (
  hearing.summary
  ) : (
@@ -236,14 +236,14 @@ export default function HearingDetailPage() {
  <span className="text-xs font-black uppercase tracking-widest text-emerald-400">Judicial Action</span>
  <div className="flex items-center gap-2">
  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
- <p className="text-slate-200 font-black">{hearing.action?.replace('_', ' ')}</p>
+ <p className="text-muted-foreground font-black">{hearing.action?.replace('_', ' ')}</p>
  </div>
  </div>
  )}
  {hearing.next_hearing_date && (
  <div className="space-y-2">
  <span className="text-xs font-black uppercase tracking-widest text-emerald-400">Next Scheduled Date</span>
- <div className="flex items-center gap-2 text-slate-200">
+ <div className="flex items-center gap-2 text-muted-foreground">
  <CalendarClock className="h-4 w-4 text-emerald-500" />
  <p className="font-black">{format(new Date(hearing.next_hearing_date), "MMM dd, yyyy 'at' HH:mm")}</p>
  </div>
@@ -254,7 +254,7 @@ export default function HearingDetailPage() {
  {hearing.judge_comment && (
  <div className="space-y-2 pt-4 border-t border-emerald-500/10">
  <span className="text-xs font-black uppercase tracking-widest text-emerald-400">Judge's Comments</span>
- <p className="text-slate-300 italic font-medium leading-relaxed">"{hearing.judge_comment}"</p>
+ <p className="text-muted-foreground italic font-medium leading-relaxed">"{hearing.judge_comment}"</p>
  </div>
  )}
  </CardContent>
@@ -265,20 +265,20 @@ export default function HearingDetailPage() {
  {/* Sidebar */}
  <div className="space-y-8">
  {/* Participants Card */}
- <Card className="glass-card border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border">
  <CardHeader>
- <CardTitle className="text-lg font-black font-display tracking-tight text-slate-200">Summoned Parties</CardTitle>
+ <CardTitle className="text-lg font-black font-display tracking-tight text-muted-foreground">Summoned Parties</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="divide-y divide-white/5">
  {hearing.participants?.length > 0 ? (
  hearing.participants.map((participant, idx) => (
- <div key={idx} className="p-5 flex items-center justify-between group hover:bg-white/5 transition-colors">
+ <div key={idx} className="p-5 flex items-center justify-between group hover:bg-muted/30 transition-colors">
  <div className="space-y-1">
  <p className={cn("text-sm font-black", getRoleColor(participant.role_in_hearing))}>
  {participant.user?.full_name || "Unknown Participant"}
  </p>
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-200 group-hover:text-primary transition-colors">
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
  {participant.role_in_hearing}
  </p>
  </div>
@@ -286,14 +286,14 @@ export default function HearingDetailPage() {
  "text-[9px] font-black uppercase tracking-tight",
  participant.confirmation_status === 'CONFIRMED' ? "border-emerald-500/30 text-emerald-500 bg-emerald-500/5" :
  participant.confirmation_status === 'DECLINED' ? "border-rose-500/30 text-rose-500 bg-rose-500/5" :
- "border-slate-500/30 text-slate-300"
+ "border-slate-500/30 text-muted-foreground"
  )}>
  {participant.confirmation_status || 'PENDING'}
  </Badge>
  </div>
  ))
  ) : (
- <div className="p-10 text-center text-slate-300 italic text-sm">
+ <div className="p-10 text-center text-muted-foreground italic text-sm">
  No participants listed yet.
  </div>
  )}
@@ -303,7 +303,7 @@ export default function HearingDetailPage() {
 
  {/* Virtual Meeting Info */}
  {hearing.virtual_meeting_link && (
- <Card className="glass-card border-indigo-500/20 bg-indigo-500/5">
+ <Card className="bg-card shadow-sm border-border border-indigo-500/20 bg-indigo-500/5">
  <CardHeader>
  <div className="flex items-center gap-3">
  <Video className="h-5 w-5 text-indigo-400" />
@@ -311,14 +311,14 @@ export default function HearingDetailPage() {
  </div>
  </CardHeader>
  <CardContent className="space-y-4">
- <p className="text-xs font-medium text-slate-200 leading-relaxed">
+ <p className="text-xs font-medium text-muted-foreground leading-relaxed">
  This session is being held virtually. Ensure your hardware and internet connection are stable at least 10 minutes prior to commencement.
  </p>
- <div className="p-4 bg-background/50 border border-white/5 rounded-xl flex items-center justify-between">
- <code className="text-[10px] text-slate-300 truncate mr-2">
+ <div className="p-4 bg-background border border-border rounded-xl flex items-center justify-between">
+ <code className="text-[10px] text-muted-foreground truncate mr-2">
  {hearing.virtual_meeting_link}
  </code>
- <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-black uppercase tracking-widest hover:bg-white/10" onClick={() => {
+ <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px] font-black uppercase tracking-widest hover:bg-muted/50" onClick={() => {
  navigator.clipboard.writeText(hearing.virtual_meeting_link);
  // Simple toast fallback or just feedback
  }}>
@@ -330,7 +330,7 @@ export default function HearingDetailPage() {
  )}
 
  {/* Mandatory Appearance Notice */}
- <Card className="glass-card border-amber-500/10 bg-amber-500/5">
+ <Card className="bg-card shadow-sm border-border border-amber-500/10 bg-amber-500/5">
  <CardContent className="p-6 space-y-4">
  <div className="flex items-center gap-3 text-amber-500">
  <Info className="h-5 w-5" />

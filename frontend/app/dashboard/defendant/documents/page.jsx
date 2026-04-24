@@ -37,7 +37,7 @@ export default function DefendantDocumentsPage() {
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
  <div>
  <h1 className="text-3xl font-black font-display tracking-tight text-white mb-2">Legal Documents</h1>
- <p className="text-slate-300 font-medium">Access all official court orders, filings, and judgments.</p>
+ <p className="text-muted-foreground font-medium">Access all official court orders, filings, and judgments.</p>
  </div>
  </div>
 
@@ -45,10 +45,10 @@ export default function DefendantDocumentsPage() {
  {/* Case Selector */}
  <div className="lg:col-span-1 space-y-4">
  <div className="relative">
- <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+ <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
  <Input 
  placeholder="Find Case..." 
- className="pl-10 bg-white/5 border-white/10 rounded-xl focus-visible:ring-primary/40"
+ className="pl-10 bg-muted/30 border-border rounded-xl focus-visible:ring-primary/40"
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
  />
@@ -57,7 +57,7 @@ export default function DefendantDocumentsPage() {
  <div className="space-y-3">
  {loadingCases ? (
  Array(3).fill(0).map((_, i) => (
- <div key={i} className="h-20 bg-white/5 rounded-2xl animate-pulse" />
+ <div key={i} className="h-20 bg-muted/30 rounded-2xl animate-pulse" />
  ))
  ) : filteredCases?.length > 0 ? (
  filteredCases.map((c) => (
@@ -68,7 +68,7 @@ export default function DefendantDocumentsPage() {
  "w-full text-left p-4 rounded-2xl border transition-all duration-300 group",
  selectedCaseId === c.id 
  ? "bg-primary/20 border-primary shadow-lg shadow-primary/10" 
- : "bg-white/5 border-white/5 hover:bg-white/10"
+ : "bg-muted/30 border-border hover:bg-muted/50"
  )}
  >
  <div className="flex justify-between items-start mb-2">
@@ -78,11 +78,11 @@ export default function DefendantDocumentsPage() {
  <ArrowRight className={cn("h-4 w-4 text-primary transition-transform", selectedCaseId === c.id ? "translate-x-0" : "-translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0")} />
  </div>
  <p className="font-bold text-sm text-white truncate">{c.title}</p>
- <p className="text-[10px] text-slate-300 font-medium mt-1">{c.status}</p>
+ <p className="text-[10px] text-muted-foreground font-medium mt-1">{c.status}</p>
  </button>
  ))
  ) : (
- <p className="text-center text-xs text-slate-300 py-10">No cases found.</p>
+ <p className="text-center text-xs text-muted-foreground py-10">No cases found.</p>
  )}
  </div>
  </div>
@@ -90,8 +90,8 @@ export default function DefendantDocumentsPage() {
  {/* Document List */}
  <div className="lg:col-span-2">
  {selectedCaseId ? (
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden min-h-[500px]">
- <CardHeader className="p-8 border-b border-white/5 bg-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden min-h-[500px]">
+ <CardHeader className="p-8 border-b border-border bg-muted/30">
  <div className="flex justify-between items-center">
  <div className="space-y-1">
  <CardTitle className="text-xl font-black">{selectedCase?.title}</CardTitle>
@@ -104,7 +104,7 @@ export default function DefendantDocumentsPage() {
  {loadingDocs ? (
  <div className="flex flex-col items-center justify-center py-32 space-y-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Retrieving Secure Files...</p>
+ <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Retrieving Secure Files...</p>
  </div>
  ) : documents?.length > 0 ? (
  <div className="divide-y divide-white/5">
@@ -119,7 +119,7 @@ export default function DefendantDocumentsPage() {
  {doc.document_type}
  </Badge>
  <p className="text-sm font-bold text-white">{doc.description || "Official Filing"}</p>
- <p className="text-[11px] text-slate-300">Version 1.0 • {doc.latest_version?.uploaded_at ? new Date(doc.latest_version.uploaded_at).toLocaleDateString() : 'Shared with you'}</p>
+ <p className="text-[11px] text-muted-foreground">Version 1.0 • {doc.latest_version?.uploaded_at ? new Date(doc.latest_version.uploaded_at).toLocaleDateString() : 'Shared with you'}</p>
  </div>
  </div>
  <div className="flex flex-wrap gap-2 pt-2">
@@ -128,7 +128,7 @@ export default function DefendantDocumentsPage() {
  <Button 
  variant="outline" 
  size="sm" 
- className="rounded-xl border-white/10 hover:bg-white/5 flex-1 md:flex-none text-xs font-bold"
+ className="rounded-xl border-border hover:bg-muted/30 flex-1 md:flex-none text-xs font-bold"
  onClick={() => window.open(doc.latest_version.file_url, '_blank')}
  >
  <ExternalLink className="h-4 w-4 mr-2" /> View
@@ -143,7 +143,7 @@ export default function DefendantDocumentsPage() {
  </Button>
  </>
  ) : (
- <span className="text-[10px] text-slate-300 italic">No file attached</span>
+ <span className="text-[10px] text-muted-foreground italic">No file attached</span>
  )}
  </div>
  </div>
@@ -158,12 +158,12 @@ export default function DefendantDocumentsPage() {
  </CardContent>
  </Card>
  ) : (
- <div className="h-full min-h-[500px] flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-[2.5rem] bg-white/[0.02]">
+ <div className="h-full min-h-[500px] flex flex-col items-center justify-center border-2 border-dashed border-border rounded-[2.5rem] bg-white/[0.02]">
  <div className="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center mb-6">
  <Search className="h-8 w-8 text-primary/90" />
  </div>
  <h3 className="text-lg font-bold text-white">Select a Case Record</h3>
- <p className="text-sm text-slate-300 text-center max-w-[250px] mt-2">
+ <p className="text-sm text-muted-foreground text-center max-w-[250px] mt-2">
  Choose a case from the list on the left to browse its official document repository.
  </p>
  </div>

@@ -9,7 +9,7 @@ export default function RegisterCasePage() {
  <FilePlus className="h-3 w-3" /> New Filing
  </div>
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">File a New Case</h1>
- <p className="text-slate-300 font-medium text-lg">Follow the steps below to submit your case to the registry.</p>
+ <p className="text-muted-foreground font-medium text-lg">Follow the steps below to submit your case to the registry.</p>
  </div>
  <CaseWizard />
  </div>

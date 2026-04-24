@@ -23,7 +23,7 @@ const STATUS_STYLES = {
  PAID: "bg-teal-500/10 text-teal-600",
  ASSIGNED: "bg-indigo-500/10 text-indigo-600",
  IN_PROGRESS: "bg-purple-500/10 text-purple-600",
- CLOSED: "bg-slate-500/10 text-slate-300",
+ CLOSED: "bg-slate-500/10 text-muted-foreground",
 };
 
 function getFileUrl(filePath) {
@@ -78,7 +78,7 @@ export default function ClerkCaseDetailPage() {
  return (
  <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-sm font-black text-slate-300 uppercase tracking-widest">Loading case details...</p>
+ <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Loading case details...</p>
  </div>
  );
  }
@@ -89,7 +89,7 @@ export default function ClerkCaseDetailPage() {
  <Button variant="outline" className="rounded-xl" onClick={() => router.back()}>
  <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
  </Button>
- <Card className="glass-card border-destructive/30">
+ <Card className="bg-card shadow-sm border-border border-destructive/30">
  <CardContent className="p-12 text-center space-y-3">
  <div className="h-16 w-16 rounded-[2rem] bg-destructive/10 flex items-center justify-center mx-auto">
  <FileText className="h-8 w-8 text-destructive" />
@@ -106,12 +106,12 @@ export default function ClerkCaseDetailPage() {
  return (
  <div className="space-y-8 max-w-5xl mx-auto animate-fade-up">
  {/* Back Button */}
- <Button variant="outline" className="rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary transition-all" onClick={() => router.back()}>
+ <Button variant="outline" className="rounded-xl border-border hover:bg-primary/10 hover:text-primary transition-all" onClick={() => router.back()}>
  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cases
  </Button>
 
  {/* Case Header */}
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-8">
  <div className="flex items-start justify-between">
  <div className="space-y-2">
@@ -123,25 +123,25 @@ export default function ClerkCaseDetailPage() {
  File Number: <span className="font-mono font-black text-foreground">{caseData.file_number || "PENDING"}</span>
  </CardDescription>
  </div>
- <Badge className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border-none", STATUS_STYLES[caseData.status] || "bg-muted/50 text-slate-300")}>
+ <Badge className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border-none", STATUS_STYLES[caseData.status] || "bg-muted/50 text-muted-foreground")}>
  {caseData.status_display || caseData.status}
  </Badge>
  </div>
  </CardHeader>
- <Separator className="bg-white/5" />
+ <Separator className="bg-muted/30" />
  <CardContent className="p-8 space-y-8">
  <div className="grid gap-8 md:grid-cols-2">
  <div className="grid grid-cols-2 gap-6">
  <div className="space-y-1.5">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Category</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</p>
  <p className="text-sm font-bold">{caseData.category_name || caseData.category?.name || "—"}</p>
  </div>
  <div className="space-y-1.5">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Priority</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Priority</p>
  <p className="text-sm font-bold">{caseData.priority_display || caseData.priority || "—"}</p>
  </div>
  <div className="space-y-1.5">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Filed By</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Filed By</p>
  <div className="flex items-center gap-2">
  <div className="h-7 w-7 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
  <User className="h-3.5 w-3.5" />
@@ -150,7 +150,7 @@ export default function ClerkCaseDetailPage() {
  </div>
  </div>
  <div className="space-y-1.5">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Filing Date</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Filing Date</p>
  <div className="flex items-center gap-2">
  <div className="h-7 w-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
  <Calendar className="h-3.5 w-3.5" />
@@ -161,17 +161,17 @@ export default function ClerkCaseDetailPage() {
  </div>
 
  {/* Defendant Management Section */}
- <div className="bg-muted/30 rounded-2xl p-5 border border-white/5 space-y-4">
+ <div className="bg-muted/30 rounded-2xl p-5 border border-border space-y-4">
  {(!caseData.defendant || caseData.defendant === "PENDING_DEFENDANT") ? (
  <>
  <div className="space-y-1.5">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Claimed Defendant (Filing)</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Claimed Defendant (Filing)</p>
  <p className="text-sm font-bold">{caseData.defendant_name || "—"}</p>
  </div>
- <Separator className="bg-white/5" />
+ <Separator className="bg-muted/30" />
  <div className="space-y-2">
  <div className="flex items-center justify-between">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Linked System Account</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Linked System Account</p>
  </div>
  <div className="flex items-center gap-3">
  <div className="h-9 w-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
@@ -196,7 +196,7 @@ export default function ClerkCaseDetailPage() {
  ) : (
  <>
  <div className="space-y-1.5">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Defendant Name</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Defendant Name</p>
  <div className="flex items-center gap-2">
  <div className="h-7 w-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
  <User className="h-3.5 w-3.5" />
@@ -204,10 +204,10 @@ export default function ClerkCaseDetailPage() {
  <p className="text-sm font-bold">{caseData.defendant?.first_name} {caseData.defendant?.last_name || ""}</p>
  </div>
  </div>
- <Separator className="bg-white/5" />
+ <Separator className="bg-muted/30" />
  <div className="space-y-1.5 pb-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Address</p>
- <p className="text-sm font-medium leading-relaxed italic text-slate-300">
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Address</p>
+ <p className="text-sm font-medium leading-relaxed italic text-muted-foreground">
  {caseData.defendant?.address || "No address on file"}
  </p>
  </div>
@@ -218,31 +218,31 @@ export default function ClerkCaseDetailPage() {
 
  {caseData.description && (
  <div className="space-y-2 pt-2">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Description</p>
- <p className="text-sm font-medium leading-relaxed bg-muted/20 p-5 rounded-xl border border-white/5">{caseData.description}</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Description</p>
+ <p className="text-sm font-medium leading-relaxed bg-muted/20 p-5 rounded-xl border border-border">{caseData.description}</p>
  </div>
  )}
  </CardContent>
  </Card>
 
  {/* Documents Section */}
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-8">
  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
  <FileText className="h-5 w-5 text-primary" />
  Uploaded Documents
  <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black h-6 px-2">{documents.length}</Badge>
  </CardTitle>
- <CardDescription className="text-slate-300 font-medium">Documents uploaded by the citizen during case registration.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Documents uploaded by the citizen during case registration.</CardDescription>
  </CardHeader>
- <Separator className="bg-white/5" />
+ <Separator className="bg-muted/30" />
  <CardContent className="p-8">
  {documents.length === 0 ? (
  <div className="flex flex-col items-center justify-center py-20 space-y-4">
- <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-white/5 shadow-inner">
- <FileText className="h-10 w-10 text-slate-300/20" />
+ <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center -rotate-6 border border-border shadow-inner">
+ <FileText className="h-10 w-10 text-muted-foreground/20" />
  </div>
- <p className="text-lg font-bold text-slate-300">No documents were uploaded for this case.</p>
+ <p className="text-lg font-bold text-muted-foreground">No documents were uploaded for this case.</p>
  </div>
  ) : (
  <div className="grid gap-3">
@@ -251,7 +251,7 @@ export default function ClerkCaseDetailPage() {
  const fileUrl = getFileUrl(latestVersion?.file || latestVersion?.file_url);
 
  return (
- <div key={doc.document_id || doc.id || i} className="flex items-center justify-between p-5 border border-white/5 rounded-xl hover:bg-white/5 transition-colors group">
+ <div key={doc.document_id || doc.id || i} className="flex items-center justify-between p-5 border border-border rounded-xl hover:bg-muted/30 transition-colors group">
  <div className="flex items-center gap-4 overflow-hidden">
  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 transform group-hover:-rotate-6 transition-transform duration-500">
  <FileText className="h-6 w-6 text-primary" />
@@ -259,22 +259,22 @@ export default function ClerkCaseDetailPage() {
  <div className="flex flex-col truncate">
  <span className="text-sm font-bold">{doc.document_type || "Document"}</span>
  {latestVersion?.file_name && (
- <span className="text-xs text-slate-300 truncate font-medium">{latestVersion.file_name}</span>
+ <span className="text-xs text-muted-foreground truncate font-medium">{latestVersion.file_name}</span>
  )}
  {latestVersion?.size_display && (
- <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest">{latestVersion.size_display}</span>
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{latestVersion.size_display}</span>
  )}
  </div>
  </div>
 
  <div className="flex items-center gap-2 shrink-0 ml-4">
  {latestVersion?.status && (
- <Badge className="bg-muted/50 text-slate-300 border-none text-[9px] font-black uppercase tracking-widest">
+ <Badge className="bg-muted/50 text-muted-foreground border-none text-[9px] font-black uppercase tracking-widest">
  {latestVersion.status_display || latestVersion.status}
  </Badge>
  )}
  {fileUrl ? (
- <Button variant="outline" size="sm" asChild className="rounded-xl border-white/10 hover:bg-primary/10 hover:text-primary transition-all">
+ <Button variant="outline" size="sm" asChild className="rounded-xl border-border hover:bg-primary/10 hover:text-primary transition-all">
  <a href={fileUrl} target="_blank" rel="noopener noreferrer">
  <Download className="h-4 w-4 mr-2" /> View
  </a>
@@ -303,13 +303,13 @@ export default function ClerkCaseDetailPage() {
  </div>
  Create Defendant Account
  </DialogTitle>
- <DialogDescription className="text-slate-300 font-medium">
+ <DialogDescription className="text-muted-foreground font-medium">
  Create and link a defendant account for <span className="font-bold text-foreground">{caseData?.title}</span>. An activation OTP will be sent to the provided email.
  </DialogDescription>
  </DialogHeader>
  <div className="grid gap-4 py-4">
  {defendantMutation.isError && (
- <Alert variant="destructive" className="glass border-destructive/50">
+ <Alert variant="destructive" className="bg-background shadow-sm border-border border-destructive/50">
  <AlertDescription className="font-bold">
  {defendantMutation.error?.message || "Failed to create defendant account."}
  </AlertDescription>
@@ -317,28 +317,28 @@ export default function ClerkCaseDetailPage() {
  )}
  <div className="grid grid-cols-2 gap-3">
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-slate-300 ml-1">First Name *</label>
+ <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">First Name *</label>
  <Input
  placeholder="First name"
  value={defendantForm.first_name}
  onChange={(e) => setDefendantForm({...defendantForm, first_name: e.target.value})}
- className="h-11 bg-background/50 border-white/20 rounded-xl"
+ className="h-11 bg-background border-border rounded-xl"
  disabled={defendantMutation.isPending}
  />
  </div>
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-slate-300 ml-1">Last Name *</label>
+ <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Last Name *</label>
  <Input
  placeholder="Last name"
  value={defendantForm.last_name}
  onChange={(e) => setDefendantForm({...defendantForm, last_name: e.target.value})}
- className="h-11 bg-background/50 border-white/20 rounded-xl"
+ className="h-11 bg-background border-border rounded-xl"
  disabled={defendantMutation.isPending}
  />
  </div>
  </div>
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-slate-300 ml-1 flex items-center gap-1.5">
+ <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
  <Mail className="h-3 w-3" /> Email Address *
  </label>
  <Input
@@ -346,12 +346,12 @@ export default function ClerkCaseDetailPage() {
  placeholder="defendant@email.com"
  value={defendantForm.email}
  onChange={(e) => setDefendantForm({...defendantForm, email: e.target.value})}
- className="h-11 bg-background/50 border-white/20 rounded-xl"
+ className="h-11 bg-background border-border rounded-xl"
  disabled={defendantMutation.isPending}
  />
  </div>
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-slate-300 ml-1 flex items-center gap-1.5">
+ <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
  <Phone className="h-3 w-3" /> Phone Number *
  </label>
  <Input
@@ -359,7 +359,7 @@ export default function ClerkCaseDetailPage() {
  placeholder="+251900000000"
  value={defendantForm.phone_number}
  onChange={(e) => setDefendantForm({...defendantForm, phone_number: e.target.value})}
- className="h-11 bg-background/50 border-white/20 rounded-xl"
+ className="h-11 bg-background border-border rounded-xl"
  disabled={defendantMutation.isPending}
  />
  </div>

@@ -117,7 +117,7 @@ export default function DocumentsPage() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight">{isDefendant ? "Case Documents" : "My Documents"}</h1>
- <p className="text-slate-300">
+ <p className="text-muted-foreground">
  {isDefendant 
  ? "View court documents, evidence and filings related to your cases." 
  : "Manage and upload documents for your active cases."}
@@ -194,13 +194,13 @@ export default function DocumentsPage() {
 
  {/* Case Filter Selector */}
  <div className="max-w-xs">
- <Label className="text-xs uppercase tracking-widest font-black text-slate-300 mb-2 block">Viewing Documents For</Label>
+ <Label className="text-xs uppercase tracking-widest font-black text-muted-foreground mb-2 block">Viewing Documents For</Label>
  <Select 
  value={activeCaseId} 
  onValueChange={setSelectedCaseId}
  disabled={isLoadingCases || !cases?.length}
  >
- <SelectTrigger className="font-bold border-white/10 bg-muted/30 h-12">
+ <SelectTrigger className="font-bold border-border bg-muted/30 h-12">
  <SelectValue placeholder={isLoadingCases ? "Loading cases..." : "Select a case..."} />
  </SelectTrigger>
  <SelectContent>
@@ -215,13 +215,13 @@ export default function DocumentsPage() {
 
  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
  {isLoadingDocuments ? (
- [1, 2, 3].map(i => <Card key={i} className="h-40 bg-muted/20 animate-pulse border-white/5" />)
+ [1, 2, 3].map(i => <Card key={i} className="h-40 bg-muted/20 animate-pulse border-border" />)
  ) : documents && documents.length > 0 ? (
  documents.map((doc) => {
  const activeVersion = getActiveVersion(doc);
  const statusKey = activeVersion?.status || "PENDING";
  return (
- <Card key={doc.document_id || doc.id} className="group relative overflow-hidden hover:border-primary/50 transition-all bg-background/50 hover:bg-muted/30">
+ <Card key={doc.document_id || doc.id} className="group relative overflow-hidden hover:border-primary/50 transition-all bg-background hover:bg-muted/30">
  <CardHeader className="flex flex-row items-center gap-4 pb-2 p-5">
  <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0 group-hover:scale-110 transition-transform">
  <FileText className="h-5 w-5" />
@@ -239,7 +239,7 @@ export default function DocumentsPage() {
  <CardContent className="px-5 pb-5 pt-0 space-y-3">
  {/* Version info */}
  {activeVersion && (
- <div className="text-xs font-bold text-slate-300 flex justify-between items-center p-2 bg-black/10 rounded-md">
+ <div className="text-xs font-bold text-muted-foreground flex justify-between items-center p-2 bg-black/10 rounded-md">
  <span className="truncate" title={activeVersion.file_name}>{activeVersion.file_name || "File"}</span>
  <span>{activeVersion.size_display || ""}</span>
  </div>
@@ -274,7 +274,7 @@ export default function DocumentsPage() {
  })
  ) : (
  activeCaseId && !isLoadingDocuments ? (
- <div className="col-span-full py-12 text-center text-slate-300 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 bg-muted/10">
+ <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-2 bg-muted/10">
  <FileText className="h-8 w-8 opacity-20" />
  <p className="font-bold text-sm">No documents found for this case.</p>
  </div>
@@ -284,7 +284,7 @@ export default function DocumentsPage() {
  {/* Upload Placeholder Card - only for citizens */}
  {activeCaseId && !isDefendant && (
  <Card 
- className="border-dashed flex flex-col items-center justify-center p-6 text-slate-300 hover:bg-muted/50 transition-colors cursor-pointer min-h-[140px] hover:border-primary/50 group" 
+ className="border-dashed flex flex-col items-center justify-center p-6 text-muted-foreground hover:bg-muted/50 transition-colors cursor-pointer min-h-[140px] hover:border-primary/50 group" 
  onClick={() => {
  setUploadForm({...uploadForm, case_id: activeCaseId});
  setIsUploadOpen(true);

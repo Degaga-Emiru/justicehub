@@ -32,7 +32,7 @@ const STATUS_COLORS = {
  PAID: "bg-teal-500/10 text-teal-600",
  ASSIGNED: "bg-blue-500/10 text-blue-600",
  IN_PROGRESS: "bg-purple-500/10 text-purple-600",
- CLOSED: "bg-slate-500/10 text-slate-300",
+ CLOSED: "bg-slate-500/10 text-muted-foreground",
  REJECTED: "bg-rose-500/10 text-rose-600",
 };
 
@@ -192,16 +192,16 @@ export default function ClerkDashboardPage() {
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Registry Command</h1>
- <p className="text-slate-300 font-medium text-lg leading-relaxed flex items-center gap-2">
+ <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
  <ClipboardList className="h-5 w-5 text-primary" />
  Case intake review, judge assignment, and financial oversight.
  </p>
  </div>
  <div className="relative max-w-sm w-full group">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+ <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
  <Input
  placeholder="Search by docket number or title..."
- className="h-11 pl-11 bg-muted/30 border-white/5 rounded-2xl focus-visible:ring-primary/20 focus-visible:bg-muted/50 transition-all font-medium text-sm"
+ className="h-11 pl-11 bg-muted/30 border-border rounded-2xl focus-visible:ring-primary/20 focus-visible:bg-muted/50 transition-all font-medium text-sm"
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
  />
@@ -210,24 +210,24 @@ export default function ClerkDashboardPage() {
 
  {/* Statistics Cards */}
  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
- <Card className="glass-card hover:border-amber-500/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-amber-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-amber-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Pending Intake</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Pending Intake</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
  <FileText className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{filteredIntake.length}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Awaiting review</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Awaiting review</p>
  </CardContent>
  </Card>
 
- <Card className="glass-card hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Pending Assignment</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Pending Assignment</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
  <UserCheck className="h-5 w-5" />
  </div>
@@ -236,42 +236,42 @@ export default function ClerkDashboardPage() {
  <div className="text-4xl font-black font-display text-foreground">
  {stats.pending_assignment !== undefined ? stats.pending_assignment : pendingAssignment.length}
  </div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Need judge assigned</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Need judge assigned</p>
  </CardContent>
  </Card>
 
- <Card className="glass-card hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Payments</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Payments</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
  <CreditCard className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{payments.filter(p => p.status === 'PENDING').length}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Pending verification</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Pending verification</p>
  </CardContent>
  </Card>
 
- <Card className="glass-card hover:border-purple-500/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-purple-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-purple-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Total Registry</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Total Registry</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
  <Scale className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{cases.length}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Cases in system</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Cases in system</p>
  </CardContent>
  </Card>
  </div>
 
  {/* Tabs */}
  <Tabs defaultValue="intake" className="w-full space-y-8">
- <TabsList className="h-14 p-1.5 bg-muted/30 border border-white/5 rounded-2xl glass backdrop-blur-xl w-full lg:max-w-3xl mx-auto flex">
+ <TabsList className="h-14 p-1.5 bg-muted/30 border border-border rounded-2xl bg-background shadow-sm border-border backdrop-blur-xl w-full lg:max-w-3xl mx-auto flex">
  <TabsTrigger value="intake" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  Intake Review
  <Badge className="bg-amber-500/20 text-amber-600 border-none text-[10px] font-black h-5 px-1.5">{filteredIntake.length}</Badge>
@@ -290,10 +290,10 @@ export default function ClerkDashboardPage() {
 
  {/* INTAKE TAB */}
  <TabsContent value="intake" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Case Filing Queue</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Verify incoming filings and proceed with administrative intake.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Verify incoming filings and proceed with administrative intake.</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {intakeLoading ? (
@@ -303,13 +303,13 @@ export default function ClerkDashboardPage() {
  ) : (
  <div className="overflow-x-auto">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 pl-8">Ref #</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Case Profile</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Jurisdiction</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Priority</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 text-right pr-8">Actions</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Ref #</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Case Profile</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Jurisdiction</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Priority</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -317,14 +317,14 @@ export default function ClerkDashboardPage() {
  filteredIntake.map((c) => (
  <TableRow 
  key={c.id} 
- className="border-white/5 hover:bg-white/5 transition-colors group cursor-pointer" 
+ className="border-border hover:bg-muted/30 transition-colors group cursor-pointer" 
  onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
  >
- <TableCell className="font-mono text-xs font-bold text-slate-300 pl-8">PENDING</TableCell>
+ <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">PENDING</TableCell>
  <TableCell className="py-6">
  <div className="flex flex-col gap-1">
  <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{c.title}</span>
- <span className="text-xs font-medium text-slate-200 truncate max-w-[240px]">{c.description}</span>
+ <span className="text-xs font-medium text-muted-foreground truncate max-w-[240px]">{c.description}</span>
  </div>
  </TableCell>
  <TableCell>
@@ -348,7 +348,7 @@ export default function ClerkDashboardPage() {
  ))
  ) : (
  <TableRow>
- <TableCell colSpan={5} className="py-32 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
+ <TableCell colSpan={5} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
  No incoming filings at this time.
  </TableCell>
  </TableRow>
@@ -363,10 +363,10 @@ export default function ClerkDashboardPage() {
 
  {/* ASSIGNMENT TAB */}
  <TabsContent value="assignment" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Judge Assignment</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Allocate validated cases to the appropriate judicial department.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Allocate validated cases to the appropriate judicial department.</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {casesLoading ? (
@@ -376,12 +376,12 @@ export default function ClerkDashboardPage() {
  ) : (
  <div className="overflow-x-auto">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 pl-8">Docket #</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Title</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Status</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 text-right pr-8">Actions</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Status</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -389,10 +389,10 @@ export default function ClerkDashboardPage() {
  pendingAssignment.map((c) => (
  <TableRow 
  key={c.id} 
- className="border-white/5 hover:bg-white/5 transition-colors group cursor-pointer" 
+ className="border-border hover:bg-muted/30 transition-colors group cursor-pointer" 
  onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
  >
- <TableCell className="font-mono text-xs font-bold text-slate-300 pl-8">{c.file_number}</TableCell>
+ <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number}</TableCell>
  <TableCell className="py-6">
  <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{c.title}</span>
  </TableCell>
@@ -417,7 +417,7 @@ export default function ClerkDashboardPage() {
  ))
  ) : (
  <TableRow>
- <TableCell colSpan={4} className="py-32 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
+ <TableCell colSpan={4} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
  No cases awaiting assignment.
  </TableCell>
  </TableRow>
@@ -432,10 +432,10 @@ export default function ClerkDashboardPage() {
 
  {/* PAYMENTS TAB */}
  <TabsContent value="payments" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Audit Transactions</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Verify filing fee receipts against electronic records.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Verify filing fee receipts against electronic records.</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {loadingPayments ? (
@@ -445,31 +445,31 @@ export default function ClerkDashboardPage() {
  ) : (
  <div className="overflow-x-auto">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 pl-8">Date</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Audit ID</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Payer Info</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Amount</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 text-right pr-8">Status</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Date</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Audit ID</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Payer Info</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Amount</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Status</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
  {payments.length > 0 ? (
  payments.map((p) => (
- <TableRow key={p.id} className="border-white/5 hover:bg-white/5 transition-colors group">
+ <TableRow key={p.id} className="border-border hover:bg-muted/30 transition-colors group">
  <TableCell className="text-xs font-bold pl-8">{new Date(p.created_at).toLocaleDateString()}</TableCell>
- <TableCell className="font-mono text-[10px] font-bold text-slate-300">{p.transaction_reference}</TableCell>
+ <TableCell className="font-mono text-[10px] font-bold text-muted-foreground">{p.transaction_reference}</TableCell>
  <TableCell className="py-6">
  <div className="flex flex-col">
  <span className="font-black font-display text-sm truncate max-w-[200px]">{p.sender_name || p.user_name || "Unknown"}</span>
- <span className="text-[10px] font-bold text-slate-300 uppercase">{p.case_title || "Filing Fee"}</span>
+ <span className="text-[10px] font-bold text-muted-foreground uppercase">{p.case_title || "Filing Fee"}</span>
  </div>
  </TableCell>
  <TableCell className="font-display font-black text-foreground">{p.amount} ETB</TableCell>
  <TableCell className="text-right pr-8">
  <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", 
- p.status === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-muted/50 text-slate-300')}>
+ p.status === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-muted/50 text-muted-foreground')}>
  {p.status}
  </Badge>
  </TableCell>
@@ -477,7 +477,7 @@ export default function ClerkDashboardPage() {
  ))
  ) : (
  <TableRow>
- <TableCell colSpan={5} className="py-32 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
+ <TableCell colSpan={5} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
  No transaction records found.
  </TableCell>
  </TableRow>
@@ -492,10 +492,10 @@ export default function ClerkDashboardPage() {
 
  {/* MASTER REGISTRY TAB */}
  <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Master Registry</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Unified index of all electronic archives and live proceedings.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Unified index of all electronic archives and live proceedings.</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {casesLoading ? (
@@ -505,25 +505,25 @@ export default function ClerkDashboardPage() {
  ) : (
  <div className="overflow-x-auto">
  <Table>
- <TableHeader className="bg-white/5">
- <TableRow className="border-white/5 hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 pl-8">Docket #</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Title</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Jurisdiction</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300">Security State</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-slate-300 text-right pr-8">Audit</TableHead>
+ <TableHeader className="bg-muted/30">
+ <TableRow className="border-border hover:bg-transparent">
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Jurisdiction</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Security State</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Audit</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
  {filteredCases.map((c) => (
  <TableRow 
  key={c.id} 
- className="border-white/5 hover:bg-white/5 transition-colors group cursor-pointer" 
+ className="border-border hover:bg-muted/30 transition-colors group cursor-pointer" 
  onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
  >
- <TableCell className="font-mono text-xs font-bold text-slate-300 pl-8">{c.file_number || "—"}</TableCell>
+ <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number || "—"}</TableCell>
  <TableCell className="py-6 font-black font-display text-sm tracking-tight group-hover:text-primary transition-colors">{c.title}</TableCell>
- <TableCell className="text-[10px] font-black uppercase tracking-widest text-slate-300">{c.category?.name || "GENERAL"}</TableCell>
+ <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category?.name || "GENERAL"}</TableCell>
  <TableCell>
  <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", STATUS_COLORS[c.status])}>
  {STATUS_LABELS[c.status] || c.status}
@@ -581,10 +581,10 @@ export default function ClerkDashboardPage() {
  </DialogHeader>
  {reviewLoading ? <div className="py-20 text-center uppercase font-black text-xs tracking-widest animate-pulse">Loading Metadata...</div> : activeReviewCase && (
  <div className="space-y-6">
- <div className="grid grid-cols-2 gap-4 text-sm p-4 bg-muted/20 rounded-2xl border border-white/5">
- <div><p className="text-[10px] font-black uppercase text-slate-300">Title</p><p className="font-bold">{activeReviewCase.title}</p></div>
- <div><p className="text-[10px] font-black uppercase text-slate-300">Category</p><p className="font-bold">{activeReviewCase.category?.name}</p></div>
- <div className="col-span-2"><p className="text-[10px] font-black uppercase text-slate-300">Description</p><p className="test-xs">{activeReviewCase.description}</p></div>
+ <div className="grid grid-cols-2 gap-4 text-sm p-4 bg-muted/20 rounded-2xl border border-border">
+ <div><p className="text-[10px] font-black uppercase text-muted-foreground">Title</p><p className="font-bold">{activeReviewCase.title}</p></div>
+ <div><p className="text-[10px] font-black uppercase text-muted-foreground">Category</p><p className="font-bold">{activeReviewCase.category?.name}</p></div>
+ <div className="col-span-2"><p className="text-[10px] font-black uppercase text-muted-foreground">Description</p><p className="test-xs">{activeReviewCase.description}</p></div>
  </div>
  
  <div className="flex gap-3">
@@ -606,10 +606,10 @@ export default function ClerkDashboardPage() {
  </div>
  
  {reviewAction === "accept" && (
- <div className="space-y-4 pt-4 border-t border-white/5 animate-in fade-in slide-in-from-top-2">
+ <div className="space-y-4 pt-4 border-t border-border animate-in fade-in slide-in-from-top-2">
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 ml-1">Court Name</label>
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Court Name</label>
  <Input 
  placeholder="e.g. Federal High Court" 
  value={courtName} 
@@ -618,7 +618,7 @@ export default function ClerkDashboardPage() {
  />
  </div>
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 ml-1">Room/Bench</label>
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Room/Bench</label>
  <Input 
  placeholder="e.g. Bench 04" 
  value={courtRoom} 
@@ -647,9 +647,9 @@ export default function ClerkDashboardPage() {
  )}
 
  {reviewAction === "reject" && (
- <div className="space-y-4 pt-4 border-t border-white/5 animate-in fade-in slide-in-from-top-2">
+ <div className="space-y-4 pt-4 border-t border-border animate-in fade-in slide-in-from-top-2">
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-300 ml-1">Rejection Reason</label>
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rejection Reason</label>
  <Textarea 
  placeholder="Detail why this filing is being rejected..." 
  value={rejectionReason} 

@@ -23,7 +23,7 @@ export default function AdminOverviewPage() {
  return (
  <div className="flex flex-col h-[50vh] items-center justify-center gap-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-sm font-black text-slate-300 uppercase tracking-widest">Loading Dashboard...</p>
+ <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Loading Dashboard...</p>
  </div>
  );
  }
@@ -115,7 +115,7 @@ export default function AdminOverviewPage() {
  {/* Header */}
  <div className="space-y-1">
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Admin Dashboard</h1>
- <p className="text-slate-300 font-medium text-lg leading-relaxed flex items-center gap-2">
+ <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
  <ShieldCheck className="h-5 w-5 text-primary" />
  System overview and key metrics.
  </p>
@@ -127,17 +127,17 @@ export default function AdminOverviewPage() {
  const Icon = card.icon;
  return (
  <Link key={card.title} href={card.href}>
- <Card className={`glass-card ${card.borderHover} transition-all duration-500 overflow-hidden relative group cursor-pointer`}>
+ <Card className={`bg-card shadow-sm border-border ${card.borderHover} transition-all duration-500 overflow-hidden relative group cursor-pointer`}>
  <div className={`absolute top-0 right-0 w-24 h-24 ${card.glow} rounded-full blur-2xl -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700`} />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">{card.title}</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">{card.title}</CardTitle>
  <div className={`h-10 w-10 rounded-xl ${card.bg} ${card.color} flex items-center justify-center`}>
  <Icon className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{card.value}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">{card.description}</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{card.description}</p>
  </CardContent>
  </Card>
  </Link>
@@ -151,7 +151,7 @@ export default function AdminOverviewPage() {
  const Icon = link.icon;
  return (
  <Link key={link.title} href={link.href}>
- <Card className="glass-card hover:border-primary/30 transition-all duration-500 cursor-pointer group h-full">
+ <Card className="bg-card shadow-sm border-border hover:border-primary/30 transition-all duration-500 cursor-pointer group h-full">
  <CardHeader className="pb-3">
  <div className="flex items-center gap-3">
  <div className={`h-10 w-10 rounded-xl ${link.bg} ${link.color} flex items-center justify-center shrink-0 transform group-hover:-rotate-6 transition-transform duration-500`}>
@@ -161,7 +161,7 @@ export default function AdminOverviewPage() {
  </div>
  </CardHeader>
  <CardContent>
- <p className="text-sm text-slate-300 font-medium leading-relaxed">{link.description}</p>
+ <p className="text-sm text-muted-foreground font-medium leading-relaxed">{link.description}</p>
  <div className="flex items-center gap-1 mt-4 text-[10px] font-black text-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300">
  Open <ArrowRight className="h-3 w-3" />
  </div>

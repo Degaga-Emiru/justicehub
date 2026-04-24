@@ -67,7 +67,7 @@ export default function NotificationsPage() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
- <p className="text-slate-300">Stay updated on your cases and hearings.</p>
+ <p className="text-muted-foreground">Stay updated on your cases and hearings.</p>
  </div>
  {filter !== "archived" && notifications && notifications.length > 0 && (
  <Button variant="outline" onClick={markAllAsRead} disabled={markAllReadMutation.isPending}>
@@ -77,7 +77,7 @@ export default function NotificationsPage() {
  )}
  </div>
 
- <div className="flex space-x-2 border-b border-white/10 pb-4">
+ <div className="flex space-x-2 border-b border-border pb-4">
  <Button 
  variant={filter === "all" ? "default" : "ghost"} 
  className="rounded-full" 
@@ -103,13 +103,13 @@ export default function NotificationsPage() {
 
  <div className="space-y-4">
  {isLoading ? (
- [1, 2, 3].map(i => <Card key={i} className="h-24 bg-muted/20 animate-pulse border-white/5" />)
+ [1, 2, 3].map(i => <Card key={i} className="h-24 bg-muted/20 animate-pulse border-border" />)
  ) : notifications && notifications.length > 0 ? (
  notifications.map((notif) => (
  <Card 
  key={notif.id} 
  className={cn(
- "group relative overflow-hidden transition-all bg-background/50 border-white/5",
+ "group relative overflow-hidden transition-all bg-background border-border",
  !notif.is_read ? "border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]" : "opacity-80"
  )}
  >
@@ -128,7 +128,7 @@ export default function NotificationsPage() {
  </CardTitle>
  <CardDescription className="text-xs shrink-0">{new Date(notif.created_at).toLocaleString()}</CardDescription>
  </div>
- <p className="text-sm text-slate-300">{notif.message}</p>
+ <p className="text-sm text-muted-foreground">{notif.message}</p>
  </div>
  </CardHeader>
  <CardContent className="px-5 pb-5 pt-0 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -146,7 +146,7 @@ export default function NotificationsPage() {
  </Card>
  ))
  ) : (
- <div className="py-16 text-center text-slate-300 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 bg-muted/10">
+ <div className="py-16 text-center text-muted-foreground border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-2 bg-muted/10">
  <Bell className="h-8 w-8 opacity-20 mb-2" />
  <p className="font-bold">No {filter !== "all" ? filter : ""} notifications</p>
  <p className="text-sm">You are all caught up!</p>

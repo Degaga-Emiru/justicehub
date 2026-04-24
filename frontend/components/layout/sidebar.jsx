@@ -113,7 +113,7 @@ export function Sidebar({ className }) {
  onMouseEnter={() => setIsHovered(true)}
  onMouseLeave={() => setIsHovered(false)}
  className={cn(
- "fixed left-0 top-0 z-40 h-screen transition-all duration-500 hidden md:flex flex-col bg-[#0f172a] text-white border-r border-white/5 shadow-2xl overflow-hidden",
+ "fixed left-0 top-0 z-40 h-screen transition-all duration-500 hidden md:flex flex-col bg-[#0f172a] text-white border-r border-border shadow-2xl overflow-hidden",
  collapsed ? "w-[80px]" : "w-72",
  className
  )}
@@ -184,7 +184,7 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
  "flex items-center gap-4 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all duration-300 relative group",
  isActive
  ? "bg-gradient-to-r from-primary/20 to-transparent text-primary"
- : "text-slate-200 hover:bg-white/5 hover:text-white"
+ : "text-muted-foreground hover:bg-muted/30 hover:text-white"
  )}
  >
  {/* Active Indicator Bar */}
@@ -194,7 +194,7 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
  
  <Icon className={cn(
  "h-5 w-5 shrink-0 transition-all duration-300", 
- isActive ? "text-primary scale-110" : "text-slate-300 group-hover:text-white group-hover:scale-110"
+ isActive ? "text-primary scale-110" : "text-muted-foreground group-hover:text-white group-hover:scale-110"
  )} />
  
  {!collapsed && (
@@ -215,13 +215,13 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
  </nav>
 
  <div className="px-6 py-4">
- <Separator className="bg-white/5 px-4" />
+ <Separator className="bg-muted/30 px-4" />
  </div>
 
  {/* User Profile Section */}
  <div className="px-4 py-2 shrink-0">
  <div className={cn(
- "flex items-center gap-4 px-4 py-4 rounded-3xl bg-white/5 border border-white/5 transition-all duration-300 hover:bg-white/10",
+ "flex items-center gap-4 px-4 py-4 rounded-3xl bg-muted/30 border border-border transition-all duration-300 hover:bg-muted/50",
  collapsed ? "justify-center px-2" : ""
  )}>
  <Avatar className="h-10 w-10 border-2 border-primary/20 shadow-lg shrink-0">
@@ -233,7 +233,7 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
  {!collapsed && (
  <div className="flex-1 min-w-0 animate-in fade-in duration-500">
  <p className="text-sm font-black text-white truncate font-display">{user.full_name || user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}</p>
- <p className="text-[11px] text-slate-200 truncate tracking-tight">{user.email}</p>
+ <p className="text-[11px] text-muted-foreground truncate tracking-tight">{user.email}</p>
  </div>
  )}
  </div>
@@ -244,7 +244,7 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
  <Link
  href={`/dashboard/${menuRole}/settings`}
  className={cn(
- "flex items-center w-full p-3 px-4 rounded-xl text-slate-200 hover:text-white hover:bg-white/5 transition-all duration-300 group",
+ "flex items-center w-full p-3 px-4 rounded-xl text-muted-foreground hover:text-white hover:bg-muted/30 transition-all duration-300 group",
  collapsed && "justify-center"
  )}
  onClick={onLinkClick}
@@ -255,7 +255,7 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
 
  <Button
  variant="ghost"
- className={cn("w-full justify-start text-slate-200 hover:text-white hover:bg-white/5 px-4", collapsed && "justify-center")}
+ className={cn("w-full justify-start text-muted-foreground hover:text-white hover:bg-muted/30 px-4", collapsed && "justify-center")}
  onClick={toggleLanguage}
  >
  <Globe className="h-4 w-4 shrink-0" />

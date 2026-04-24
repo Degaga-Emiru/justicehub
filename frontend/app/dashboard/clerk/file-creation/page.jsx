@@ -35,7 +35,7 @@ export default function FileCreationPage() {
  <div className="max-w-2xl mx-auto space-y-6">
  <div className="text-center mb-8">
  <h1 className="text-3xl font-bold tracking-tight">Case File Directory</h1>
- <p className="text-slate-300">View official court file numbers for accepted cases.</p>
+ <p className="text-muted-foreground">View official court file numbers for accepted cases.</p>
  </div>
 
  <Card>
@@ -79,7 +79,7 @@ export default function FileCreationPage() {
 
  {selectedCase?.file_number && (
  <div className="mt-6 p-6 bg-muted/50 rounded-lg border border-dashed border-primary/30 text-center animate-fade-in">
- <p className="text-sm text-slate-300 mb-2">Official File Number:</p>
+ <p className="text-sm text-muted-foreground mb-2">Official File Number:</p>
  <div className="flex items-center justify-center gap-3">
  <span className="text-3xl font-mono font-bold tracking-wider text-primary">{selectedCase.file_number}</span>
  <Button variant="ghost" size="icon" onClick={copyToClipboard}>

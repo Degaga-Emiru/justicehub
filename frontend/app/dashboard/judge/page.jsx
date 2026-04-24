@@ -294,14 +294,14 @@ export default function JudgeDashboard() {
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Judicial Command</h1>
- <p className="text-slate-300 font-medium text-lg leading-relaxed flex items-center gap-2">
+ <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
  <CalendarDays className="h-5 w-5 text-primary" />
  {format(new Date(), "EEEE, MMMM do, yyyy")}
  </p>
  </div>
  <div className="flex items-center gap-4">
  <Link href="/dashboard/judge/search">
- <Button variant="outline" className="h-12 px-6 rounded-xl font-bold border-white/10 glass hover:bg-white/5 transition-all text-sm group">
+ <Button variant="outline" className="h-12 px-6 rounded-xl font-bold border-border bg-background shadow-sm border-border hover:bg-muted/30 transition-all text-sm group">
  <Search className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
  Search cases
  </Button>
@@ -317,36 +317,36 @@ export default function JudgeDashboard() {
 
  {/* Statistics Cards - Enhanced Judicial Look */}
  <div className="grid gap-6 md:grid-cols-4">
- <Card className="glass-card hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Total Assigned</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Total Assigned</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
  <Briefcase className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{totalCases}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Lifecycle active</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Lifecycle active</p>
  </CardContent>
  </Card>
 
- <Card className="glass-card hover:border-purple-500/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-purple-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-purple-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Pending Cases</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Pending Cases</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
  <Scale className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{pendingCases}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Awaiting Review</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Awaiting Review</p>
  </CardContent>
  </Card>
 
  <Card 
- className="glass-card hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group cursor-pointer active:scale-95"
+ className="bg-card shadow-sm border-border hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group cursor-pointer active:scale-95"
  onClick={() => {
  setActiveTab("hearings");
  setHearingStatusFilter("SCHEDULED");
@@ -354,35 +354,35 @@ export default function JudgeDashboard() {
  >
  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Coming Hearings</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Coming Hearings</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
  <CalendarDays className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{upcomingHearings}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1 group-hover:text-emerald-500 transition-colors">Click to view scheduled sessions</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1 group-hover:text-emerald-500 transition-colors">Click to view scheduled sessions</p>
  </CardContent>
  </Card>
 
- <Card className="glass-card hover:border-slate-500/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-slate-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-slate-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Closed</CardTitle>
- <div className="h-10 w-10 rounded-xl bg-slate-500/10 text-slate-300 flex items-center justify-center">
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Closed</CardTitle>
+ <div className="h-10 w-10 rounded-xl bg-slate-500/10 text-muted-foreground flex items-center justify-center">
  <CheckCircle className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{closedCases}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Resolved Archive</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Resolved Archive</p>
  </CardContent>
  </Card>
  </div>
 
  {/* Navigation Tabs - Modern Styled */}
  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
- <TabsList className="h-14 p-1.5 bg-muted/30 border border-white/5 rounded-2xl glass backdrop-blur-xl w-full lg:max-w-2xl mx-auto flex">
+ <TabsList className="h-14 p-1.5 bg-muted/30 border border-border rounded-2xl bg-background shadow-sm border-border backdrop-blur-xl w-full lg:max-w-2xl mx-auto flex">
  <TabsTrigger value="cases" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  <Briefcase className="h-4 w-4" />
  My Cases ({cases?.length || 0})
@@ -404,14 +404,14 @@ export default function JudgeDashboard() {
 
  {/* CASES TAB */}
  <TabsContent value="cases" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+ <CardHeader className="p-8 border-b border-border">
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
  <div className="space-y-1">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Assigned Portfolio</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Manage and review cases within your jurisdiction.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Manage and review cases within your jurisdiction.</CardDescription>
  </div>
- <div className="flex bg-muted/30 p-1 rounded-xl border border-white/5">
+ <div className="flex bg-muted/30 p-1 rounded-xl border border-border">
  {[
  { key: "all", label: "All" },
  { key: "pending", label: "New" },
@@ -424,7 +424,7 @@ export default function JudgeDashboard() {
  variant="ghost"
  className={cn(
  "h-8 px-4 rounded-lg font-bold text-xs uppercase tracking-wider transition-all duration-300",
- caseFilter === f.key ? "bg-white text-slate-900 shadow-md scale-105" : "text-slate-300 hover:text-white"
+ caseFilter === f.key ? "bg-white text-slate-900 shadow-md scale-105" : "text-muted-foreground hover:text-white"
  )}
  onClick={() => setCaseFilter(f.key)}
  >
@@ -444,7 +444,7 @@ export default function JudgeDashboard() {
  {filteredCases.map((caseItem) => (
  <div
  key={caseItem.id}
- className="group relative p-6 rounded-3xl border border-white/5 bg-background/40 hover:bg-white/5 transition-all duration-500 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl"
+ className="group relative p-6 rounded-3xl border border-border bg-background/40 hover:bg-muted/30 transition-all duration-500 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl"
  onClick={() => router.push(`/dashboard/judge/cases/${caseItem.id}`)}
  >
  {/* Hover Active Indicator */}
@@ -463,7 +463,7 @@ export default function JudgeDashboard() {
  </Badge>
  </div>
  </div>
- <div className="flex items-center gap-6 text-xs font-bold text-slate-300 uppercase tracking-[0.15em]">
+ <div className="flex items-center gap-6 text-xs font-bold text-muted-foreground uppercase tracking-[0.15em]">
  <span className="flex items-center gap-1.5"><FileText className="h-3 w-3 text-primary" /> {caseItem.file_number || "F-PENDING"}</span>
  <span className="flex items-center gap-1.5"><Scale className="h-3 w-3 text-primary" /> {caseItem.category?.name || caseItem.category || "GENERAL"}</span>
  <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3 text-primary" /> {caseItem.filing_date ? format(new Date(caseItem.filing_date), "MMM d, yyyy") : "—"}</span>
@@ -479,11 +479,11 @@ export default function JudgeDashboard() {
  ) : (
  <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
  <div className="h-24 w-24 rounded-full bg-muted/10 flex items-center justify-center">
- <Briefcase className="h-12 w-12 text-slate-300/30" />
+ <Briefcase className="h-12 w-12 text-muted-foreground/30" />
  </div>
  <div className="space-y-2 max-w-xs">
  <p className="text-xl font-black font-display text-foreground">No records found</p>
- <p className="text-sm font-medium text-slate-300">Try adjusting your filters or search criteria.</p>
+ <p className="text-sm font-medium text-muted-foreground">Try adjusting your filters or search criteria.</p>
  </div>
  </div>
  )}
@@ -496,13 +496,13 @@ export default function JudgeDashboard() {
  <div className="grid gap-8 lg:grid-cols-7 items-start">
  {/* Calendar Section */}
  <div className="lg:col-span-3">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden h-full">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden h-full">
  <CardHeader className="p-8 pb-4">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Docket Calendar</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Visual overview of your court session schedule.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Visual overview of your court session schedule.</CardDescription>
  </CardHeader>
  <CardContent className="p-8 pt-2 flex flex-col items-center">
- <div className="w-full bg-muted/20 rounded-[2.5rem] p-6 border border-white/5 shadow-inner">
+ <div className="w-full bg-muted/20 rounded-[2.5rem] p-6 border border-border shadow-inner">
  <Calendar
  mode="single"
  selected={date}
@@ -522,7 +522,7 @@ export default function JudgeDashboard() {
  </div>
  <div>
  <p className="text-xs font-black uppercase tracking-widest text-primary">Active Dates Highlighted</p>
- <p className="text-[11px] font-bold text-slate-200 mt-1 uppercase tracking-tight">Sessions currently defined in backend</p>
+ <p className="text-[11px] font-bold text-muted-foreground mt-1 uppercase tracking-tight">Sessions currently defined in backend</p>
  </div>
  </div>
  </CardContent>
@@ -531,8 +531,8 @@ export default function JudgeDashboard() {
 
  {/* Hearings List Section */}
  <div className="lg:col-span-4 h-full">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden flex flex-col h-full min-h-[600px]">
- <CardHeader className="p-8 pb-4 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden flex flex-col h-full min-h-[600px]">
+ <CardHeader className="p-8 pb-4 border-b border-border">
  <div className="flex justify-between items-center">
  <div className="space-y-1">
  <CardTitle className="text-2xl font-black font-display tracking-tight flex items-center gap-3">
@@ -541,7 +541,7 @@ export default function JudgeDashboard() {
  {displayedHearings.length}
  </Badge>
  </CardTitle>
- <CardDescription className="text-slate-300 font-medium">
+ <CardDescription className="text-muted-foreground font-medium">
  {date ? "Proceedings for selected date." : "Complete overview of your judicial schedule."}
  </CardDescription>
  </div>
@@ -568,19 +568,19 @@ export default function JudgeDashboard() {
  {/* New Advanced Filter Bar */}
  <div className="mt-8 flex flex-col md:flex-row gap-4">
  <div className="relative flex-1 group">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-primary transition-colors" />
+ <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
  <Input 
  placeholder="Search by docket or title..." 
- className="pl-11 h-12 bg-muted/20 border-white/5 rounded-2xl focus:ring-primary/20 transition-all font-medium"
+ className="pl-11 h-12 bg-muted/20 border-border rounded-2xl focus:ring-primary/20 transition-all font-medium"
  value={hearingSearch}
  onChange={(e) => setHearingSearch(e.target.value)}
  />
  </div>
  <Select value={hearingStatusFilter} onValueChange={setHearingStatusFilter}>
- <SelectTrigger className="w-full md:w-[180px] h-12 bg-muted/20 border-white/5 rounded-2xl font-bold text-xs uppercase tracking-widest">
+ <SelectTrigger className="w-full md:w-[180px] h-12 bg-muted/20 border-border rounded-2xl font-bold text-xs uppercase tracking-widest">
  <SelectValue placeholder="All Status" />
  </SelectTrigger>
- <SelectContent className="glass-card border-white/5">
+ <SelectContent className="bg-card shadow-sm border-border border-border">
  <SelectItem value="all" className="font-bold text-xs uppercase tracking-widest">All Events</SelectItem>
  <SelectItem value="SCHEDULED" className="font-bold text-xs uppercase tracking-widest">Scheduled</SelectItem>
  <SelectItem value="IN_PROGRESS" className="font-bold text-xs uppercase tracking-widest">In Progress</SelectItem>
@@ -591,7 +591,7 @@ export default function JudgeDashboard() {
  {(hearingSearch || hearingStatusFilter !== "all") && (
  <Button 
  variant="ghost" 
- className="h-12 px-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-slate-300 hover:text-primary transition-colors"
+ className="h-12 px-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
  onClick={() => { setHearingSearch(""); setHearingStatusFilter("all"); }}
  >
  Reset Filters
@@ -609,14 +609,14 @@ export default function JudgeDashboard() {
  {displayedHearings.map((hearing) => (
  <div
  key={hearing.id}
- className="group relative p-6 rounded-3xl border border-white/5 bg-background/40 hover:bg-white/5 transition-all duration-500 cursor-pointer shadow-sm hover:shadow-xl"
+ className="group relative p-6 rounded-3xl border border-border bg-background/40 hover:bg-muted/30 transition-all duration-500 cursor-pointer shadow-sm hover:shadow-xl"
  onClick={() => setSelectedHearing(hearing)}
  >
  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-primary rounded-r-xl opacity-0 group-hover:opacity-100 transition-opacity" />
  <div className="flex justify-between items-start mb-4">
  <div className="space-y-1">
  <h4 className="font-black font-display text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{hearing.title || hearing.case?.title || "Hearing Session"}</h4>
- <p className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+ <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
  <FileText className="h-3 w-3 text-primary" /> {hearing.case?.file_number || hearing.caseId || "N/A"}
  </p>
  </div>
@@ -625,7 +625,7 @@ export default function JudgeDashboard() {
  </Badge>
  </div>
 
- <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs font-bold uppercase tracking-widest text-slate-200">
+ <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
  <div className="flex items-center gap-2 group-hover:text-foreground transition-colors">
  <div className="h-8 w-8 rounded-lg bg-muted/30 flex items-center justify-center">
  <Clock className="h-4 w-4 text-blue-500" />
@@ -650,14 +650,14 @@ export default function JudgeDashboard() {
  </div>
  ) : (
  <div className="flex flex-col items-center justify-center h-[400px] text-center space-y-6">
- <div className="h-24 w-24 rounded-[2rem] bg-muted/10 flex items-center justify-center border border-white/5 rotate-3 shadow-inner">
- <CalendarDays className="h-12 w-12 text-slate-300/20" />
+ <div className="h-24 w-24 rounded-[2rem] bg-muted/10 flex items-center justify-center border border-border rotate-3 shadow-inner">
+ <CalendarDays className="h-12 w-12 text-muted-foreground/20" />
  </div>
  <div className="space-y-1">
  <p className="text-xl font-black font-display text-foreground">
  {date || hearingSearch || hearingStatusFilter !== "all" ? "No matches found" : "Court Closed"}
  </p>
- <p className="text-sm font-medium text-slate-300">
+ <p className="text-sm font-medium text-muted-foreground">
  {date || hearingSearch || hearingStatusFilter !== "all" 
  ? "Try adjusting your current filters or selection." 
  : "You have no upcoming hearings in your current docket."}
@@ -673,10 +673,10 @@ export default function JudgeDashboard() {
 
  {/* NOTIFICATIONS TAB */}
  <TabsContent value="notifications" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="glass-card border-white/5 shadow-2xl overflow-hidden max-w-4xl mx-auto">
- <CardHeader className="p-8 border-b border-white/5">
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden max-w-4xl mx-auto">
+ <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">System Updates</CardTitle>
- <CardDescription className="text-slate-300 font-medium">Keep track of case assignments and procedural changes.</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">Keep track of case assignments and procedural changes.</CardDescription>
  </CardHeader>
  <CardContent className="p-8">
  {notifications?.length > 0 ? (
@@ -688,7 +688,7 @@ export default function JudgeDashboard() {
  "relative p-6 rounded-[2rem] border transition-all duration-300 group",
  !notif.is_read 
  ? 'bg-primary/5 border-primary/20 shadow-lg shadow-primary/5' 
- : 'bg-background/40 border-white/5 hover:bg-white/5'
+ : 'bg-background/40 border-border hover:bg-muted/30'
  )}
  >
  <div className="flex justify-between items-start gap-4">
@@ -696,14 +696,14 @@ export default function JudgeDashboard() {
  <div className="flex items-center gap-3">
  {!notif.is_read && <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-lg shadow-primary/50 animate-pulse" />}
  <h4 className="font-black font-display text-lg tracking-tight text-foreground">{notif.title}</h4>
- <Badge variant="outline" className="px-2 py-0 h-5 rounded-md text-[9px] font-black uppercase tracking-widest border-none bg-muted/50 text-slate-300">
+ <Badge variant="outline" className="px-2 py-0 h-5 rounded-md text-[9px] font-black uppercase tracking-widest border-none bg-muted/50 text-muted-foreground">
  {notif.type?.replace("_", " ")}
  </Badge>
  </div>
- <p className="text-sm font-medium text-slate-300 leading-relaxed">{notif.message}</p>
+ <p className="text-sm font-medium text-muted-foreground leading-relaxed">{notif.message}</p>
  {notif.case_details && (
  <div className="pt-2">
- <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background/50 border border-white/5 text-[10px] font-black uppercase tracking-wider text-slate-200">
+ <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-background border border-border text-[10px] font-black uppercase tracking-wider text-muted-foreground">
  <FileText className="h-3 w-3 text-primary" /> 
  Docket: {notif.case_details.file_number || notif.case_details.title}
  </div>
@@ -711,7 +711,7 @@ export default function JudgeDashboard() {
  )}
  </div>
  <div className="flex flex-col items-end gap-1">
- <span className="text-[10px] font-black text-slate-200 uppercase tracking-widest bg-muted/20 px-3 py-1 rounded-full">
+ <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted/20 px-3 py-1 rounded-full">
  {notif.created_at ? format(new Date(notif.created_at), "MMM d, h:mm a") : ""}
  </span>
  </div>
@@ -721,12 +721,12 @@ export default function JudgeDashboard() {
  </div>
  ) : (
  <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
- <div className="h-24 w-24 rounded-[3rem] bg-muted/10 border border-white/5 flex items-center justify-center -rotate-12 shadow-inner">
- <Bell className="h-12 w-12 text-slate-300/20" />
+ <div className="h-24 w-24 rounded-[3rem] bg-muted/10 border border-border flex items-center justify-center -rotate-12 shadow-inner">
+ <Bell className="h-12 w-12 text-muted-foreground/20" />
  </div>
  <div className="space-y-1">
  <p className="text-xl font-black font-display text-foreground">Awaiting Notifications</p>
- <p className="text-sm font-medium text-slate-300">Procedural updates and alerts will appear here.</p>
+ <p className="text-sm font-medium text-muted-foreground">Procedural updates and alerts will appear here.</p>
  </div>
  </div>
  )}
@@ -750,7 +750,7 @@ export default function JudgeDashboard() {
  <div className="space-y-6 py-4">
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-1">
- <span className="text-xs text-slate-300 font-medium uppercase tracking-wider">Date & Time</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Date & Time</span>
  <p className="font-medium flex items-center gap-2">
  <CalendarDays className="h-4 w-4 text-primary" />
  {selectedHearing.scheduled_date
@@ -759,25 +759,25 @@ export default function JudgeDashboard() {
  </p>
  </div>
  <div className="space-y-1">
- <span className="text-xs text-slate-300 font-medium uppercase tracking-wider">Location</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Location</span>
  <p className="font-medium flex items-center gap-2">
  <MapPin className="h-4 w-4 text-primary" />
  {selectedHearing.location || selectedHearing.courtroom || "N/A"}
  </p>
  </div>
  <div className="space-y-1">
- <span className="text-xs text-slate-300 font-medium uppercase tracking-wider">Hearing Type</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Hearing Type</span>
  <p className="font-medium">{selectedHearing.hearing_type || selectedHearing.type || "N/A"}</p>
  </div>
  <div className="space-y-1">
- <span className="text-xs text-slate-300 font-medium uppercase tracking-wider">Status</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Status</span>
  <Badge variant="outline" className={statusColors[selectedHearing.status] || ""}>{selectedHearing.status}</Badge>
  </div>
  </div>
 
  {selectedHearing.agenda && (
  <div className="space-y-2">
- <span className="text-xs text-slate-300 font-medium uppercase tracking-wider">Agenda</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Agenda</span>
  <p className="text-sm border rounded-lg p-3 bg-muted/50">{selectedHearing.agenda}</p>
  </div>
  )}
@@ -785,7 +785,7 @@ export default function JudgeDashboard() {
  {/* Participants */}
  {selectedHearing.participants?.length > 0 && (
  <div className="space-y-2">
- <span className="text-xs text-slate-300 font-medium uppercase tracking-wider">Participants</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Participants</span>
  <div className="space-y-1">
  {selectedHearing.participants.map((p, i) => (
  <div key={i} className="flex justify-between items-center text-sm p-2 border rounded">
@@ -1237,10 +1237,10 @@ export default function JudgeDashboard() {
  </DialogHeader>
  <div className="space-y-3 py-4 max-h-[400px] overflow-y-auto">
  {attendanceData.length > 0 ? attendanceData.map((p, i) => (
- <div key={p.user_id || i} className="flex items-center justify-between p-3 rounded-xl border border-white/10 bg-background/40">
+ <div key={p.user_id || i} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background/40">
  <div className="space-y-0.5">
  <p className="font-bold text-sm">{p.name}</p>
- <p className="text-xs text-slate-300 uppercase tracking-wider">{p.role}</p>
+ <p className="text-xs text-muted-foreground uppercase tracking-wider">{p.role}</p>
  </div>
  <Select
  value={p.attendance_status}
@@ -1267,7 +1267,7 @@ export default function JudgeDashboard() {
  </Select>
  </div>
  )) : (
- <p className="text-sm text-slate-300 text-center py-8">No participants found for this hearing.</p>
+ <p className="text-sm text-muted-foreground text-center py-8">No participants found for this hearing.</p>
  )}
  </div>
  <DialogFooter>
@@ -1305,18 +1305,18 @@ export default function JudgeDashboard() {
  </div>
  
  <div className="p-8 space-y-6">
- <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+ <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
  <div className="flex items-center gap-3">
  <Scale className="h-4 w-4 text-emerald-500" />
- <p className="text-xs font-black text-slate-300 uppercase tracking-widest">Linked Case File</p>
+ <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Linked Case File</p>
  </div>
- <p className="text-sm font-bold text-slate-200 leading-relaxed">
+ <p className="text-sm font-bold text-muted-foreground leading-relaxed">
  {lastCompletedHearing?.case?.title || "Active Legal Proceeding"}
  </p>
  </div>
 
  <div className="space-y-4">
- <p className="text-sm font-medium text-slate-300 leading-relaxed text-center px-4">
+ <p className="text-sm font-medium text-muted-foreground leading-relaxed text-center px-4">
  The hearing has been successfully recorded. Would you like to schedule the 
  <span className="text-white font-bold ml-1">next follow-up session</span> for this docket now?
  </p>
@@ -1331,7 +1331,7 @@ export default function JudgeDashboard() {
  <Button 
  variant="ghost" 
  onClick={() => setShowFollowUpPrompt(false)}
- className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-slate-300 hover:text-white hover:bg-white/5"
+ className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-muted-foreground hover:text-white hover:bg-muted/30"
  >
  Maybe Later
  </Button>

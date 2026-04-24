@@ -49,7 +49,7 @@ export default function ClientDashboard() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
  <div className="space-y-1">
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{t("overview")}</h1>
- <p className="text-slate-300 font-medium text-lg leading-relaxed">
+ <p className="text-muted-foreground font-medium text-lg leading-relaxed">
  {t("welcomeBackName").replace("{name}", user?.name || "Client")}
  </p>
  </div>
@@ -63,41 +63,41 @@ export default function ClientDashboard() {
 
  {/* Stats Overview */}
  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
- <Card className="glass-card hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-primary/10 transition-colors"></div>
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-slate-300">{t("activeCasesOverview")}</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t("activeCasesOverview")}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
  <FileText className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{activeCases.length}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">Assigned &amp; In Progress</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Assigned &amp; In Progress</p>
  </CardContent>
  </Card>
 
- <Card className="glass-card hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-primary/10 transition-colors"></div>
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-slate-300">{t("pendingReview")}</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t("pendingReview")}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
  <Clock className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{pendingCases.length}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">{t("awaitingRegistrar")}</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t("awaitingRegistrar")}</p>
  </CardContent>
  </Card>
 
  <Card className={cn(
- "glass-card hover:border-blue-400/50 transition-all duration-500 overflow-hidden relative group",
+ "bg-card shadow-sm border-border hover:border-blue-400/50 transition-all duration-500 overflow-hidden relative group",
  awaitingPayment.length > 0 ? "border-blue-500/30 bg-blue-500/5" : ""
  )}>
  {awaitingPayment.length > 0 && <div className="absolute inset-0 bg-blue-500/5 animate-pulse-slow"></div>}
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
- <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-slate-300">Awaiting Payment</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Awaiting Payment</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
  <CreditCard className="h-5 w-5" />
  </div>
@@ -109,13 +109,13 @@ export default function ClientDashboard() {
  Pay now <ArrowRight className="ml-1 h-3 w-3 group-hover/pay:translate-x-1 transition-transform" />
  </Link>
  ) : (
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">No pending fees</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">No pending fees</p>
  )}
  </CardContent>
  </Card>
 
  {rejectedCases.length > 0 ? (
- <Card className="glass-card border-destructive/30 bg-destructive/5 hover:border-destructive/50 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border border-destructive/30 bg-destructive/5 hover:border-destructive/50 transition-all duration-500 overflow-hidden relative group">
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
  <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-destructive">Rejected</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-destructive/10 text-destructive flex items-center justify-center">
@@ -130,16 +130,16 @@ export default function ClientDashboard() {
  </CardContent>
  </Card>
  ) : (
- <Card className="glass-card hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
+ <Card className="bg-card shadow-sm border-border hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-slate-300">{t("upcomingHearings")}</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t("upcomingHearings")}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
  <Calendar className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{myHearings.length}</div>
- <p className="text-xs font-bold text-slate-200 uppercase tracking-tight mt-1">{t("next30Days")}</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t("next30Days")}</p>
  </CardContent>
  </Card>
  )}
@@ -147,12 +147,12 @@ export default function ClientDashboard() {
 
  <div className="grid gap-8 md:grid-cols-7">
  {/* Recent Cases List */}
- <Card className="col-span-4 glass-card border-white/10 shadow-xl overflow-hidden">
+ <Card className="col-span-4 bg-card shadow-sm border-border border-border shadow-xl overflow-hidden">
  <CardHeader className="p-8 pb-4">
  <div className="flex justify-between items-center">
  <div className="space-y-1">
  <CardTitle className="text-2xl font-black font-display tracking-tight">{t("recentCases")}</CardTitle>
- <CardDescription className="text-slate-300 font-medium">{t("recentCasesDesc")}</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">{t("recentCasesDesc")}</CardDescription>
  </div>
  <Button variant="ghost" size="sm" className="font-bold text-primary group" asChild>
  <Link href="/dashboard/client/cases">
@@ -171,7 +171,7 @@ export default function ClientDashboard() {
  ) : cases?.length > 0 ? (
  <div className="space-y-3">
  {cases.slice(0, 5).map((caseItem) => (
- <div key={caseItem.id} className="flex items-center justify-between p-5 rounded-2xl border border-white/5 bg-background/30 hover:bg-white/5 transition-all duration-300 group">
+ <div key={caseItem.id} className="flex items-center justify-between p-5 rounded-2xl border border-border bg-background/30 hover:bg-muted/30 transition-all duration-300 group">
  <div className="space-y-2 flex-1">
  <div className="flex items-center gap-3">
  <p className="font-bold font-display text-lg tracking-tight group-hover:text-primary transition-colors">{caseItem.title}</p>
@@ -182,7 +182,7 @@ export default function ClientDashboard() {
  {STATUS_LABELS[caseItem.status] || caseItem.status}
  </Badge>
  </div>
- <div className="flex items-center gap-4 text-xs font-bold text-slate-300 uppercase tracking-widest leading-none">
+ <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">
  <span className="flex items-center gap-1.5"><FileText className="h-3 w-3" /> {caseItem.file_number || "—"}</span>
  <span className="flex items-center gap-1.5"><PlusCircle className="h-3 w-3" /> {caseItem.category?.name || caseItem.category || "General"}</span>
  </div>
@@ -206,19 +206,19 @@ export default function ClientDashboard() {
  ) : (
  <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
  <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center">
- <FileText className="h-8 w-8 text-slate-200" />
+ <FileText className="h-8 w-8 text-muted-foreground" />
  </div>
- <p className="text-lg font-bold text-slate-300 max-w-xs">{t("noCasesStart")}</p>
+ <p className="text-lg font-bold text-muted-foreground max-w-xs">{t("noCasesStart")}</p>
  </div>
  )}
  </CardContent>
  </Card>
 
  {/* Upcoming Hearings */}
- <Card className="col-span-3 glass-card border-white/10 shadow-xl overflow-hidden flex flex-col">
+ <Card className="col-span-3 bg-card shadow-sm border-border border-border shadow-xl overflow-hidden flex flex-col">
  <CardHeader className="p-8 pb-4">
  <CardTitle className="text-2xl font-black font-display tracking-tight">{t("scheduleTitle")}</CardTitle>
- <CardDescription className="text-slate-300 font-medium">{t("scheduleDesc")}</CardDescription>
+ <CardDescription className="text-muted-foreground font-medium">{t("scheduleDesc")}</CardDescription>
  </CardHeader>
  <CardContent className="px-8 pb-0 flex-1">
  {loadingHearings ? (
@@ -242,8 +242,8 @@ export default function ClientDashboard() {
  </Badge>
  <h4 className="font-bold text-sm tracking-tight text-foreground truncate">{hearing.type || hearing.hearing_type}</h4>
  </div>
- <p className="text-xs font-bold text-slate-300 truncate">{hearing.caseTitle || hearing.title}</p>
- <div className="flex items-center gap-3 text-xs font-black text-slate-200 uppercase tracking-tighter">
+ <p className="text-xs font-bold text-muted-foreground truncate">{hearing.caseTitle || hearing.title}</p>
+ <div className="flex items-center gap-3 text-xs font-black text-muted-foreground uppercase tracking-tighter">
  <span className="flex items-center gap-1.5"><Clock className="h-3 w-3 text-primary" /> {hearing.time || hearing.start_time}</span>
  <span className="flex items-center gap-1.5 truncate"><Scale className="h-3 w-3 text-primary" /> {hearing.courtroom || hearing.location}</span>
  </div>
@@ -254,14 +254,14 @@ export default function ClientDashboard() {
  ) : (
  <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
  <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center">
- <Calendar className="h-8 w-8 text-slate-200" />
+ <Calendar className="h-8 w-8 text-muted-foreground" />
  </div>
- <p className="text-lg font-bold text-slate-300 max-w-xs">{t("noUpcomingHearings")}</p>
+ <p className="text-lg font-bold text-muted-foreground max-w-xs">{t("noUpcomingHearings")}</p>
  </div>
  )}
  </CardContent>
  <div className="p-8 pt-6">
- <Button variant="outline" className="w-full h-12 rounded-xl font-bold border-white/10 glass hover:bg-white/5 transition-all text-sm group" asChild>
+ <Button variant="outline" className="w-full h-12 rounded-xl font-bold border-border bg-background shadow-sm border-border hover:bg-muted/30 transition-all text-sm group" asChild>
  <Link href="/dashboard/client/schedule">
  {t("viewFullCalendar")} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
  </Link>
