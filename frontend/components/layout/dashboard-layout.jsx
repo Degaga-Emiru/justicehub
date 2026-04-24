@@ -34,16 +34,16 @@ const roleMenus = {
 // 'cn' usually lets last wins.
 
 export function DashboardLayout({ children }) {
-    const { user, isAuthenticated, logout } = useAuthStore();
+    const { user, isAuthenticated, isInitialized, logout } = useAuthStore();
     const router = useRouter();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const { t } = useLanguage();
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (isInitialized && !isAuthenticated) {
             router.push("/");
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, isInitialized, router]);
 
     const roleMap = {
         'CITIZEN': 'client',
@@ -57,7 +57,7 @@ export function DashboardLayout({ children }) {
     
     const normalizedRole = user?.role ? (roleMap[user.role.toUpperCase()] || user.role.toLowerCase()) : "client";
 
-    if (!isAuthenticated || !user) {
+    if (!isInitialized || (!isAuthenticated && isInitialized) || !user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
                 <div className="absolute inset-0 bg-primary/5 -z-10 blur-[100px]"></div>

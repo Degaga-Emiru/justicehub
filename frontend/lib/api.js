@@ -139,6 +139,24 @@ export async function fetchAllJudgeProfiles() {
     }
 }
 
+export async function updateJudgeProfile(id, data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/judge-profiles/${id}/`, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to update judge profile");
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("updateJudgeProfile error:", error);
+        throw error;
+    }
+}
+
 export async function fetchCaseById(id) {
     try {
         const res = await fetch(`${getApiUrl()}/cases/${id}/`, {
@@ -164,6 +182,22 @@ export async function fetchHearings(filters = {}) {
     } catch (error) {
         console.error("fetchHearings error:", error);
         return [];
+    }
+}
+
+export async function fetchHearingById(id) {
+    try {
+        const res = await fetch(`${getApiUrl()}/hearings/${id}/`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to fetch hearing details");
+        }
+        return await res.json();
+    } catch (error) {
+        console.error("fetchHearingById error:", error);
+        throw error;
     }
 }
 
@@ -1058,6 +1092,30 @@ export async function downloadJudgeDocument(documentId) {
     const a = document.createElement("a"); a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     window.URL.revokeObjectURL(url);
+}
+
+export async function downloadDocument(fileUrl, filename = "document") {
+    try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+        const res = await fetch(fileUrl, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!res.ok) throw new Error("Failed to download file");
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("downloadDocument error:", error);
+        // Fallback to window.open if fetch fails (e.g. CORS)
+        window.open(fileUrl, '_blank');
+    }
 }
 
 export async function downloadDecisionPdf(decisionId) {

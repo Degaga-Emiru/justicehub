@@ -5,6 +5,7 @@ const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:800
 export const useAuthStore = create((set) => ({
     user: null,
     isAuthenticated: false,
+    isInitialized: false,
 
     login: async (email, password) => {
         try {
@@ -199,6 +200,12 @@ export const useAuthStore = create((set) => ({
         }));
     },
 
+    setProfile: (updates) => {
+        set((state) => ({
+            user: state.user ? { ...state.user, ...updates } : null,
+        }));
+    },
+
     // Initialize auth from token in localStorage when app loads
     initAuth: async () => {
         if (typeof window === "undefined") return;
@@ -211,14 +218,16 @@ export const useAuthStore = create((set) => ({
                 });
                 if (profileRes.ok) {
                     const userProfile = await profileRes.json();
-                    set({ user: userProfile, isAuthenticated: true });
+                    set({ user: userProfile, isAuthenticated: true, isInitialized: true });
                 } else {
                     localStorage.removeItem("access_token");
-                    set({ user: null, isAuthenticated: false });
+                    set({ user: null, isAuthenticated: false, isInitialized: true });
                 }
             } catch (error) {
-                set({ user: null, isAuthenticated: false });
+                set({ user: null, isAuthenticated: false, isInitialized: true });
             }
+        } else {
+            set({ isInitialized: true });
         }
     }
 }));

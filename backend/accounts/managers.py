@@ -2,6 +2,9 @@ from django.contrib.auth.models import BaseUserManager
 from django.utils import timezone
 
 class CustomUserManager(BaseUserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
     def _create_user(self, email, password, **extra_fields):
         """
         Create and save a user with the given email and password.
