@@ -19,13 +19,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { statusColors, priorityColors } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { Clock, MapPin, FileText, Gavel, CalendarDays, Briefcase, Scale, AlertCircle, ArrowRight, Bell, CheckCircle, Play, XCircle, RotateCcw, Search, PlusCircle, Pencil, Users, History, Download } from "lucide-react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function JudgeDashboard() {
  const router = useRouter();
@@ -78,9 +79,11 @@ export default function JudgeDashboard() {
  });
 
  // Fetch hearings from backend (filtered by judge role automatically)
- const { data: hearings, isLoading: hearingsLoading } = useQuery({
+ const { data: hearings, isLoading: hearingsLoading, refetch: refetchHearings } = useQuery({
  queryKey: ["judge-hearings"],
  queryFn: () => fetchHearings(),
+ staleTime: 0,
+ refetchOnMount: "always",
  });
 
  // Fetch notifications
@@ -107,10 +110,15 @@ export default function JudgeDashboard() {
  case: "", title: "", hearing_type: "INITIAL", scheduled_date: "",
  duration_minutes: 60, location: "", agenda: ""
  });
- alert(isFollowUp ? "Follow-up hearing scheduled successfully!" : "Hearing scheduled successfully!");
+ // Auto-switch to hearings tab so the new hearing is visible
+ setActiveTab("hearings");
+ setHearingStatusFilter("all");
+ // Force immediate refetch
+ setTimeout(() => refetchHearings(), 300);
+ toast.success(isFollowUp ? "Follow-up hearing scheduled successfully!" : "Hearing scheduled successfully!");
  },
  onError: (err) => {
- alert(err.message || "Failed to schedule hearing");
+ toast.error(err.message || "Failed to schedule hearing.");
  }
  });
 
@@ -120,9 +128,9 @@ export default function JudgeDashboard() {
  onSuccess: () => {
  queryClient.invalidateQueries({ queryKey: ["judge-cases"] });
  queryClient.invalidateQueries({ queryKey: ["judge-dashboard-stats"] });
- alert("Case marked as In Progress.");
+ toast.success("Case marked as In Progress.");
  },
- onError: (err) => alert(err.message || "Failed to start case")
+ onError: (err) => toast.error(err.message || "Failed to start case")
  });
 
  // Complete hearing mutation
@@ -137,7 +145,7 @@ export default function JudgeDashboard() {
  setLastCompletedHearing(completingHearing);
  setShowFollowUpPrompt(true);
  },
- onError: (err) => alert(err.message || "Failed to complete hearing")
+ onError: (err) => toast.error(err.message || "Failed to complete hearing")
  });
 
  // Cancel hearing mutation
@@ -148,9 +156,9 @@ export default function JudgeDashboard() {
  queryClient.invalidateQueries({ queryKey: ["judge-dashboard-stats"] });
  setCancellingHearing(null);
  setCancelReason("");
- alert("Hearing cancelled.");
+ toast.success("Hearing cancelled.");
  },
- onError: (err) => alert(err.message || "Failed to cancel hearing")
+ onError: (err) => toast.error(err.message || "Failed to cancel hearing")
  });
 
  // Reschedule hearing mutation
@@ -160,9 +168,9 @@ export default function JudgeDashboard() {
  queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
  setReschedulingHearing(null);
  setRescheduleData({ new_date: "", new_time: "", reason: "" });
- alert("Hearing rescheduled successfully!");
+ toast.success("Hearing rescheduled successfully!");
  },
- onError: (err) => alert(err.message || "Failed to reschedule hearing")
+ onError: (err) => toast.error(err.message || "Failed to reschedule hearing")
  });
 
  // Edit hearing mutation
@@ -171,9 +179,9 @@ export default function JudgeDashboard() {
  onSuccess: () => {
  queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
  setEditingHearing(null);
- alert("Hearing updated successfully!");
+ toast.success("Hearing updated successfully!");
  },
- onError: (err) => alert(err.message || "Failed to update hearing")
+ onError: (err) => toast.error(err.message || "Failed to update hearing")
  });
 
  // Record attendance mutation
@@ -183,9 +191,9 @@ export default function JudgeDashboard() {
  queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
  setAttendanceHearing(null);
  setAttendanceData([]);
- alert("Attendance recorded successfully!");
+ toast.success("Attendance recorded successfully!");
  },
- onError: (err) => alert(err.message || "Failed to record attendance")
+ onError: (err) => toast.error(err.message || "Failed to record attendance")
  });
 
  // Schedule next hearing mutation
@@ -194,31 +202,41 @@ export default function JudgeDashboard() {
  onSuccess: () => {
  queryClient.invalidateQueries({ queryKey: ["judge-hearings"] });
  queryClient.invalidateQueries({ queryKey: ["judge-dashboard-stats"] });
- alert("Follow-up hearing scheduled!");
+ toast.success("Follow-up hearing scheduled!");
  },
- onError: (err) => alert(err.message || "Failed to schedule next hearing")
+ onError: (err) => toast.error(err.message || "Failed to schedule next hearing")
  });
 
- const handleScheduleSubmit = (e) => {
- e.preventDefault();
- scheduleMutation.mutate({
- ...scheduleData,
- judge: user?.id
- });
- };
+  const handleScheduleSubmit = (e) => {
+    e.preventDefault();
+    if (new Date(scheduleData.scheduled_date) <= new Date()) {
+      toast.error("Scheduled date and time must be in the future.");
+      return;
+    }
+    scheduleMutation.mutate({
+     ...scheduleData,
+     judge: user?.id
+    });
+  };
 
- const handleCompleteHearing = () => {
- if (!completingHearing) return;
- completeHearingMutation.mutate({
- hearingId: completingHearing.id,
- data: {
- summary: completeNotes.summary,
- action: completeNotes.action.toUpperCase(),
- judge_comment: completeNotes.judge_comment || "",
- ...(nextHearingDate ? { next_hearing_date: new Date(nextHearingDate).toISOString() } : {})
- }
- });
- };
+  const handleCompleteHearing = () => {
+    if (!completingHearing) return;
+    const now = new Date();
+    const scheduledTime = new Date(completingHearing.scheduled_date);
+    if (now < new Date(scheduledTime.getTime() - 30 * 60000)) {
+      toast.error(`Cannot conduct hearing before scheduled time. Scheduled for: ${format(scheduledTime, "PPP 'at' h:mm a")}`);
+      return;
+    }
+    completeHearingMutation.mutate({
+     hearingId: completingHearing.id,
+     data: {
+      summary: completeNotes.summary,
+      action: completeNotes.action.toUpperCase(),
+      judge_comment: completeNotes.judge_comment || "",
+      ...(nextHearingDate ? { next_hearing_date: new Date(nextHearingDate).toISOString() } : {})
+     }
+    });
+  };
 
  const handleScheduleFollowUp = () => {
  if (!lastCompletedHearing) return;
@@ -255,16 +273,16 @@ export default function JudgeDashboard() {
  const displayedHearings = hearings?.filter(h => {
  // 1. Date Filter (if a date is selected on calendar)
  if (date) {
- const hearingDate = new Date(h.scheduled_date || h.date);
- const isSameDate = 
- hearingDate.getDate() === date.getDate() &&
- hearingDate.getMonth() === date.getMonth() &&
- hearingDate.getFullYear() === date.getFullYear();
- if (!isSameDate) return false;
+ const rawDate = h.scheduled_date || h.date;
+ if (!rawDate) return false;
+ const hearingDate = new Date(rawDate);
+ if (!isSameDay(hearingDate, date)) return false;
  }
 
  // 2. Status Filter
- if (hearingStatusFilter !== "all" && h.status !== hearingStatusFilter) {
+ if (hearingStatusFilter === "all") {
+ if (["CONDUCTED", "COMPLETED"].includes(h.status)) return false;
+ } else if (h.status !== hearingStatusFilter) {
  return false;
  }
 
@@ -272,7 +290,7 @@ export default function JudgeDashboard() {
  if (hearingSearch.trim()) {
  const searchLower = hearingSearch.toLowerCase();
  const titleMatch = (h.title || h.case?.title || "").toLowerCase().includes(searchLower);
- const fileMatch = (h.case?.file_number || "").toLowerCase().includes(searchLower);
+ const fileMatch = (h.case_details?.file_number || h.case?.file_number || "").toLowerCase().includes(searchLower);
  const locationMatch = (h.location || "").toLowerCase().includes(searchLower);
  if (!titleMatch && !fileMatch && !locationMatch) return false;
  }
@@ -506,13 +524,23 @@ export default function JudgeDashboard() {
  <Calendar
  mode="single"
  selected={date}
- onSelect={setDate}
+ onSelect={(newDate) => {
+ setDate(newDate);
+ if (newDate) {
+ setHearingStatusFilter("all");
+ }
+ }}
  className="w-full pointer-events-auto"
  modifiers={{
  hasHearing: hearingDates
  }}
  modifiersStyles={{
- hasHearing: { fontWeight: 'black', color: 'hsl(var(--primary))', backgroundColor: 'hsla(var(--primary), 0.1)' }
+ hasHearing: { 
+ fontWeight: '900', 
+ color: 'hsl(var(--primary))',
+ textDecoration: 'underline',
+ textUnderlineOffset: '4px'
+ }
  }}
  />
  </div>
@@ -584,7 +612,8 @@ export default function JudgeDashboard() {
  <SelectItem value="all" className="font-bold text-xs uppercase tracking-widest">All Events</SelectItem>
  <SelectItem value="SCHEDULED" className="font-bold text-xs uppercase tracking-widest">Scheduled</SelectItem>
  <SelectItem value="IN_PROGRESS" className="font-bold text-xs uppercase tracking-widest">In Progress</SelectItem>
- <SelectItem value="COMPLETED" className="font-bold text-xs uppercase tracking-widest">Completed</SelectItem>
+ <SelectItem value="CONDUCTED" className="font-bold text-xs uppercase tracking-widest">Conducted</SelectItem>
+ <SelectItem value="RESCHEDULED" className="font-bold text-xs uppercase tracking-widest">Rescheduled</SelectItem>
  <SelectItem value="CANCELLED" className="font-bold text-xs uppercase tracking-widest text-rose-500">Cancelled</SelectItem>
  </SelectContent>
  </Select>
@@ -606,18 +635,30 @@ export default function JudgeDashboard() {
  </div>
  ) : displayedHearings.length > 0 ? (
  <div className="space-y-4">
- {displayedHearings.map((hearing) => (
+ {[...displayedHearings].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).map((hearing) => (
  <div
  key={hearing.id}
  className="group relative p-6 rounded-3xl border border-border bg-background/40 hover:bg-muted/30 transition-all duration-500 cursor-pointer shadow-sm hover:shadow-xl"
  onClick={() => setSelectedHearing(hearing)}
  >
  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-primary rounded-r-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+ {/* Prominent Date Header */}
+ <div className="flex items-center gap-2 mb-3">
+ <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary/10 border border-primary/20">
+ <CalendarDays className="h-3.5 w-3.5 text-primary" />
+ <span className="text-xs font-black text-primary uppercase tracking-wider">
+ {hearing.scheduled_date ? format(new Date(hearing.scheduled_date), "EEE, MMM d, yyyy") : "No Date"}
+ </span>
+ </div>
+ <span className="text-xs font-bold text-muted-foreground">
+ {hearing.scheduled_date ? format(new Date(hearing.scheduled_date), "h:mm a") : ""}
+ </span>
+ </div>
  <div className="flex justify-between items-start mb-4">
  <div className="space-y-1">
  <h4 className="font-black font-display text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{hearing.title || hearing.case?.title || "Hearing Session"}</h4>
  <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
- <FileText className="h-3 w-3 text-primary" /> {hearing.case?.file_number || hearing.caseId || "N/A"}
+ <FileText className="h-3 w-3 text-primary" /> {hearing.case_details?.file_number || hearing.case?.file_number || hearing.caseId || "N/A"}
  </p>
  </div>
  <Badge variant="outline" className={cn("px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", statusColors[hearing.status])}>
@@ -1065,6 +1106,7 @@ export default function JudgeDashboard() {
  id="date" 
  type="datetime-local" 
  required 
+ min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
  value={scheduleData.scheduled_date}
  onChange={(e) => setScheduleData({ ...scheduleData, scheduled_date: e.target.value })}
  />
@@ -1114,11 +1156,12 @@ export default function JudgeDashboard() {
  <div className="space-y-4 py-4">
  <div className="space-y-2">
  <Label>New Date *</Label>
- <Input
- type="date"
- value={rescheduleData.new_date}
- onChange={(e) => setRescheduleData({ ...rescheduleData, new_date: e.target.value })}
- />
+  <Input
+  type="date"
+  min={format(new Date(), "yyyy-MM-dd")}
+  value={rescheduleData.new_date}
+  onChange={(e) => setRescheduleData({ ...rescheduleData, new_date: e.target.value })}
+  />
  </div>
  <div className="space-y-2">
  <Label>New Time *</Label>
@@ -1139,8 +1182,16 @@ export default function JudgeDashboard() {
  </div>
  <DialogFooter>
  <Button variant="outline" onClick={() => setReschedulingHearing(null)}>Cancel</Button>
- <Button
- onClick={() => rescheduleMutation.mutate({ hearingId: reschedulingHearing.id, data: rescheduleData })}
+  <Button
+  onClick={() => {
+    // FUTURE DATE VALIDATION
+    const selected = new Date(`${rescheduleData.new_date}T${rescheduleData.new_time}`);
+    if (selected <= new Date()) {
+      alert("Error: New scheduled date and time must be in the future.");
+      return;
+    }
+    rescheduleMutation.mutate({ hearingId: reschedulingHearing.id, data: rescheduleData });
+  }}
  disabled={rescheduleMutation.isPending || !rescheduleData.new_date || !rescheduleData.new_time}
  >
  {rescheduleMutation.isPending ? "Rescheduling..." : "Reschedule"}
@@ -1273,16 +1324,22 @@ export default function JudgeDashboard() {
  <DialogFooter>
  <Button variant="outline" onClick={() => setAttendanceHearing(null)}>Cancel</Button>
  <Button
- onClick={() => {
- const payload = {
- participants: attendanceData.map(p => ({
- user_id: p.user_id,
- role: p.role,
- attendance_status: p.attendance_status
- }))
- };
- recordAttendanceMutation.mutate({ hearingId: attendanceHearing.id, data: payload });
- }}
+  onClick={() => {
+    const now = new Date();
+    const scheduledTime = new Date(attendanceHearing.scheduled_date);
+    if (now < new Date(scheduledTime.getTime() - 60 * 60000)) {
+      toast.error(`Cannot record attendance before scheduled time. Scheduled for: ${format(scheduledTime, "PPP 'at' h:mm a")}`);
+      return;
+    }
+    const payload = {
+     participants: attendanceData.map(p => ({
+      user_id: p.user_id,
+      role: p.role,
+      attendance_status: p.attendance_status
+     }))
+    };
+    recordAttendanceMutation.mutate({ hearingId: attendanceHearing.id, data: payload });
+  }}
  disabled={recordAttendanceMutation.isPending || attendanceData.length === 0}
  >
  {recordAttendanceMutation.isPending ? "Saving..." : "Save Attendance"}

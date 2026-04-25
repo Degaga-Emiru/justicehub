@@ -54,7 +54,9 @@ class HearingSerializer(serializers.ModelSerializer):
         return {
             "id": obj.case.id,
             "title": obj.case.title,
-            "file_number": obj.case.file_number
+            "file_number": obj.case.file_number,
+            "plaintiff": obj.case.plaintiff.get_full_name() if obj.case.plaintiff else "N/A",
+            "defendant": obj.case.defendant.get_full_name() if obj.case.defendant else obj.case.defendant_name or "N/A"
         }
     
     def validate_scheduled_date(self, value):
@@ -187,6 +189,9 @@ class HearingCreateSerializer(serializers.ModelSerializer):
 
         # 13: Working Hours Constraint
         if scheduled_date:
+            if scheduled_date <= timezone.now():
+                raise serializers.ValidationError("Scheduled date and time must be in the future.")
+                
             is_val, msg = is_within_working_hours(scheduled_date, duration)
             if not is_val:
                 raise serializers.ValidationError(msg)

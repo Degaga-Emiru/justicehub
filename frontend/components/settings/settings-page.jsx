@@ -5,6 +5,7 @@ import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -134,6 +135,7 @@ export function SettingsPage() {
  passwordMutation.mutate({
  old_password: passwordData.old_password,
  new_password: passwordData.new_password,
+ confirm_password: passwordData.confirm_password,
  });
  };
 
@@ -220,14 +222,16 @@ export function SettingsPage() {
  <Label>First Name</Label>
  <Input 
  value={profileData.first_name} 
- onChange={(e) => setProfileData({...profileData, first_name: e.target.value})} 
+ disabled
+ className="bg-muted/50 cursor-not-allowed"
  />
  </div>
  <div className="space-y-2">
  <Label>Last Name</Label>
  <Input 
  value={profileData.last_name} 
- onChange={(e) => setProfileData({...profileData, last_name: e.target.value})} 
+ disabled
+ className="bg-muted/50 cursor-not-allowed"
  />
  </div>
  <div className="space-y-2">
@@ -272,8 +276,7 @@ export function SettingsPage() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Current Password</Label>
- <Input 
- type="password" 
+ <PasswordInput 
  required
  value={passwordData.old_password} 
  onChange={(e) => setPasswordData({...passwordData, old_password: e.target.value})} 
@@ -281,8 +284,7 @@ export function SettingsPage() {
  </div>
  <div className="space-y-2 md:col-start-1">
  <Label>New Password</Label>
- <Input 
- type="password" 
+ <PasswordInput 
  required
  value={passwordData.new_password} 
  onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})} 
@@ -290,8 +292,7 @@ export function SettingsPage() {
  </div>
  <div className="space-y-2 group">
  <Label>Confirm New Password</Label>
- <Input 
- type="password" 
+ <PasswordInput 
  required
  value={passwordData.confirm_password} 
  onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})} 

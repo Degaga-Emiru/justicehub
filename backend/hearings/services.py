@@ -62,20 +62,62 @@ def send_hearing_reminder_email(reminder):
     )
 
 
+def send_hearing_notification_email(hearing, recipient, notification_type='SCHEDULED'):
+    """
+    Send detailed notification email for hearing scheduling/updates.
+    Includes complete case details and hearing information.
+    """
+    context = {
+        'user': recipient,
+        'hearing': hearing,
+        'case': hearing.case,
+        'frontend_url': settings.FRONTEND_URL,
+        'type': notification_type,
+        'is_virtual': bool(hearing.virtual_meeting_link),
+        'formatted_date': hearing.scheduled_date.strftime("%B %d, %Y"),
+        'formatted_time': hearing.scheduled_date.strftime("%I:%M %p")
+    }
+    
+    if notification_type == 'RESCHEDULED':
+        subject = f"RE-SCHEDULED: Court Hearing - Case {hearing.case.file_number}"
+    else:
+        subject = f"NOTICE: Court Hearing Scheduled - Case {hearing.case.file_number}"
+        
+    return send_email_template(
+        subject=subject,
+        template_name='emails/hearing_detailed_notification.html',
+        context=context,
+        recipient_list=[recipient.email]
+    )
+
+
 def send_hearing_notification(hearing, notification_type):
     """
-    Send notifications for hearing updates
+    Send notifications and emails for hearing updates
     """
     participants = hearing.participant_list.all()
     
+    # Internal Notification Logic
+    messages = {
+        'JUDGE': f"You have a {hearing.hearing_type} hearing scheduled for case {hearing.case.file_number} on {hearing.scheduled_date.strftime('%B %d')}.",
+        'CITIZEN': f"A {hearing.hearing_type} hearing has been scheduled for your case {hearing.case.file_number} on {hearing.scheduled_date.strftime('%B %d')}.",
+        'DEFAULT': f"A hearing has been {notification_type.lower()} for case {hearing.case.file_number}."
+    }
+    
+    from notifications.services import notify_case_participants
+    notify_case_participants(
+        case=hearing.case,
+        type=f'HEARING_{notification_type}',
+        title=f'Hearing {notification_type.title()}',
+        message=messages
+    )
+
+    # Email Logic
     for participant in participants:
-        create_notification(
-            user=participant.user,
-            type=notification_type,
-            title='Hearing Update',
-            message=f'Hearing for case {hearing.case.file_number} has been {notification_type.lower()}',
-            case=hearing.case
-        )
+        try:
+            send_hearing_notification_email(hearing, participant.user, notification_type)
+        except Exception as e:
+            logger.error(f"Failed to send hearing email to {participant.user.email}: {str(e)}")
 
 
 class HearingService:

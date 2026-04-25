@@ -131,9 +131,10 @@ export default function RegistrarDashboardPage() {
  const judges = users.filter(user => user.role === "JUDGE" && user.is_active !== false);
 
  const filteredCases = cases.filter(c =>
- String(c.file_number || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
- String(c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
- );
+  c.status !== "CLOSED" && (
+  String(c.file_number || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+  String(c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
+  ));
 
  const pendingAssignment = filteredCases.filter(c => c.status === "PAID" || c.status === "APPROVED");
 

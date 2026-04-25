@@ -81,17 +81,19 @@ def send_notification_email(notification):
 
 def notify_case_participants(case, type, title, message, exclude_users=None):
     """
-    Send notification to all case participants
+    Send notification to all case participants.
+    'message' can be a string (generic) or a dict with role-based overrides:
+    {'JUDGE': '...', 'CITIZEN': '...', 'LAWYER': '...', 'DEFAULT': '...'}
     """
     exclude_users = exclude_users or []
     
-    # Collect all participants
+    # Collect all participants with their roles
     participants = []
     
     if case.created_by and case.created_by not in exclude_users:
         participants.append(case.created_by)
     
-    if case.plaintiff and case.plaintiff not in exclude_users:
+    if case.plaintiff and case.plaintiff and case.plaintiff not in exclude_users:
         participants.append(case.plaintiff)
     
     if case.defendant and case.defendant not in exclude_users:
@@ -110,10 +112,19 @@ def notify_case_participants(case, type, title, message, exclude_users=None):
     
     # Create notifications
     for user in set(participants):
+        role_message = message
+        if isinstance(message, dict):
+            # Try specific role first, then group roles, then default
+            role_message = message.get(user.role) or message.get('DEFAULT')
+            
+            # Special handling for citizens (Plaintiff/Defendant) if role key is 'CITIZEN'
+            if not role_message and user.role == 'CITIZEN':
+                role_message = message.get('CITIZEN')
+                
         create_notification(
             user=user,
             type=type,
             title=title,
-            message=message,
+            message=role_message or str(message),
             case=case
         )

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserPlus, Trash2, Shield, Search, AlertCircle, Power, CheckSquare, Square } from "lucide-react";
+import { MoreHorizontal, UserPlus, Trash2, Shield, Search, AlertCircle, Power, CheckSquare, Square, ChevronLeft, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,8 @@ import { toast } from "sonner";
 
 export default function UserManagementPage() {
  const [searchTerm, setSearchTerm] = useState("");
+ const [currentPage, setCurrentPage] = useState(1);
+ const itemsPerPage = 10;
  const [isCreateOpen, setIsCreateOpen] = useState(false);
  const [newUser, setNewUser] = useState({ first_name: "", last_name: "", email: "", phone_number: "", role: "JUDGE", specialization_ids: [] });
  const [createError, setCreateError] = useState("");
@@ -151,6 +153,33 @@ export default function UserManagementPage() {
  }
  };
 
+ const handleExportCSV = () => {
+ if (!users || users.length === 0) return;
+ const headers = ["First Name", "Last Name", "Email", "Role", "Phone Number", "Status", "Joined"];
+ const csvData = users.map(u => [
+ `"${u.first_name || ''}"`,
+ `"${u.last_name || ''}"`,
+ `"${u.email || ''}"`,
+ u.role,
+ `"${u.phone_number || ''}"`,
+ u.is_active !== false ? "Active" : "Inactive",
+ u.date_joined ? new Date(u.date_joined).toISOString().split('T')[0] : ""
+ ]);
+ const csvContent = [headers.join(","), ...csvData.map(row => row.join(","))].join("\n");
+ const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+ const url = URL.createObjectURL(blob);
+ const link = document.createElement("a");
+ link.setAttribute("href", url);
+ link.setAttribute("download", `justicehub_users_${new Date().toISOString().split('T')[0]}.csv`);
+ document.body.appendChild(link);
+ link.click();
+ document.body.removeChild(link);
+ };
+
+ const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+ const startIndex = (currentPage - 1) * itemsPerPage;
+ const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
  return (
  <div className="space-y-10 animate-fade-up">
  {/* Header */}
@@ -164,7 +193,7 @@ export default function UserManagementPage() {
  </div>
  <div className="flex gap-3">
  <Button 
- onClick={() => window.open(getAdminUsersExportUrl(), '_blank')}
+ onClick={handleExportCSV}
  className="h-12 px-6 rounded-xl font-bold bg-muted/50 border border-border hover:bg-muted transition-all duration-300 text-foreground"
  >
  Export CSV
@@ -192,7 +221,7 @@ export default function UserManagementPage() {
  placeholder={t("searchUsers")}
  className="pl-11 h-12 bg-muted/30 border-border rounded-2xl bg-background shadow-sm border-border focus-visible:ring-primary/50 focus-visible:border-primary transition-all font-medium"
  value={searchTerm}
- onChange={(e) => setSearchTerm(e.target.value)}
+ onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
  />
  </div>
  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/20 border border-border">
@@ -227,7 +256,7 @@ export default function UserManagementPage() {
  </TableCell>
  </TableRow>
  ) : filteredUsers.length > 0 ? (
- filteredUsers.map((user) => (
+ paginatedUsers.map((user) => (
  <TableRow key={user.id} className="border-border hover:bg-muted/30 transition-colors group">
  <TableCell className="pl-8 py-6">
  <div className="flex items-center gap-4">
@@ -346,6 +375,36 @@ export default function UserManagementPage() {
  </TableBody>
  </Table>
  </div>
+ {totalPages > 1 && (
+ <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/10">
+ <span className="text-sm text-muted-foreground font-medium">
+ Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} entries
+ </span>
+ <div className="flex items-center gap-2">
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-9 px-4 rounded-lg font-bold"
+ onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+ disabled={currentPage === 1}
+ >
+ <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+ </Button>
+ <span className="text-sm font-bold px-4 text-foreground">
+ Page {currentPage} of {totalPages}
+ </span>
+ <Button
+ variant="outline"
+ size="sm"
+ className="h-9 px-4 rounded-lg font-bold"
+ onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+ disabled={currentPage === totalPages}
+ >
+ Next <ChevronRight className="h-4 w-4 ml-1" />
+ </Button>
+ </div>
+ </div>
+ )}
  </CardContent>
  </Card>
 

@@ -95,6 +95,8 @@ class CaseViewSet(viewsets.ModelViewSet):
         user = self.request.user
         
         if user.role in ['ADMIN', 'REGISTRAR', 'CLERK']:
+            # Exclude Closed cases for registrar/admin in specific contexts if requested
+            # For general listing, we return all, but we can filter by query params
             return self.queryset
         elif user.role == 'JUDGE':
             # Judges see only assigned cases
@@ -371,6 +373,14 @@ class CaseViewSet(viewsets.ModelViewSet):
         """Add document to case - supports multipart/form-data"""
         case = self.get_object()
         
+        # 1. Conditional Upload Check
+        # Only allow uploads if case is accepted (APPROVED or further)
+        if case.status in ['PENDING_REVIEW', 'REJECTED']:
+            return Response(
+                {"error": f"Document upload is not allowed while the case is {case.status}. Please wait for registrar approval."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         if 'file' not in request.FILES:
             return Response(
                 {"error": "No file provided."},
@@ -414,6 +424,13 @@ class CaseViewSet(viewsets.ModelViewSet):
         """Upload multiple documents to a case"""
         case = self.get_object()
         
+        # 1. Conditional Upload Check
+        if case.status in ['PENDING_REVIEW', 'REJECTED']:
+            return Response(
+                {"error": f"Multiple document upload is not allowed while the case is {case.status}."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
         if 'documents' not in request.FILES:
             return Response(
                 {"error": "No files provided."},
@@ -619,6 +636,13 @@ class CitizenDocumentViewSet(viewsets.ViewSet):
             
         if not (case.created_by == request.user or case.plaintiff == request.user or case.defendant == request.user):
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            
+        # 1. Conditional Upload Check
+        if case.status in ['PENDING_REVIEW', 'REJECTED']:
+            return Response(
+                {"error": "Additional documents can only be uploaded after the case has been reviewed and accepted by the court."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
             
         serializer = CaseDocumentSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)

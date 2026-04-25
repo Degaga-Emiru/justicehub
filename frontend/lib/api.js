@@ -29,6 +29,36 @@ const getAuthHeaders = () => {
     };
 };
 
+export async function verifyOtp(email, otp) {
+    try {
+        const res = await fetch(`${getApiUrl()}/auth/verify-otp/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, otp }),
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Invalid or expired OTP");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function resendOTP(data) {
+    try {
+        const res = await fetch(`${getApiUrl()}/auth/resend-otp/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to resend OTP");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
 export async function setupAccountPassword(data) {
     try {
         const res = await fetch(`${getApiUrl()}/auth/set-password/`, {
@@ -173,12 +203,19 @@ export async function fetchCaseById(id) {
 export async function fetchHearings(filters = {}) {
     try {
         const queryParams = new URLSearchParams(filters).toString();
-        const res = await fetch(`${getApiUrl()}/hearings/?${queryParams}`, {
+        const url = `${getApiUrl()}/hearings/${queryParams ? '?' + queryParams : ''}`;
+        const res = await fetch(url, {
             headers: getAuthHeaders()
         });
-        if (!res.ok) throw new Error("Failed to fetch hearings");
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error("fetchHearings API error:", res.status, errText);
+            throw new Error(`Failed to fetch hearings: ${res.status}`);
+        }
         const data = await res.json();
-        return Array.isArray(data) ? data : (data.results || []);
+        const hearings = Array.isArray(data) ? data : (data.results || []);
+        console.log(`fetchHearings: received ${hearings.length} hearings`);
+        return hearings;
     } catch (error) {
         console.error("fetchHearings error:", error);
         return [];

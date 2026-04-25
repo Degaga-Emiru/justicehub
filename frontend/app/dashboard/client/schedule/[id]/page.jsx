@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchHearingById, fetchDefendantDocuments } from "@/lib/api";
+import { fetchHearingById, fetchCitizenCaseDocuments } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,15 +16,13 @@ import {
   User, 
   AlertCircle,
   Download,
-  ExternalLink,
-  CheckCircle
+  ExternalLink
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { statusColors } from "@/lib/mock-data";
-import Link from "next/link";
 
-export default function DefendantHearingDetailsPage() {
+export default function HearingDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
 
@@ -34,8 +32,8 @@ export default function DefendantHearingDetailsPage() {
   });
 
   const { data: documents, isLoading: loadingDocs } = useQuery({
-    queryKey: ["defendant-documents", hearing?.case],
-    queryFn: () => fetchDefendantDocuments(hearing.case),
+    queryKey: ["case-documents", hearing?.case],
+    queryFn: () => fetchCitizenCaseDocuments(hearing.case),
     enabled: !!hearing?.case,
   });
 
@@ -51,7 +49,7 @@ export default function DefendantHearingDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <AlertCircle className="h-12 w-12 text-destructive" />
-        <h2 className="text-xl font-bold text-slate-900">Hearing Not Found</h2>
+        <h2 className="text-xl font-bold">Hearing Not Found</h2>
         <Button onClick={() => router.back()}>Go Back</Button>
       </div>
     );
@@ -66,14 +64,14 @@ export default function DefendantHearingDetailsPage() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="rounded-full hover:bg-slate-100"
-          onClick={() => router.push("/dashboard/defendant/schedule")}
+          className="rounded-full hover:bg-muted"
+          onClick={() => router.push("/dashboard/client/schedule")}
         >
-          <ArrowLeft className="h-5 w-5 text-slate-600" />
+          <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">{hearing.title || "Hearing Details"}</h1>
-          <p className="text-slate-500 font-medium font-semibold">Case: {caseDetails.file_number} — {caseDetails.title}</p>
+          <h1 className="text-3xl font-black tracking-tight">{hearing.title || "Hearing Details"}</h1>
+          <p className="text-muted-foreground font-medium">Case: {caseDetails.file_number} — {caseDetails.title}</p>
         </div>
       </div>
 
@@ -91,8 +89,8 @@ export default function DefendantHearingDetailsPage() {
                   <Badge className={cn("mb-2 uppercase tracking-widest px-3 py-1 font-black text-[10px]", statusColors[hearing.status])}>
                     {hearing.status}
                   </Badge>
-                  <CardTitle className="text-2xl font-black text-slate-900">{hearing.hearing_type}</CardTitle>
-                  <CardDescription className="text-base font-bold text-slate-500">Scheduled sequence #{hearing.hearing_number}</CardDescription>
+                  <CardTitle className="text-2xl font-black">{hearing.hearing_type}</CardTitle>
+                  <CardDescription className="text-base font-semibold">Scheduled sequence #{hearing.hearing_number}</CardDescription>
                 </div>
                 <div className="bg-primary/10 p-4 rounded-2xl text-primary text-center min-w-[80px]">
                   <span className="block text-xs font-black uppercase tracking-widest">{format(new Date(hearing.scheduled_date), "MMM")}</span>
@@ -101,33 +99,33 @@ export default function DefendantHearingDetailsPage() {
               </div>
             </CardHeader>
             <CardContent className="p-8 pt-0 space-y-8">
-              <div className="grid sm:grid-cols-2 gap-8 p-6 rounded-3xl bg-slate-50 border border-slate-200">
+              <div className="grid sm:grid-cols-2 gap-8 p-6 rounded-3xl bg-muted/30 border border-border/50">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                  <div className="h-12 w-12 rounded-2xl bg-background flex items-center justify-center shadow-sm">
                     <Clock className="h-6 w-6 text-primary" />
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Time</p>
-                    <p className="font-black text-slate-900 text-lg">{format(new Date(hearing.scheduled_date), "h:mm a")} ({hearing.duration_minutes} mins)</p>
+                    <p className="font-bold text-slate-900">{format(new Date(hearing.scheduled_date), "h:mm a")} ({hearing.duration_minutes} mins)</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                  <div className="h-12 w-12 rounded-2xl bg-background flex items-center justify-center shadow-sm">
                     <MapPin className="h-6 w-6 text-primary" />
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</p>
-                    <p className="font-black text-slate-900 text-lg">{hearing.location}</p>
+                    <p className="font-bold text-slate-900">{hearing.location}</p>
                   </div>
                 </div>
               </div>
 
               {hearing.agenda && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-black tracking-tight flex items-center gap-2 text-slate-900">
+                  <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
                     <FileText className="h-5 w-5 text-primary" /> Agenda
                   </h3>
-                  <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 leading-relaxed text-slate-800 font-bold whitespace-pre-wrap">
+                  <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 leading-relaxed text-slate-800 font-medium whitespace-pre-wrap">
                     {hearing.agenda || "No agenda provided for this hearing."}
                   </div>
                 </div>
@@ -146,10 +144,10 @@ export default function DefendantHearingDetailsPage() {
               
               {hearing.summary && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-black tracking-tight flex items-center gap-2 text-emerald-600">
-                    <CheckCircle className="h-5 w-5" /> Hearing Summary
+                  <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-emerald-500" /> Hearing Summary
                   </h3>
-                  <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 leading-relaxed font-bold text-slate-800">
+                  <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 leading-relaxed font-medium">
                     {hearing.summary}
                   </div>
                 </div>
@@ -163,7 +161,7 @@ export default function DefendantHearingDetailsPage() {
           {/* Parties Card */}
           <Card className="border-none shadow-xl bg-white">
             <CardHeader>
-              <CardTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
+              <CardTitle className="text-xl font-black flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" /> Parties
               </CardTitle>
             </CardHeader>
@@ -176,8 +174,8 @@ export default function DefendantHearingDetailsPage() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-rose-600/70">Defendant</p>
                 <p className="font-black text-slate-900 text-xl">{caseDetails.defendant || "N/A"}</p>
               </div>
-              <div className="pt-4 border-t border-slate-100">
-                <Link href={`/dashboard/defendant/cases`} className="text-xs font-black text-primary hover:underline flex items-center gap-2">
+              <div className="pt-4 border-t border-border">
+                <Link href={`/dashboard/client/cases`} className="text-xs font-black text-primary hover:underline flex items-center gap-2">
                   View Case Files <ExternalLink className="h-3 w-3" />
                 </Link>
               </div>
@@ -187,38 +185,38 @@ export default function DefendantHearingDetailsPage() {
           {/* Related Documents */}
           <Card className="border-none shadow-xl bg-white">
             <CardHeader>
-              <CardTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
+              <CardTitle className="text-xl font-black flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" /> Documents
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {loadingDocs ? (
                 <div className="space-y-2">
-                  {[1, 2].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}
+                  {[1, 2].map(i => <div key={i} className="h-10 bg-muted rounded-xl animate-pulse" />)}
                 </div>
               ) : documents?.length > 0 ? (
                 documents.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 group hover:bg-slate-100 transition-all">
+                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border group hover:bg-muted/30 transition-all">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <FileText className="h-4 w-4 text-primary" />
                       </div>
                       <div className="overflow-hidden">
-                        <p className="text-sm font-bold truncate text-slate-900">{doc.document_type_display || doc.document_type}</p>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">
+                        <p className="text-sm font-bold truncate">{doc.document_type_display || doc.document_type}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase">
                           {doc.latest_version?.uploaded_at 
                             ? format(new Date(doc.latest_version.uploaded_at), "MMM d, yyyy") 
                             : "No Date"}
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg group-hover:bg-primary/20 text-slate-400 hover:text-primary">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg group-hover:bg-primary/20">
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-6 text-slate-400 text-sm font-bold">
+                <div className="text-center py-6 text-muted-foreground text-sm font-bold">
                   No documents found.
                 </div>
               )}
@@ -229,3 +227,5 @@ export default function DefendantHearingDetailsPage() {
     </div>
   );
 }
+
+import Link from "next/link";

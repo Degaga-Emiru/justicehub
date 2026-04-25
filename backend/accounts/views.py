@@ -304,12 +304,11 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class AdminUserViewSet(viewsets.ModelViewSet):
     """ViewSet for comprehensive admin user management."""
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserAdminDetailSerializer
     permission_classes = [IsAdmin]
     lookup_field = 'id'
-
-
+    pagination_class = None
 
     def get_serializer_class(self):
         if self.action == 'list':

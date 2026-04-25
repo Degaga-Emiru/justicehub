@@ -214,46 +214,22 @@ class JudgeAssignmentService:
     
     @classmethod
     def _send_assignment_notifications(cls, assignment):
-        """Send notifications for new assignment"""
-        # Notify judge
-        create_notification(
-            user=assignment.judge,
-            type='JUDGE_ASSIGNED',
-            title='New Case Assignment',
-            message=(
-                f"You have been assigned to case: {assignment.case.title} "
-                f"(File No: {assignment.case.file_number})"
-            ),
-            case=assignment.case,
-            priority='HIGH',
-            action_url='/dashboard/judge'
-        )
+        """Send notifications for new assignment using role-based messages"""
+        messages = {
+            'JUDGE': f"You have been assigned to case: {assignment.case.title} (File No: {assignment.case.file_number})",
+            'PLAINTIFF': f"Judge {assignment.judge.get_full_name()} has been assigned to your case: {assignment.case.title}",
+            'DEFENDANT': f"Judge {assignment.judge.get_full_name()} has been assigned to your case: {assignment.case.title}",
+            'CITIZEN': f"Judge {assignment.judge.get_full_name()} has been assigned to your case: {assignment.case.title}",
+            'DEFAULT': f"Judge {assignment.judge.get_full_name()} has been assigned to case: {assignment.case.title} (File No: {assignment.case.file_number})"
+        }
         
-        # Notify case creator
-        create_notification(
-            user=assignment.case.created_by,
-            type='JUDGE_ASSIGNED',
-            title='Judge Assigned to Your Case',
-            message=(
-                f"Judge {assignment.judge.get_full_name()} has been assigned "
-                f"to your case: {assignment.case.title}"
-            ),
+        from notifications.services import notify_case_participants
+        notify_case_participants(
             case=assignment.case,
-            action_url='/dashboard/client'
+            type='JUDGE_ASSIGNED',
+            title='Judge Assigned to Case',
+            message=messages
         )
-        
-        # Notify defendant
-        if assignment.case.defendant:
-            create_notification(
-                user=assignment.case.defendant,
-                type='JUDGE_ASSIGNED',
-                title='Judge Assigned to Case',
-                message=(
-                    f"Judge {assignment.judge.get_full_name()} has been assigned "
-                    f"to case: {assignment.case.title} (File No: {assignment.case.file_number})"
-                ),
-                case=assignment.case
-            )
     
     @classmethod
     def _handle_no_judges_available(cls, case):

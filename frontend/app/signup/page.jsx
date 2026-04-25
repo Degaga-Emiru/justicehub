@@ -3,13 +3,29 @@
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthContainer } from "@/components/auth/auth-container";
 import { useLanguage } from "@/components/language-provider";
-import { Scale } from "lucide-react";
+import { Scale, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function SignupPage() {
  const { t } = useLanguage();
+ const router = useRouter();
 
  return (
  <div className="min-h-screen grid lg:grid-cols-2 bg-background relative overflow-hidden font-sans">
+ {/* Global Back Button */}
+ <div className="absolute top-8 left-8 lg:left-8 z-50 animate-fade-in">
+ <Button
+ variant="ghost"
+ size="sm"
+ onClick={() => router.push("/")}
+ className="flex items-center gap-2 font-bold text-muted-foreground hover:text-primary hover:bg-transparent group transition-colors px-0"
+ >
+ <div className="w-10 h-10 rounded-full bg-card/50 backdrop-blur-md border border-border/50 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all shadow-lg group-active:scale-95">
+ <ArrowLeft className="h-5 w-5" />
+ </div>
+ </Button>
+ </div>
  {/* Background Mesh Gradients */}
  <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-30 dark:opacity-20 pointer-events-none">
  <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow"></div>
@@ -69,7 +85,7 @@ export default function SignupPage() {
 
  {/* Right Form Panel */}
  <div className="flex items-center justify-center p-8 lg:p-16 relative">
- <AuthContainer>
+ <AuthContainer showBackArrow={false}>
  <AuthForm type="signup" />
  </AuthContainer>
  </div>

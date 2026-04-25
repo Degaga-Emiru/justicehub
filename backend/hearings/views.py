@@ -17,7 +17,7 @@ from .serializers import (
     BulkScheduleHearingSerializer, HearingCompleteSerializer,
     NextHearingSerializer
 )
-from .services import HearingService
+from .services import HearingService, send_hearing_notification
 from .permissions import (
     IsHearingJudge, IsHearingParticipant, CanScheduleHearings,
     CanConfirmAttendance, CanViewHearing
@@ -37,8 +37,9 @@ class HearingViewSet(viewsets.ModelViewSet):
     """
     queryset = Hearing.objects.all().select_related(
         'case', 'judge'
-    ).prefetch_related('participant_list__user')
+    ).prefetch_related('participant_list__user').order_by('-scheduled_date')
     
+    pagination_class = None  # Return all hearings without pagination
     permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
@@ -115,14 +116,8 @@ class HearingViewSet(viewsets.ModelViewSet):
          # Get participants to notify
         participants = hearing.participant_list.exclude(user=hearing.judge)
 
-        # Notify participants
-        notify_case_participants(
-            case=hearing.case,
-            type='HEARING_SCHEDULED',
-            title='Hearing Scheduled',
-            message=f'A hearing has been scheduled for {hearing.scheduled_date.strftime("%B %d, %Y at %I:%M %p")}',
-            exclude_users=[self.request.user]
-        )
+        # Notify participants (Internal + Email)
+        send_hearing_notification(hearing, 'SCHEDULED')
         
         logger.info(f"Hearing {hearing.id} scheduled for case {hearing.case.id}")
     
@@ -219,14 +214,8 @@ class HearingViewSet(viewsets.ModelViewSet):
         hearing.cancellation_reason = request.data.get('reason', '')
         hearing.save()
         
-        # Notify participants
-        notify_case_participants(
-            case=hearing.case,
-            type='HEARING_CANCELLED',
-            title='Hearing Cancelled',
-            message=f'The hearing scheduled for {hearing.scheduled_date.strftime("%B %d, %Y at %I:%M %p")} has been cancelled',
-            exclude_users=[request.user]
-        )
+        # Notify participants (Internal + Email)
+        send_hearing_notification(hearing, 'CANCELLED')
         
         # Log Cancellation
         create_audit_log(
@@ -247,11 +236,25 @@ class HearingViewSet(viewsets.ModelViewSet):
         """Mark hearing as completed with structured notes and optional next hearing"""
         hearing = self.get_object()
         
-        if hearing.status == 'CONDUCTED':
-            raise BusinessLogicError("This hearing has already been conducted.")
-            
         serializer = HearingCompleteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        # TIME ENFORCEMENT
+        now = timezone.now()
+        scheduled_time = hearing.scheduled_date
+        
+        if now < scheduled_time - timedelta(minutes=30):
+            raise BusinessLogicError(
+                f"Cannot conduct hearing before scheduled time. "
+                f"Scheduled for: {scheduled_time.strftime('%B %d, %Y %I:%M %p')}"
+            )
+            
+        # Allow conduction up to 24 hours after scheduled time (as a buffer)
+        # In a real court, if a judge is late, they should still be able to conduct it same day.
+        if now > scheduled_time + timedelta(hours=24):
+             raise BusinessLogicError(
+                "This hearing's scheduled window has closed. Please reschedule the hearing."
+            )
         
         data = serializer.validated_data
         
@@ -293,13 +296,8 @@ class HearingViewSet(viewsets.ModelViewSet):
         
         # Schedule reminders and notify
         self._schedule_reminders(new_hearing)
-        notify_case_participants(
-            case=new_hearing.case,
-            type='HEARING_SCHEDULED',
-            title='Follow-up Hearing Scheduled',
-            message=f'A follow-up hearing has been scheduled for {new_hearing.scheduled_date.strftime("%B %d, %Y at %I:%M %p")}',
-            exclude_users=[request.user]
-        )
+        # Notify participants (Internal + Email)
+        send_hearing_notification(new_hearing, 'SCHEDULED')
         
         response_serializer = HearingSerializer(new_hearing, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -338,14 +336,8 @@ class HearingViewSet(viewsets.ModelViewSet):
                 role_in_hearing=participant.role_in_hearing
             )
         
-        # Notify participants
-        notify_case_participants(
-            case=hearing.case,
-            type='HEARING_RESCHEDULED',
-            title='Hearing Rescheduled',
-            message=f'The hearing has been rescheduled to {new_hearing.scheduled_date.strftime("%B %d, %Y at %I:%M %p")}',
-            exclude_users=[request.user]
-        )
+        # Notify participants (Internal + Email)
+        send_hearing_notification(new_hearing, 'RESCHEDULED')
         
         response_data = HearingSerializer(new_hearing).data
         return Response({
@@ -389,6 +381,21 @@ class HearingViewSet(viewsets.ModelViewSet):
         from .serializers import RecordAttendanceSerializer
         serializer = RecordAttendanceSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
+        # TIME ENFORCEMENT
+        now = timezone.now()
+        scheduled_time = hearing.scheduled_date
+        
+        if now < scheduled_time - timedelta(minutes=60): # Allow attendance recording slightly earlier
+            raise BusinessLogicError(
+                f"Cannot record attendance before scheduled time. "
+                f"Scheduled for: {scheduled_time.strftime('%B %d, %Y %I:%M %p')}"
+            )
+            
+        if now > scheduled_time + timedelta(hours=24):
+             raise BusinessLogicError(
+                "This hearing's scheduled window has closed. Please reschedule the hearing."
+            )
         
         for p_data in serializer.validated_data['participants']:
             try:

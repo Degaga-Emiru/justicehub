@@ -2,12 +2,12 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { setupAccountPassword } from "@/lib/api";
+import { setupAccountPassword, resendOTP } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/components/language-provider";
-import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, ShieldCheck, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PasswordInput } from "@/components/ui/password-input";
 
@@ -58,6 +58,20 @@ function SetupAccountForm() {
  }, 3000);
  } catch (err) {
  setError(err.message || t("unexpectedError"));
+ } finally {
+ setIsLoading(false);
+ }
+ };
+
+ const handleResendOTP = async () => {
+ setError("");
+ setIsLoading(true);
+ try {
+ await resendOTP({ email: formData.email, purpose: "ACCOUNT_SETUP" });
+ setSuccess("A new OTP has been sent to your email.");
+ setTimeout(() => setSuccess(""), 3000);
+ } catch (err) {
+ setError(err.message || "Failed to resend OTP");
  } finally {
  setIsLoading(false);
  }
@@ -155,24 +169,41 @@ function SetupAccountForm() {
  />
  </div>
 
+ {error.toLowerCase().includes("expired") ? (
+ <Button type="button" onClick={handleResendOTP} className="w-full h-14 rounded-xl font-black bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 transition-all duration-300 shadow-xl shadow-amber-500/25 text-white uppercase tracking-widest text-xs" disabled={isLoading}>
+ {isLoading ? "Synchronizing..." : "Resend OTP"}
+ </Button>
+ ) : (
  <Button type="submit" className="w-full h-14 rounded-xl font-black bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 transition-all duration-300 shadow-xl shadow-primary/25 hover:shadow-primary/40 text-white uppercase tracking-widest text-xs" disabled={isLoading}>
  {isLoading ? "Synchronizing..." : "Activate Account"}
  </Button>
+ )}
  </form>
  </div>
  );
 }
 
 export default function SetupAccountPage() {
+ const router = useRouter();
+
  return (
  <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-6 font-sans">
+ {/* Back Button */}
+ <Button
+ variant="ghost"
+ className="absolute top-6 left-6 z-50 rounded-xl hover:bg-muted/50 transition-colors"
+ onClick={() => router.push("/login")}
+ >
+ <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
+ </Button>
+
  {/* Background Mesh Gradients */}
  <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-30 dark:opacity-20 pointer-events-none">
  <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[120px] animate-pulse-slow"></div>
  <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/10 rounded-full blur-[120px]"></div>
  </div>
 
- <div className="w-full max-w-md animate-fade-up">
+ <div className="w-full max-w-md animate-fade-up relative z-10">
  <div className="relative group">
  {/* Background Glow Effect */}
  <div className="absolute -inset-1 bg-gradient-to-r from-primary to-blue-600 rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
