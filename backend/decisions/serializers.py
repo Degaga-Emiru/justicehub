@@ -39,6 +39,7 @@ class DecisionSerializer(serializers.ModelSerializer):
     comments = DecisionCommentSerializer(many=True, read_only=True)
 
     signature_details = serializers.SerializerMethodField()
+    decision_date = serializers.SerializerMethodField()
     
     class Meta:
         model = Decision
@@ -49,7 +50,7 @@ class DecisionSerializer(serializers.ModelSerializer):
             'immediate_reason', 'description', 'finalized',
             'laws_cited', 'cases_cited',
             'document', 'pdf_document', 'is_published', 'published_at', 'finalized_at',
-            'created_at', 'updated_at', 'versions', 'comments', 'signature_details'
+            'created_at', 'updated_at', 'decision_date', 'versions', 'comments', 'signature_details'
         ]
         read_only_fields = [
             'id', 'decision_number', 'status', 'version', 'judge',
@@ -84,6 +85,9 @@ class DecisionSerializer(serializers.ModelSerializer):
             "document_hash": doc.document_hash,
             "signature_verified": doc.signature_verified
         }
+    
+    def get_decision_date(self, obj):
+        return obj.finalized_at or obj.created_at
     
     def validate(self, attrs):
         request = self.context.get('request')

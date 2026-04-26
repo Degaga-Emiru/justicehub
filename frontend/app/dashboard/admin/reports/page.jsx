@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const PIE_COLORS = [
  "hsl(215, 50%, 45%)", "hsl(142, 76%, 36%)", "hsl(199, 89%, 48%)",
@@ -28,8 +30,12 @@ const CustomTooltipStyle = {
 };
 
 export default function ReportsPage() {
- const [startDate, setStartDate] = useState("");
- const [endDate, setEndDate] = useState("");
+ const [exportStartDate, setExportStartDate] = useState("");
+ const [exportEndDate, setExportEndDate] = useState("");
+ const [isDownloading, setIsDownloading] = useState(false);
+ const [downloadFormat, setDownloadFormat] = useState("");
+ const [downloadType, setDownloadType] = useState("");
+ const [predefinedRange, setPredefinedRange] = useState("custom");
  
  const { data: stats, isLoading: statsLoading } = useQuery({
  queryKey: ["dashboard-stats"],
@@ -37,8 +43,8 @@ export default function ReportsPage() {
  });
 
  const { data: systemData, isLoading: systemLoading } = useQuery({
- queryKey: ["system-report", "overview", startDate, endDate],
- queryFn: () => fetchSystemReport('overview', { start_date: startDate, end_date: endDate }),
+ queryKey: ["system-report", "overview"],
+ queryFn: () => fetchSystemReport('overview'),
  });
 
  const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
@@ -46,10 +52,51 @@ export default function ReportsPage() {
  queryFn: () => fetchAnalyticsReport('master'),
  });
 
+ const handlePredefinedRange = (value) => {
+ setPredefinedRange(value);
+ if (value === "custom") return;
+ 
+ const end = new Date();
+ let start = new Date();
+ 
+ switch (value) {
+ case "today": break;
+ case "last_2_days": start.setDate(end.getDate() - 1); break;
+ case "last_3_days": start.setDate(end.getDate() - 2); break;
+ case "1_week": start.setDate(end.getDate() - 7); break;
+ case "2_weeks": start.setDate(end.getDate() - 14); break;
+ case "1_month": start.setMonth(end.getMonth() - 1); break;
+ case "3_months": start.setMonth(end.getMonth() - 3); break;
+ case "6_months": start.setMonth(end.getMonth() - 6); break;
+ case "1_year": start.setFullYear(end.getFullYear() - 1); break;
+ default:
+ setExportStartDate("");
+ setExportEndDate("");
+ return;
+ }
+ 
+ setExportStartDate(start.toISOString().split('T')[0]);
+ setExportEndDate(end.toISOString().split('T')[0]);
+ };
+
  const handleDownload = (format, type) => {
+ let effectiveStartDate = exportStartDate;
+ let effectiveEndDate = exportEndDate;
+
+ if (exportStartDate && exportEndDate && new Date(exportEndDate) < new Date(exportStartDate)) {
+ toast.error("End date cannot be earlier than start date.");
+ return;
+ }
+ if (exportStartDate && !exportEndDate) effectiveEndDate = exportStartDate;
+ if (!exportStartDate && exportEndDate) effectiveStartDate = exportEndDate;
+
  const filters = {};
- if (startDate) filters.start_date = startDate;
- if (endDate) filters.end_date = endDate;
+ if (effectiveStartDate) filters.start_date = effectiveStartDate;
+ if (effectiveEndDate) filters.end_date = effectiveEndDate;
+
+ setIsDownloading(true);
+ setDownloadFormat(format);
+ setDownloadType(type);
 
  const url = getReportDownloadUrl(format, type, filters);
  const token = localStorage.getItem("access_token");
@@ -70,9 +117,23 @@ export default function ReportsPage() {
  document.body.appendChild(a);
  a.click();
  window.URL.revokeObjectURL(tempUrl);
+
+ if (predefinedRange && predefinedRange !== "custom") {
+ const rangeText = predefinedRange.replace(/_/g, ' ');
+ toast.success(`Report generated successfully for ${rangeText}`);
+ } else if (effectiveStartDate && effectiveEndDate) {
+ toast.success(`Report generated successfully from ${effectiveStartDate} to ${effectiveEndDate}`);
+ } else {
+ toast.success("Report generated successfully");
+ }
  })
  .catch(err => {
- alert("Error downloading report: " + err.message);
+ toast.error("Error downloading report: " + err.message);
+ })
+ .finally(() => {
+ setIsDownloading(false);
+ setDownloadFormat("");
+ setDownloadType("");
  });
  };
 
@@ -89,26 +150,20 @@ export default function ReportsPage() {
  const demographicData = systemData?.demographics?.plaintiff_regions ? 
  Object.entries(systemData.demographics.plaintiff_regions).map(([key, val]) => ({ name: key, count: val })) : [];
 
- const caseTypeDist = analyticsData?.case_types ? 
- Object.entries(analyticsData.case_types).map(([key, val]) => ({ name: key, count: val })) : [];
+ const caseTypeDist = analyticsData?.case_type_analysis?.distribution ? 
+ analyticsData.case_type_analysis.distribution.map((item) => ({ name: item.case_type, count: item.total })) : [];
 
  const monthlyTrends = [];
- if (analyticsData?.volume?.by_month) {
- Object.entries(analyticsData.volume.by_month).forEach(([monthStr, count]) => {
+ if (analyticsData?.volume_by_month) {
+ Object.entries(analyticsData.volume_by_month).forEach(([monthStr, count]) => {
  monthlyTrends.push({ name: monthStr, CaseVolume: count });
  });
- } else {
- monthlyTrends.push(
- { name: "Jan", CaseVolume: 12 }, { name: "Feb", CaseVolume: 19 },
- { name: "Mar", CaseVolume: 15 }, { name: "Apr", CaseVolume: 22 },
- { name: "May", CaseVolume: 30 }, { name: "Jun", CaseVolume: 28 }
- );
  }
 
  const resolutionData = [
- { name: "Avg Time", days: analyticsData?.resolution?.avg_days || 45 },
- { name: "Fastest", days: analyticsData?.resolution?.fastest_days || 3 },
- { name: "Longest", days: analyticsData?.resolution?.longest_days || 120 }
+ { name: "Avg Time", days: analyticsData?.resolution_time_metrics?.average || 0 },
+ { name: "Fastest", days: analyticsData?.resolution_time_metrics?.fastest || 0 },
+ { name: "Longest", days: analyticsData?.resolution_time_metrics?.slowest || 0 }
  ];
 
  return (
@@ -163,7 +218,7 @@ export default function ReportsPage() {
  </div>
  </CardHeader>
  <CardContent>
- <div className="text-4xl font-black font-display text-foreground">{analyticsData?.resolution?.avg_days || 45}<span className="text-lg font-bold text-muted-foreground ml-1">d</span></div>
+ <div className="text-4xl font-black font-display text-foreground">{analyticsData?.resolution_time_metrics?.average || 0}<span className="text-lg font-bold text-muted-foreground ml-1">d</span></div>
  <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Filing to verdict</p>
  </CardContent>
  </Card>
@@ -263,7 +318,7 @@ export default function ReportsPage() {
  </ul>
  </div>
  )}
- <div className="mt-6 border-t border-border pt-6 flex gap-6">
+ <div className="mt-6 border-t border-border pt-6 flex gap-4">
  <div className="flex-1 text-center">
  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Overloaded Judges</p>
  <p className="text-3xl font-black font-display text-rose-500">{systemData?.intelligence_insights?.overloaded_judges || 0}</p>
@@ -271,7 +326,12 @@ export default function ReportsPage() {
  <div className="w-px bg-muted/30"></div>
  <div className="flex-1 text-center">
  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Pending Approval</p>
- <p className="text-3xl font-black font-display text-amber-500">{systemData?.pending_registrations || stats?.pending_review || 0}</p>
+ <p className="text-3xl font-black font-display text-amber-500">{systemData?.intelligence_insights?.pending_registrations || 0}</p>
+ </div>
+ <div className="w-px bg-muted/30"></div>
+ <div className="flex-1 text-center">
+ <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">System Backlog</p>
+ <p className="text-3xl font-black font-display text-purple-500">{systemData?.intelligence_insights?.system_backlog || 0}</p>
  </div>
  </div>
  </CardContent>
@@ -357,25 +417,45 @@ export default function ReportsPage() {
  <CardDescription className="text-muted-foreground font-medium">Generate official data exports parameterized by temporal limits.</CardDescription>
  </CardHeader>
  <CardContent className="p-8 space-y-8">
- <div className="grid md:grid-cols-2 gap-6 items-end pb-8 border-b border-border">
+ <div className="grid md:grid-cols-3 gap-6 items-end pb-8 border-b border-border">
+ <div className="space-y-2">
+ <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Predefined Range</Label>
+ <Select value={predefinedRange} onValueChange={handlePredefinedRange}>
+ <SelectTrigger className="h-12 bg-background border-border rounded-xl">
+ <SelectValue placeholder="Custom Range" />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="custom">Custom Range</SelectItem>
+ <SelectItem value="today">Today</SelectItem>
+ <SelectItem value="last_2_days">Last 2 Days</SelectItem>
+ <SelectItem value="last_3_days">Last 3 Days</SelectItem>
+ <SelectItem value="1_week">Last 1 Week</SelectItem>
+ <SelectItem value="2_weeks">Last 2 Weeks</SelectItem>
+ <SelectItem value="1_month">Last 1 Month</SelectItem>
+ <SelectItem value="3_months">Last 3 Months</SelectItem>
+ <SelectItem value="6_months">Last 6 Months</SelectItem>
+ <SelectItem value="1_year">Last 1 Year</SelectItem>
+ </SelectContent>
+ </Select>
+ </div>
  <div className="space-y-2">
  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Start Date Boundary</Label>
  <Input 
  type="date" 
- value={startDate} 
- onChange={(e) => setStartDate(e.target.value)} 
+ value={exportStartDate} 
+ onChange={(e) => { setExportStartDate(e.target.value); setPredefinedRange("custom"); }} 
  className="h-12 bg-background border-border rounded-xl focus:ring-primary/20 font-medium"
  />
  </div>
- <div className="space-y-2">
+ <div className="space-y-2 relative">
  <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">End Date Boundary</Label>
  <Input 
  type="date" 
- value={endDate} 
- onChange={(e) => setEndDate(e.target.value)} 
+ value={exportEndDate} 
+ onChange={(e) => { setExportEndDate(e.target.value); setPredefinedRange("custom"); }} 
  className="h-12 bg-background border-border rounded-xl focus:ring-primary/20 font-medium"
  />
- <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight ml-1">Leave bounds empty for sweeping historical reports.</p>
+ <p className="absolute -bottom-5 left-1 text-[9px] font-bold text-muted-foreground uppercase tracking-tight">Leave bounds empty for historical data.</p>
  </div>
  </div>
 
@@ -389,11 +469,11 @@ export default function ReportsPage() {
  <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed">Formatted PDF optimized for printing and presentations.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleDownload('pdf', 'system')}>
- <Download className="mr-2 h-4 w-4" /> System PDF
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleDownload('pdf', 'system')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'pdf' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System PDF</>}
  </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleDownload('pdf', 'analytics')}>
- <ShieldCheck className="mr-2 h-4 w-4" /> Analytics PDF
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleDownload('pdf', 'analytics')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'pdf' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics PDF</>}
  </Button>
  </div>
  </div>
@@ -407,11 +487,11 @@ export default function ReportsPage() {
  <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed">Multi-sheet dataset for financial deep-dive analysis.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleDownload('excel', 'system')}>
- <Download className="mr-2 h-4 w-4" /> System XLSX
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleDownload('excel', 'system')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'excel' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System XLSX</>}
  </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleDownload('excel', 'analytics')}>
- <ShieldCheck className="mr-2 h-4 w-4" /> Analytics XLSX
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleDownload('excel', 'analytics')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'excel' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics XLSX</>}
  </Button>
  </div>
  </div>
@@ -425,11 +505,11 @@ export default function ReportsPage() {
  <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed">Flattened matrix for database ingestion and ML pipelines.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleDownload('csv', 'system')}>
- <Download className="mr-2 h-4 w-4" /> System CSV
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleDownload('csv', 'system')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'csv' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System CSV</>}
  </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleDownload('csv', 'analytics')}>
- <ShieldCheck className="mr-2 h-4 w-4" /> Analytics CSV
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleDownload('csv', 'analytics')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'csv' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics CSV</>}
  </Button>
  </div>
  </div>

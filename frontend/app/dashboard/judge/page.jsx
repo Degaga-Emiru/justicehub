@@ -1187,7 +1187,7 @@ export default function JudgeDashboard() {
     // FUTURE DATE VALIDATION
     const selected = new Date(`${rescheduleData.new_date}T${rescheduleData.new_time}`);
     if (selected <= new Date()) {
-      alert("Error: New scheduled date and time must be in the future.");
+      toast.error("Error: New scheduled date and time must be in the future.");
       return;
     }
     rescheduleMutation.mutate({ hearingId: reschedulingHearing.id, data: rescheduleData });

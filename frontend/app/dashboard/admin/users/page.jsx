@@ -146,10 +146,10 @@ export default function UserManagementPage() {
  if (!window.confirm(`Force password reset for ${user.email}? They will receive an email with their new password.`)) return;
  try {
  await adminResetPassword(user.id, true);
- alert("Password reset successfully. Temp password sent via email.");
+ toast.success("Password reset successfully. Temp password sent via email.");
  } catch (err) {
  console.error("Reset password error:", err);
- alert("Failed to reset password: " + err.message);
+ toast.error("Failed to reset password: " + err.message);
  }
  };
 

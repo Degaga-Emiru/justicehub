@@ -15,6 +15,7 @@ import { Loader2, KeyRound, AlertCircle, CheckCircle2 } from "lucide-react";
 import { AuthContainer } from "@/components/auth/auth-container";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PasswordInput } from "@/components/ui/password-input";
+import { toast } from "sonner";
 
 const resetPasswordSchema = z.object({
  email: z.string().email("invalidEmail"),
@@ -30,8 +31,6 @@ const resetPasswordSchema = z.object({
 
 function ResetPasswordContent() {
  const [isLoading, setIsLoading] = useState(false);
- const [error, setError] = useState("");
- const [success, setSuccess] = useState("");
  const { resetPassword, setupAdminAccount } = useAuthStore();
  const router = useRouter();
  const searchParams = useSearchParams();
@@ -57,7 +56,6 @@ function ResetPasswordContent() {
 
  const onSubmit = async (data) => {
  setIsLoading(true);
- setError("");
  
  try {
  let result;
@@ -71,46 +69,20 @@ function ResetPasswordContent() {
  const successMsg = purpose === "ACCOUNT_SETUP" 
  ? "Your password has been reset successfully. Now login."
  : "Password reset successfully.";
- setSuccess(successMsg);
+ toast.success(successMsg);
  
  setTimeout(() => {
  router.push("/login");
  }, 3000);
  } else {
- setError(result.error);
+ toast.error(result.error);
  }
  } catch (err) {
- setError(t("unexpectedError") || "An unexpected error occurred");
+ toast.error(t("unexpectedError") || "An unexpected error occurred");
  } finally {
  setIsLoading(false);
  }
  };
-
- if (success) {
- return (
- <AuthContainer>
- <Card className="relative bg-card shadow-sm border-border border-border dark:border-border rounded-[2rem] overflow-hidden shadow-2xl p-8 text-center space-y-6">
- <div className="flex justify-center">
- <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center animate-bounce">
- <CheckCircle2 className="h-10 w-10 text-emerald-500" />
- </div>
- </div>
- <CardTitle className="text-3xl font-black font-display tracking-tight text-foreground">
- Success!
- </CardTitle>
- <p className="text-muted-foreground font-medium text-lg leading-relaxed">
- {success}
- </p>
- <div className="pt-4">
- <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-2" />
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
- Redirecting to login...
- </p>
- </div>
- </Card>
- </AuthContainer>
- );
- }
 
  return (
  <AuthContainer>
@@ -130,13 +102,6 @@ function ResetPasswordContent() {
  </CardHeader>
  <form onSubmit={handleSubmit(onSubmit)}>
  <CardContent className="space-y-5 px-8">
- {error && (
- <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2 bg-background shadow-sm border-border border-destructive/50">
- <AlertCircle className="h-4 w-4" />
- <AlertDescription className="font-medium">{error}</AlertDescription>
- </Alert>
- )}
-
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email</Label>

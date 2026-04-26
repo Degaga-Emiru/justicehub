@@ -25,6 +25,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const STATUS_COLORS = {
  PENDING_REVIEW: "bg-amber-500/10 text-amber-600",
@@ -116,7 +117,9 @@ export default function ClerkDashboardPage() {
  setIsAssignOpen(false);
  setTargetCase(null);
  setSelectedJudgeId("");
- }
+ toast.success("Judge assigned successfully.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to assign judge")
  });
 
  const reviewMutation = useMutation({
@@ -132,7 +135,9 @@ export default function ClerkDashboardPage() {
  setCourtName("");
  setCourtRoom("");
  setReviewAction("");
- }
+ toast.success("Case review submitted.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to submit review")
  });
 
  const defendantMutation = useMutation({
@@ -144,7 +149,9 @@ export default function ClerkDashboardPage() {
  setIsDefendantOpen(false);
  setDefendantTarget(null);
  setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "" });
- }
+ toast.success("Defendant account created and linked.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to create defendant account")
  });
 
  // Filters

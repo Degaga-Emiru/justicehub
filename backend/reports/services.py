@@ -152,6 +152,8 @@ class ReportService:
     def get_system_overview(cls, days=None, start_date=None, end_date=None):
         start, end = cls.get_date_range(days, start_date, end_date)
         active_cases = cls.get_active_cases()
+        if start and end:
+            active_cases = active_cases.filter(created_at__range=(start, end))
         total_cases = active_cases.count()
         resolved_qs = active_cases.filter(status='CLOSED')
         total_resolved = resolved_qs.count()

@@ -16,6 +16,7 @@ import { useLanguage } from "@/components/language-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
+import { toast } from "sonner";
 
 const loginSchema = z.object({
  email: z.string().email("invalidEmail"),
@@ -42,8 +43,6 @@ const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:800
 
 export function AuthForm({ type = "login", onTypeChange }) {
  const [isLoading, setIsLoading] = useState(false);
- const [error, setError] = useState("");
- const [success, setSuccess] = useState("");
  const { login, signup, forgotPassword } = useAuthStore();
  const router = useRouter();
  const { t } = useLanguage();
@@ -68,8 +67,6 @@ export function AuthForm({ type = "login", onTypeChange }) {
 
  const onSubmit = async (data) => {
  setIsLoading(true);
- setError("");
- setSuccess("");
 
  try {
  if (type === "login") {
@@ -87,8 +84,9 @@ export function AuthForm({ type = "login", onTypeChange }) {
  const normalizedRole = typeof result.role === 'string' ? result.role.toUpperCase() : "CITIZEN";
  const route = roleRouteMap[normalizedRole] || "client";
  router.push(`/dashboard/${route}`);
+ toast.success(t("welcomeBack") || "Welcome back!");
  } else {
- setError(result.error || t("invalidCredentials"));
+ toast.error(result.error || t("invalidCredentials"));
  }
  } else if (type === "signup") {
  const result = await signup(
@@ -101,20 +99,22 @@ export function AuthForm({ type = "login", onTypeChange }) {
  );
  if (result.success) {
  router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+ toast.success("Account created! Please verify your email.");
  } else {
- setError(result.error || t("failedCreateAccount"));
+ toast.error(result.error || t("failedCreateAccount"));
  }
  } else {
  // Forgot password – call the real API
  const result = await forgotPassword(data.email);
  if (result.success) {
  router.push(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=PASSWORD_RESET`);
+ toast.success("OTP sent to your email.");
  } else {
- setError(result.error);
+ toast.error(result.error);
  }
  }
  } catch (err) {
- setError(t("unexpectedError"));
+ toast.error(t("unexpectedError"));
  } finally {
  setIsLoading(false);
  }
@@ -145,17 +145,6 @@ export function AuthForm({ type = "login", onTypeChange }) {
  </CardHeader>
  <form onSubmit={handleSubmit(onSubmit)}>
  <CardContent className="space-y-5 px-8">
- {error && (
- <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-2 bg-background shadow-sm border-border border-destructive/50">
- <AlertCircle className="h-4 w-4" />
- <AlertDescription className="font-medium">{error}</AlertDescription>
- </Alert>
- )}
- {success && (
- <Alert className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 bg-background shadow-sm border-border">
- <AlertDescription className="font-bold">{success}</AlertDescription>
- </Alert>
- )}
 
  {type === "signup" && (
  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">

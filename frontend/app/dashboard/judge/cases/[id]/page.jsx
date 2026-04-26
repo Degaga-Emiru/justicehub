@@ -14,6 +14,7 @@ import { ArrowLeft, FileText, Download, User, Calendar, Scale, Loader2, Play, Ga
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { statusColors, priorityColors } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 export default function JudgeCaseDetailPage() {
  const { id } = useParams();
@@ -37,9 +38,9 @@ export default function JudgeCaseDetailPage() {
  mutationFn: () => updateCaseStatus(id, { status: "IN_PROGRESS" }),
  onSuccess: () => {
  queryClient.invalidateQueries(["case-detail", id]);
- alert("Case marked as In Progress.");
+ toast.success("Case marked as In Progress.");
  },
- onError: (err) => alert(err.message || "Failed to start case")
+ onError: (err) => toast.error(err.message || "Failed to start case")
  });
 
  if (isLoading) {
@@ -182,7 +183,7 @@ export default function JudgeCaseDetailPage() {
  variant="ghost" 
  size="sm" 
  className="h-9 px-3 rounded-lg text-primary hover:bg-primary/10 font-bold text-xs"
- onClick={() => downloadJudgeDocument(docId).catch(err => alert(err.message))}
+ onClick={() => downloadJudgeDocument(docId).catch(err => toast.error(err.message))}
  >
  <Download className="h-4 w-4 mr-2" /> Download
  </Button>

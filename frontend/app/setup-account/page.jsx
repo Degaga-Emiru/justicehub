@@ -10,6 +10,7 @@ import { useLanguage } from "@/components/language-provider";
 import { AlertCircle, CheckCircle2, ShieldCheck, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PasswordInput } from "@/components/ui/password-input";
+import { toast } from "sonner";
 
 function SetupAccountForm() {
  const router = useRouter();
@@ -23,9 +24,8 @@ function SetupAccountForm() {
  confirm_password: "",
  });
  
- const [error, setError] = useState("");
- const [success, setSuccess] = useState("");
  const [isLoading, setIsLoading] = useState(false);
+ const [error, setError] = useState("");
  const { t } = useLanguage();
 
  useEffect(() => {
@@ -36,68 +36,47 @@ function SetupAccountForm() {
 
  const handleSubmit = async (e) => {
  e.preventDefault();
- setError("");
  
  if (formData.new_password !== formData.confirm_password) {
- setError(t("passwordsMustMatch"));
+ toast.error(t("passwordsMustMatch"));
  return;
  }
 
  if (formData.new_password.length < 8) {
- setError(t("passwordMinLength"));
+ toast.error(t("passwordMinLength"));
  return;
  }
 
  setIsLoading(true);
  try {
  await setupAccountPassword(formData);
- setSuccess("Account activation complete! Your judicial credentials are now active.");
+ toast.success("Account activation complete! Your judicial credentials are now active.");
  
  setTimeout(() => {
  router.push("/login?setup=success");
  }, 3000);
  } catch (err) {
- setError(err.message || t("unexpectedError"));
+ const errMsg = err.message || t("unexpectedError");
+ setError(errMsg);
+ toast.error(errMsg);
  } finally {
  setIsLoading(false);
  }
  };
 
  const handleResendOTP = async () => {
- setError("");
  setIsLoading(true);
  try {
  await resendOTP({ email: formData.email, purpose: "ACCOUNT_SETUP" });
- setSuccess("A new OTP has been sent to your email.");
- setTimeout(() => setSuccess(""), 3000);
+ toast.success("A new OTP has been sent to your email.");
  } catch (err) {
- setError(err.message || "Failed to resend OTP");
+ const errMsg = err.message || "Failed to resend OTP";
+ setError(errMsg);
+ toast.error(errMsg);
  } finally {
  setIsLoading(false);
  }
  };
-
- if (success) {
- return (
- <div className="text-center space-y-6 py-6 animate-fade-up">
- <div className="flex justify-center">
- <div className="h-20 w-20 rounded-[2rem] bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-xl">
- <CheckCircle2 className="h-10 w-10 text-emerald-500" />
- </div>
- </div>
- <div className="space-y-2">
- <h1 className="text-3xl font-black font-display tracking-tight text-foreground">Access Restored</h1>
- <p className="text-muted-foreground font-medium text-lg">{success}</p>
- </div>
- <div className="pt-4">
- <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 text-xs font-bold text-muted-foreground border border-border uppercase tracking-widest">
- <span className="h-2 w-2 rounded-full bg-primary animate-pulse"></span>
- Redirecting to Command Panel
- </div>
- </div>
- </div>
- );
- }
 
  return (
  <div className="space-y-8 animate-fade-up">
@@ -110,13 +89,6 @@ function SetupAccountForm() {
  Authenticate your identity and establish your encrypted credentials.
  </p>
  </div>
-
- {error && (
- <Alert variant="destructive" className="bg-background shadow-sm border-border border-destructive/50 animate-in fade-in slide-in-from-top-2">
- <AlertCircle className="h-4 w-4" />
- <AlertDescription className="font-bold">{error}</AlertDescription>
- </Alert>
- )}
 
  <form onSubmit={handleSubmit} className="space-y-5">
  <div className="space-y-2">

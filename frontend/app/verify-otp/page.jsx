@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/components/language-provider";
 import { Loader2, ShieldCheck, Timer } from "lucide-react";
 import { AuthContainer } from "@/components/auth/auth-container";
+import { toast } from "sonner";
 
 const otpSchema = z.object({
  otp: z.string().length(6, "OTP must be 6 digits"),
@@ -22,8 +23,6 @@ const otpSchema = z.object({
 function VerifyOTPContent() {
  const [isLoading, setIsLoading] = useState(false);
  const [isResending, setIsResending] = useState(false);
- const [error, setError] = useState("");
- const [success, setSuccess] = useState("");
  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
  const { verifyOTP, resendOTP } = useAuthStore();
  const router = useRouter();
@@ -62,13 +61,11 @@ function VerifyOTPContent() {
 
  const onSubmit = async (data) => {
  setIsLoading(true);
- setError("");
- setSuccess("");
 
  try {
  const result = await verifyOTP(data.email, data.otp, purpose);
  if (result.success) {
- setSuccess(t("otpVerified") || "OTP Verified Successfully");
+ toast.success(t("otpVerified") || "OTP Verified Successfully");
  
  // Redirection logic based on purpose
  setTimeout(() => {
@@ -81,10 +78,10 @@ function VerifyOTPContent() {
  }
  }, 1500);
  } else {
- setError(result.error);
+ toast.error(result.error);
  }
  } catch (err) {
- setError(t("unexpectedError") || "An unexpected error occurred");
+ toast.error(t("unexpectedError") || "An unexpected error occurred");
  } finally {
  setIsLoading(false);
  }
@@ -92,24 +89,22 @@ function VerifyOTPContent() {
 
  const handleResend = async () => {
  if (!emailParam) {
- setError("Email is missing. Cannot resend OTP.");
+ toast.error("Email is missing. Cannot resend OTP.");
  return;
  }
 
  setIsResending(true);
- setError("");
- setSuccess("");
 
  try {
  const result = await resendOTP(emailParam, purpose);
  if (result.success) {
- setSuccess("New OTP sent to your email.");
+ toast.success("New OTP sent to your email.");
  setTimeLeft(300); // Reset timer
  } else {
- setError(result.error);
+ toast.error(result.error);
  }
  } catch (err) {
- setError(t("unexpectedError") || "An unexpected error occurred");
+ toast.error(t("unexpectedError") || "An unexpected error occurred");
  } finally {
  setIsResending(false);
  }
@@ -134,17 +129,6 @@ function VerifyOTPContent() {
  </CardHeader>
  <form onSubmit={handleSubmit(onSubmit)}>
  <CardContent className="space-y-6 px-8">
- {error && (
- <div className="bg-destructive/10 text-destructive text-sm font-bold p-4 rounded-xl text-center bg-background shadow-sm border-border border border-destructive/20 animate-in fade-in slide-in-from-top-2">
- {error}
- </div>
- )}
- {success && (
- <div className="bg-emerald-500/10 text-emerald-600 text-sm font-bold p-4 rounded-xl text-center bg-background shadow-sm border-border border border-emerald-500/20">
- {success}
- </div>
- )}
-
  <div className="space-y-3">
  <Label htmlFor="otp" className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80 ml-1">{t("enterOTP") || "Enter 6-digit OTP"}</Label>
  <Input

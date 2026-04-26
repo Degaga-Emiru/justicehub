@@ -16,6 +16,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { createCase, fetchCategories } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Schema for Step 1: Party Details
 const step1Schema = z.object({
@@ -41,7 +42,6 @@ export function CaseWizard() {
  const [step, setStep] = useState(1);
  const [isLoading, setIsLoading] = useState(false);
  const [categories, setCategories] = useState([]);
- const [error, setError] = useState("");
  const { user } = useAuthStore();
  const router = useRouter();
 
@@ -99,7 +99,6 @@ export function CaseWizard() {
  const onSubmit = async () => {
  const allData = getValues();
  setIsLoading(true);
- setError("");
  try {
  const formData = new FormData();
  formData.append("title", allData.title);
@@ -118,10 +117,11 @@ export function CaseWizard() {
  }
 
  await createCase(formData);
+ toast.success("Case registered successfully!");
  router.push("/dashboard/client");
  } catch (err) {
  console.error("Failed to register case", err);
- setError(err.message || "An unexpected error occurred. Please try again.");
+ toast.error(err.message || "An unexpected error occurred. Please try again.");
  } finally {
  setIsLoading(false);
  }
@@ -243,12 +243,6 @@ export function CaseWizard() {
  {/* Step 3: Documents */}
  {step === 3 && (
  <div className="space-y-6 animate-fade-in">
- {error && (
- <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-md flex items-start gap-3">
- <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
- <p className="text-sm">{error}</p>
- </div>
- )}
  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-10 text-center hover:bg-muted/30 transition-colors">
  <div className="flex flex-col items-center justify-center gap-3">
  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCircle, Archive, Trash2, Clock, Calendar, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function DefendantNotificationsPage() {
  const queryClient = useQueryClient();
@@ -20,12 +21,19 @@ export default function DefendantNotificationsPage() {
 
  const markReadMutation = useMutation({
  mutationFn: (id) => markNotificationRead(id),
- onSuccess: () => queryClient.invalidateQueries(["notifications"]),
+ onSuccess: () => {
+ queryClient.invalidateQueries(["notifications"]);
+ },
+ onError: (err) => toast.error(err.message || "Failed to mark as read")
  });
 
  const markAllReadMutation = useMutation({
  mutationFn: () => markAllNotificationsRead(),
- onSuccess: () => queryClient.invalidateQueries(["notifications"]),
+ onSuccess: () => {
+ queryClient.invalidateQueries(["notifications"]);
+ toast.success("All notifications marked as read");
+ },
+ onError: (err) => toast.error(err.message || "Failed to mark all as read")
  });
 
  const getIcon = (type) => {

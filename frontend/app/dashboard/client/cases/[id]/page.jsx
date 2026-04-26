@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchCaseById, fetchCaseTimeline, initiatePayment, submitPayment } from "@/lib/api";
+import { fetchCaseById, fetchCaseTimeline, initiatePayment, submitPayment, downloadDocument } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,7 +90,7 @@ export default function ClientCaseDetailPage() {
  return (
  <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Gathering Case Records...</p>
+ <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Gathering Case Records...</p>
  </div>
  );
  }
@@ -147,7 +147,7 @@ export default function ClientCaseDetailPage() {
  Plaintiff Record
  </Badge>
  <CardTitle className="text-3xl font-black font-display tracking-tight text-white">{caseData.title}</CardTitle>
- <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground pt-1">
+ <div className="flex items-center gap-4 text-sm font-medium text-slate-400 pt-1">
  <span className="flex items-center gap-1.5"><FileText className="h-4 w-4 text-primary" /> {caseData.file_number || "Draft No: " + caseData.id}</span>
  <span>•</span>
  <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary" /> Registered {format(new Date(caseData.created_at || caseData.filing_date), "MMM d, yyyy")}</span>
@@ -164,19 +164,19 @@ export default function ClientCaseDetailPage() {
  <CardContent className="p-8 space-y-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 px-2">
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
  <p className="text-sm font-bold text-white">{caseData.category?.name || caseData.category || "General"}</p>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Case Priority</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Case Priority</p>
  <Badge variant="outline" className="text-[10px] font-black border-border uppercase tracking-tighter bg-muted/30">{caseData.priority}</Badge>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Court assigned</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Court assigned</p>
  <p className="text-sm font-bold text-white truncate">{caseData.court_name || "Lideta Federal Court"}</p>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Processing Fee</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Processing Fee</p>
  <p className="text-sm font-black text-primary">{caseData.category?.fee || caseData.category_fee || "0"} ETB</p>
  </div>
  </div>
@@ -184,88 +184,227 @@ export default function ClientCaseDetailPage() {
  <Separator className="bg-muted/30" />
 
  <div className="space-y-3">
- <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-2">
+ <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2">
  <FileText className="h-4 w-4" /> Brief Description
  </h3>
- <p className="text-sm font-medium leading-relaxed bg-muted/30 p-6 rounded-2xl border border-border text-muted-foreground">
+ <p className="text-sm font-medium leading-relaxed bg-muted/30 p-6 rounded-2xl border border-border text-slate-400">
  {caseData.description || "No description provided."}
  </p>
  </div>
 
  {/* Documents */}
  <div className="space-y-5">
- <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-2 pt-4">
+ <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2 pt-4">
  <Download className="h-4 w-4" /> Supporting Evidence
  </h3>
  <div className="grid gap-3">
  {caseData.documents?.length > 0 ? (
  caseData.documents.map((doc, i) => (
- <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-border bg-background/40 hover:bg-muted/30 transition-all group">
- <div className="flex items-center gap-4">
- <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
- <FileText className="h-5 w-5 text-primary" />
- </div>
- <div className="flex flex-col">
- <span className="text-sm font-bold truncate max-w-[200px]">{doc.description || doc.document_type}</span>
- <span className="text-[10px] font-black text-muted-foreground uppercase">{doc.document_type}</span>
- </div>
- </div>
- <Button size="sm" variant="ghost" className="h-9 px-3 font-bold text-xs hover:text-primary">
- <Download className="h-4 w-4 mr-2" /> Download
- </Button>
- </div>
+  <div key={i} className="flex flex-col p-4 rounded-xl border border-border bg-background/40 hover:bg-muted/30 transition-all group gap-4">
+  <div className="flex items-center justify-between">
+  <div className="flex items-center gap-4">
+  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+  <FileText className="h-5 w-5 text-primary" />
+  </div>
+  <div className="flex flex-col">
+  <span className="text-sm font-bold truncate max-w-[200px]">{doc.description || doc.document_type}</span>
+  <span className="text-[10px] font-black text-slate-400 uppercase">{doc.document_type}</span>
+  </div>
+  </div>
+  <Button 
+    size="sm" 
+    variant="ghost" 
+    className="h-9 px-3 font-bold text-xs hover:text-primary"
+    onClick={() => doc.latest_version?.file_url ? downloadDocument(doc.latest_version.file_url, doc.description || doc.document_type) : window.open(doc.file, '_blank')}
+  >
+  <Download className="h-4 w-4 mr-2" /> Download
+  </Button>
+  </div>
+  <div className="flex items-center justify-between px-2 text-[10px] font-black uppercase tracking-widest text-slate-300">
+    <div className="flex items-center gap-2">
+      <User className="h-3 w-3" />
+      <span>Uploaded by <span className="text-slate-100">{doc.uploaded_by_name || "System"}</span> ({doc.uploaded_by_role || "User"})</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <Clock className="h-3 w-3" />
+      <span>{doc.created_at ? format(new Date(doc.created_at), "MMM d, yyyy") : "N/A"}</span>
+    </div>
+  </div>
+  </div>
  ))
  ) : (
- <p className="text-xs italic text-muted-foreground border-border border border-dashed rounded-xl p-6 text-center">No evidentiary files recorded for this filing.</p>
+ <p className="text-xs italic text-slate-400 border-border border border-dashed rounded-xl p-6 text-center">No evidentiary files recorded for this filing.</p>
  )}
  </div>
  </div>
  </CardContent>
  </Card>
 
- {/* Timeline */}
- <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
- <CardHeader className="p-8 pb-4">
- <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
- <History className="h-5 w-5 text-primary" />
- Filing Timeline & Status
- </CardTitle>
- </CardHeader>
- <CardContent className="p-8">
- {timelineLoading ? (
- <div className="space-y-4 animate-pulse">
- {[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted/30 rounded-xl" />)}
- </div>
- ) : timeline?.length > 0 ? (
- <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-muted/50">
- {timeline.map((event, idx) => (
- <div key={idx} className="relative flex items-center gap-6 group">
- <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#0f172a] bg-primary/20 text-primary shadow shrink-0 z-10 transition-all group-hover:scale-110">
- <CheckCircle className="h-4 w-4" />
- </div>
- <div className="flex-1 p-5 rounded-2xl border border-border bg-background group-hover:bg-muted/30 transition-colors">
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
- <h4 className="font-bold text-sm text-white">{event.title || event.event_type}</h4>
- <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{format(new Date(event.date), "PPP")}</span>
- </div>
- <p className="text-xs text-muted-foreground leading-relaxed font-medium">{event.description}</p>
- </div>
- </div>
- ))}
- </div>
- ) : (
- <p className="text-sm italic text-muted-foreground text-center py-10">Waiting for judicial action to populate timeline...</p>
- )}
- </CardContent>
- </Card>
- </div>
+  {/* Case Timeline */}
+  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+  <CardHeader className="p-8 pb-4">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
+  <History className="h-5 w-5 text-primary" />
+  Case Journey Milestones
+  </CardTitle>
+  </CardHeader>
+  <CardContent className="p-8">
+  {(() => {
+    const milestones = [
+      { title: "Case Filed", date: caseData.filing_date || caseData.created_at, description: "Official case registration", icon: FileText, color: "text-blue-500" },
+      ...(caseData.reviewed_at ? [{ title: "Accepted by Registrar", date: caseData.reviewed_at, description: "Filing reviewed and accepted", icon: CheckCircle, color: "text-emerald-500" }] : []),
+      ...(caseData.hearings?.map(h => ({ 
+        title: `Hearing ${h.status === "CONDUCTED" ? "Conducted" : "Scheduled"}`, 
+        date: h.scheduled_date, 
+        description: `${h.hearing_type} - ${h.location || "Online"}`,
+        icon: Clock,
+        color: h.status === "CONDUCTED" ? "text-emerald-500" : "text-blue-500"
+      })) || []),
+      ...(caseData.decisions?.map(d => ({ 
+        title: "Decision Issued", 
+        date: d.decision_date, 
+        description: `Verdict: ${d.verdict}`,
+        icon: Gavel,
+        color: "text-purple-500"
+      })) || []),
+      ...(caseData.closed_date ? [{ title: "Case Closed", date: caseData.closed_date, description: "Final proceedings completed", icon: CheckCircle, color: "text-slate-500" }] : []),
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    return milestones.length > 0 ? (
+      <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-muted/50">
+        {milestones.map((m, idx) => (
+          <div key={idx} className="relative flex items-center gap-6 group">
+            <div className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#0f172a] bg-background shadow shrink-0 z-10 transition-all group-hover:scale-110",
+              m.color
+            )}>
+              <m.icon className="h-4 w-4" />
+            </div>
+            <div className="flex-1 p-5 rounded-2xl border border-border bg-background group-hover:bg-muted/30 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <h4 className="font-bold text-sm text-white">{m.title}</h4>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{format(new Date(m.date), "PPP")}</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">{m.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm italic text-slate-400 text-center py-10">Waiting for judicial action to populate timeline...</p>
+    );
+  })()}
+  </CardContent>
+  </Card>
+
+  {/* Hearings History */}
+  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+  <CardHeader className="p-8 pb-4">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
+  <Clock className="h-5 w-5 text-primary" />
+  Hearing History
+  </CardTitle>
+  </CardHeader>
+  <CardContent className="p-8">
+  {caseData.hearings?.length > 0 ? (
+  <div className="space-y-4">
+  {caseData.hearings.map((h, i) => (
+  <div key={i} className="p-4 rounded-xl border border-border bg-muted/20 hover:bg-muted/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex items-center gap-4">
+      <div className={cn(
+        "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
+        h.status === "CONDUCTED" ? "bg-emerald-500/10 text-emerald-500" : "bg-blue-500/10 text-blue-500"
+      )}>
+        <Calendar className="h-6 w-6" />
+      </div>
+      <div>
+        <div className="flex items-center gap-2">
+          <p className="font-bold text-sm">{format(new Date(h.scheduled_date), "PPP")}</p>
+          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest">{h.status}</Badge>
+        </div>
+        <p className="text-xs text-slate-400 font-medium">{h.scheduled_time} • {h.hearing_type}</p>
+      </div>
+    </div>
+    <div className="flex flex-col md:items-end">
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Presided by</p>
+      <p className="text-xs font-bold text-white">{h.judge_name || "Assigned Judge"}</p>
+      {h.location && <p className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" /> {h.location}</p>}
+    </div>
+  </div>
+  ))}
+  </div>
+  ) : (
+  <p className="text-sm italic text-slate-400 text-center py-6 border border-dashed border-border rounded-xl">No hearings recorded for this case yet.</p>
+  )}
+  </CardContent>
+  </Card>
+
+  {/* Decision History (Only if Decided/Closed) */}
+  {["DECIDED", "CLOSED"].includes(caseData.status) && (
+  <Card className="bg-card shadow-sm border-border border-primary/20 shadow-2xl overflow-hidden">
+  <CardHeader className="p-8 pb-4 bg-primary/5">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
+  <Gavel className="h-5 w-5 text-primary" />
+  Final Decision & Judgment
+  </CardTitle>
+  </CardHeader>
+  <CardContent className="p-8 space-y-6">
+  {caseData.decisions?.length > 0 ? (
+  caseData.decisions.map((d, i) => (
+  <div key={i} className="space-y-6 animate-in zoom-in-95 duration-500">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-muted/20 rounded-2xl border border-border">
+      <div className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Verdict</p>
+        <h4 className="text-xl font-black font-display text-white">{d.verdict}</h4>
+      </div>
+      <div className="flex flex-col md:items-end">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Decision Date</p>
+        <p className="text-sm font-bold text-white">{format(new Date(d.decision_date), "PPP")}</p>
+      </div>
+    </div>
+    <div className="space-y-3 px-2">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+        <FileText className="h-4 w-4" /> Judge's Remarks & Orders
+      </p>
+      <div className="p-6 rounded-2xl bg-background border border-border italic text-sm text-slate-400 leading-relaxed whitespace-pre-line">
+        {d.remarks}
+      </div>
+    </div>
+    <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
+      <div className="flex items-center gap-4">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary">{d.judge_name?.charAt(0)}</div>
+        <div>
+          <p className="text-[10px] font-black text-slate-300 uppercase leading-none">Delivered By</p>
+          <p className="text-sm font-bold mt-1 text-white truncate">{d.judge_name}</p>
+        </div>
+      </div>
+      {d.pdf_document && (
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="h-9 px-4 font-bold text-xs border-primary/20 hover:bg-primary/10"
+          onClick={() => downloadDocument(d.pdf_document, `Judgment_${caseData.file_number}`)}
+        >
+          <Download className="h-4 w-4 mr-2" /> Download PDF
+        </Button>
+      )}
+    </div>
+  </div>
+  ))
+  ) : (
+  <p className="text-sm italic text-slate-400 text-center py-6">Judgment record is pending finalized filing.</p>
+  )}
+  </CardContent>
+  </Card>
+  )}
+  </div>
 
  {/* Sidebar Info - Right Column */}
  <div className="space-y-8">
  {/* User Info Card */}
  <Card className="bg-card shadow-sm border-border border-border overflow-hidden">
  <CardHeader className="p-6 pb-2">
- <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Case Involvement</CardTitle>
+ <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Case Involvement</CardTitle>
  </CardHeader>
  <CardContent className="p-6 space-y-6">
  <div className="space-y-4">
@@ -276,7 +415,7 @@ export default function ClientCaseDetailPage() {
  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary">{user?.name?.charAt(0)}</div>
  <div className="flex flex-col truncate">
  <p className="font-bold text-sm">{user?.name}</p>
- <p className="text-[10px] text-muted-foreground font-black uppercase truncate">{user?.email}</p>
+ <p className="text-[10px] text-slate-400 font-black uppercase truncate">{user?.email}</p>
  </div>
  </div>
  </div>
@@ -291,13 +430,13 @@ export default function ClientCaseDetailPage() {
  <div className="h-10 w-10 rounded-lg bg-rose-500/10 flex items-center justify-center font-black text-rose-500">{(caseData.defendant_name || "D").charAt(0)}</div>
  <div className="flex flex-col truncate">
  <p className="font-bold text-sm truncate">{caseData.defendant_name || "Pending Account"}</p>
- <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tight">External Non-User</p>
+ <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">External Non-User</p>
  </div>
  </div>
  {caseData.defendant?.address && (
  <div className="flex items-start gap-2 p-3 bg-rose-500/5 rounded-xl border border-rose-500/10">
  <MapPin className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
- <p className="text-[11px] font-medium text-muted-foreground leading-relaxed">{caseData.defendant.address}</p>
+ <p className="text-[11px] font-medium text-slate-400 leading-relaxed">{caseData.defendant.address}</p>
  </div>
  )}
  </div>
@@ -317,7 +456,7 @@ export default function ClientCaseDetailPage() {
  <Gavel className="h-5 w-5 text-emerald-500" />
  </div>
  <div>
- <p className="text-[10px] font-black text-muted-foreground uppercase leading-none">Judge Assigned</p>
+ <p className="text-[10px] font-black text-slate-400 uppercase leading-none">Judge Assigned</p>
  <p className="text-sm font-bold mt-1 text-white truncate">{caseData.judge_name || "Honorable Justice"}</p>
  </div>
  </div>
@@ -326,7 +465,7 @@ export default function ClientCaseDetailPage() {
  <History className="h-5 w-5 text-blue-500" />
  </div>
  <div>
- <p className="text-[10px] font-black text-muted-foreground uppercase leading-none">Current Phase</p>
+ <p className="text-[10px] font-black text-slate-400 uppercase leading-none">Current Phase</p>
  <p className="text-sm font-bold mt-1 text-white">{STATUS_LABELS[caseData.status] || "Filing Approval"}</p>
  </div>
  </div>
@@ -342,12 +481,12 @@ export default function ClientCaseDetailPage() {
  <DialogTitle className="text-xl font-black font-display flex items-center gap-2">
  <CreditCard className="h-5 w-5 text-primary" /> Case Filing Fee
  </DialogTitle>
- <DialogDescription className="text-muted-foreground font-medium">Please select a payment method for case: <span className="text-foreground font-bold">{caseData?.title}</span></DialogDescription>
+ <DialogDescription className="text-slate-400 font-medium">Please select a payment method for case: <span className="text-foreground font-bold">{caseData?.title}</span></DialogDescription>
  </DialogHeader>
  
  <div className="py-4 space-y-5">
  <div className="flex justify-between items-center p-5 bg-primary/10 rounded-2xl border border-primary/20">
- <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total Fee</span>
+ <span className="text-xs font-black uppercase tracking-widest text-slate-400">Total Fee</span>
  <span className="text-2xl font-black font-display text-primary">{caseData?.category?.fee || caseData?.category_fee || 0} <span className="text-sm font-bold">ETB</span></span>
  </div>
 

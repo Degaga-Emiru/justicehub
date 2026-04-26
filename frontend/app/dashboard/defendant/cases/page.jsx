@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STATUS_LABELS = {
  PENDING_REVIEW: "Investigation",
@@ -45,6 +46,7 @@ export default function DefendantCasesPage() {
  
  // Defendant-specific modal state
  const [acknowledgingCase, setAcknowledgingCase] = useState(null);
+ const [statusFilter, setStatusFilter] = useState("ACTIVE");
 
  const { data: cases, isLoading: isLoadingCases } = useQuery({
  queryKey: ["defendant-cases", user?.id],
@@ -62,6 +64,16 @@ export default function DefendantCasesPage() {
 
 
  const allCases = cases || [];
+ 
+ // Filter logic
+ const filteredCases = allCases.filter(c => {
+   if (statusFilter === "ACTIVE") {
+     return !["CLOSED", "DECIDED"].includes(c.status);
+   }
+   if (statusFilter === "ALL") return true;
+   return c.status === statusFilter;
+ });
+
  const needsAction = allCases.filter(c => 
  (c.status === "DECIDED" && !c.is_defendant_acknowledged) ||
  (c.status === "ASSIGNED" && !c.defendant_response)
@@ -98,6 +110,23 @@ export default function DefendantCasesPage() {
  </TabsTrigger>
  </TabsList>
 
+ <div className="flex justify-end mb-4">
+   <div className="w-full md:w-64">
+     <Select value={statusFilter} onValueChange={setStatusFilter}>
+       <SelectTrigger className="h-12 bg-background border-border rounded-xl shadow-sm">
+         <SelectValue placeholder="Filter by Status" />
+       </SelectTrigger>
+       <SelectContent>
+         <SelectItem value="ACTIVE">All Active Claims</SelectItem>
+         <SelectItem value="ALL">Show All History</SelectItem>
+         {Object.entries(STATUS_LABELS).map(([value, label]) => (
+           <SelectItem key={value} value={value}>{label}</SelectItem>
+         ))}
+       </SelectContent>
+     </Select>
+   </div>
+ </div>
+
  <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-8 border-b border-border">
@@ -110,7 +139,7 @@ export default function DefendantCasesPage() {
  {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted/20 rounded-xl animate-pulse" />)}
  </div>
  ) : (
- <CaseTable data={allCases} router={router} emptyMessage="No disputes found." onAcknowledge={setAcknowledgingCase} />
+ <CaseTable data={filteredCases} router={router} emptyMessage="No disputes found." onAcknowledge={setAcknowledgingCase} />
  )}
  </CardContent>
  </Card>

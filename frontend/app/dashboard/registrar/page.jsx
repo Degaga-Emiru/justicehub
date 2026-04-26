@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const STATUS_COLORS = {
  PENDING_REVIEW: "bg-amber-500/10 text-amber-600",
@@ -99,12 +100,14 @@ export default function RegistrarDashboardPage() {
  setIsAssignOpen(false);
  setTargetCase(null);
  setSelectedJudgeId("");
- }
+ toast.success("Judge assigned successfully.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to assign judge")
  });
 
  const reviewMutation = useMutation({
  mutationFn: ({ caseId, action, notes }) => reviewCase(caseId, { action, notes }),
- onSuccess: () => {
+ onSuccess: (data) => {
  queryClient.invalidateQueries(["pendingIntake"]);
  queryClient.invalidateQueries(["cases"]);
  queryClient.invalidateQueries(["registrarStats"]);
@@ -112,7 +115,9 @@ export default function RegistrarDashboardPage() {
  setReviewTarget(null);
  setRejectionReason("");
  setReviewAction("");
- }
+ toast.success(data.message || "Case review submitted.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to submit review")
  });
 
  const defendantMutation = useMutation({
@@ -124,7 +129,9 @@ export default function RegistrarDashboardPage() {
  setIsDefendantOpen(false);
  setDefendantTarget(null);
  setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "" });
- }
+ toast.success("Defendant account created and linked.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to create defendant account")
  });
 
  // Filters
@@ -541,13 +548,6 @@ export default function RegistrarDashboardPage() {
  </DialogDescription>
  </DialogHeader>
  <div className="grid gap-4 py-4">
- {assignMutation.isError && (
- <Alert variant="destructive" className="bg-background shadow-sm border-border border-destructive/50">
- <AlertDescription className="font-bold">
- {assignMutation.error?.message || "Failed to assign judge."}
- </AlertDescription>
- </Alert>
- )}
  <div className="space-y-2">
  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Select Judge</label>
  <Select value={selectedJudgeId} onValueChange={setSelectedJudgeId}>
@@ -784,9 +784,7 @@ export default function RegistrarDashboardPage() {
  </div>
  </div>
  ) : (
- <Alert variant="destructive" className="bg-background shadow-sm border-border border-destructive/50">
- <AlertDescription className="font-bold">Target case not found.</AlertDescription>
- </Alert>
+ <p className="p-8 text-center text-destructive font-bold">Target case not found.</p>
  )}
  </DialogContent>
  </Dialog>

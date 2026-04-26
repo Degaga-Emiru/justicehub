@@ -73,14 +73,18 @@ class CaseDocumentSerializer(serializers.ModelSerializer):
     
     # Fields for initial upload
     file = serializers.FileField(write_only=True, required=False)
+    uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    uploaded_by_role = serializers.CharField(source='uploaded_by.role', read_only=True)
+    created_at = serializers.DateTimeField(source='uploaded_at', read_only=True)
     
     class Meta:
         model = CaseDocument
         fields = [
             'document_id', 'document_type', 'document_type_display', 
-            'description', 'is_confidential', 'uploaded_by', 'versions', 'latest_version', 'file'
+            'description', 'is_confidential', 'uploaded_by', 'uploaded_by_name',
+            'uploaded_by_role', 'created_at', 'versions', 'latest_version', 'file'
         ]
-        read_only_fields = ['document_id', 'document_type_display', 'versions', 'latest_version', 'uploaded_by']
+        read_only_fields = ['document_id', 'document_type_display', 'versions', 'latest_version', 'uploaded_by', 'created_at']
 
     def get_latest_version(self, obj):
         active = obj.get_active_version()
@@ -392,6 +396,8 @@ class CaseDetailSerializer(serializers.ModelSerializer):
     current_assignment = serializers.SerializerMethodField()
     document_count = serializers.IntegerField(source='documents.count', read_only=True)
     days_pending = serializers.SerializerMethodField()
+    hearings = serializers.SerializerMethodField()
+    decisions = serializers.SerializerMethodField()
     
     class Meta:
         model = Case
@@ -403,7 +409,8 @@ class CaseDetailSerializer(serializers.ModelSerializer):
             'plaintiff_lawyer', 'defendant_lawyer',
             'reviewed_by', 'reviewed_at', 'rejection_reason',
             'filing_date', 'closed_date', 'created_at', 'updated_at',
-            'documents', 'document_count', 'current_assignment', 'days_pending'
+            'documents', 'document_count', 'current_assignment', 'days_pending',
+            'hearings', 'decisions'
         ]
         read_only_fields = [
             'id', 'file_number', 'filing_date',
@@ -426,6 +433,16 @@ class CaseDetailSerializer(serializers.ModelSerializer):
         if obj.closed_date:
             return (obj.closed_date - obj.filing_date).days
         return (timezone.now() - obj.filing_date).days
+
+    def get_hearings(self, obj):
+        from hearings.serializers import HearingSerializer
+        hearings = obj.hearings.all().order_by('-scheduled_date')
+        return HearingSerializer(hearings, many=True, context=self.context).data
+
+    def get_decisions(self, obj):
+        from decisions.serializers import DecisionSerializer
+        decisions = obj.decisions.all().order_by('-created_at')
+        return DecisionSerializer(decisions, many=True, context=self.context).data
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)

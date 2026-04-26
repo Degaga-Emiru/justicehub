@@ -18,6 +18,7 @@ import { ArrowLeft, FileText, Download, User, Calendar, Scale, Loader2, Shield, 
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { statusColors } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 const STATUS_LABELS = {
  PENDING_REVIEW: "Case Under Review",
@@ -63,7 +64,7 @@ export default function DefendantCaseDetailPage() {
  mutationFn: () => updateCaseStatus(id, { is_defendant_acknowledged: true }),
  onSuccess: () => {
  queryClient.invalidateQueries(["case-detail", id]);
- alert("Decision acknowledged successfully.");
+ toast.success("Decision acknowledged successfully.");
  }
  });
 
@@ -72,15 +73,15 @@ export default function DefendantCaseDetailPage() {
  onSuccess: () => {
  queryClient.invalidateQueries(["case-detail", id]);
  queryClient.invalidateQueries(["case-documents-defendant", id]);
- alert("Response submitted successfully.");
+ toast.success("Response submitted successfully.");
  setResponseForm({ description: "", document_type: "EVIDENCE", file: null });
  },
- onError: (err) => alert(err.message || "Failed to submit response")
+ onError: (err) => toast.error(err.message || "Failed to submit response")
  });
 
  const handleResponseSubmit = () => {
  if (!responseForm.description) {
- alert("Description is required.");
+ toast.error("Description is required.");
  return;
  }
  const formData = new FormData();
@@ -96,7 +97,7 @@ export default function DefendantCaseDetailPage() {
  return (
  <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Accessing Defense Files...</p>
+ <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Accessing Defense Files...</p>
  </div>
  );
  }
@@ -149,7 +150,7 @@ export default function DefendantCaseDetailPage() {
  Defense Record
  </Badge>
  <CardTitle className="text-3xl font-black font-display tracking-tight text-slate-100">{caseData.title}</CardTitle>
- <div className="flex items-center gap-4 text-sm font-semibold text-muted-foreground pt-1">
+ <div className="flex items-center gap-4 text-sm font-semibold text-slate-400 pt-1">
  <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-rose-500" /> {caseData.file_number}</span>
  <span className="">•</span>
  <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-rose-500" /> Summons Received {format(new Date(caseData.created_at || caseData.filing_date), "MMM d, yyyy")}</span>
@@ -164,19 +165,19 @@ export default function DefendantCaseDetailPage() {
  <CardContent className="p-8 space-y-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 px-2">
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</p>
- <p className="text-sm font-bold text-muted-foreground">{caseData.category?.name || caseData.category || "General Civil"}</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
+ <p className="text-sm font-bold text-slate-400">{caseData.category?.name || caseData.category || "General Civil"}</p>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Court Jurisdiction</p>
- <p className="text-base font-bold text-muted-foreground truncate">{caseData.court_name || "Superior Court"}</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Court Jurisdiction</p>
+ <p className="text-base font-bold text-slate-400 truncate">{caseData.court_name || "Superior Court"}</p>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Hearing Status</p>
- <p className="text-sm font-bold text-muted-foreground">{caseData.next_hearing_date ? "Scheduled" : "Pending Intake"}</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hearing Status</p>
+ <p className="text-sm font-bold text-slate-400">{caseData.next_hearing_date ? "Scheduled" : "Pending Intake"}</p>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Defense ID</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Defense ID</p>
  <p className="text-sm font-black text-rose-500 uppercase tracking-tighter">JH-D-{caseData.id}</p>
  </div>
  </div>
@@ -184,17 +185,17 @@ export default function DefendantCaseDetailPage() {
  <Separator className="bg-muted/30" />
 
  <div className="space-y-3">
- <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-2">
+ <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2">
  <AlertTriangle className="h-4 w-4 text-amber-500" /> Plaintiff's Claims
  </h3>
- <div className="text-base font-semibold leading-relaxed bg-muted/30 p-6 rounded-2xl border border-border text-muted-foreground shadow-inner">
+ <div className="text-base font-semibold leading-relaxed bg-muted/30 p-6 rounded-2xl border border-border text-slate-400 shadow-inner">
  {caseData.description || "The plaintiff has not provided a description."}
  </div>
  </div>
 
  {/* Defendant Response Section */}
  <div className="space-y-5 pt-4">
- <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-2">
+ <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2">
  <Send className="h-4 w-4 text-primary" /> Formal Defense Response
  </h3>
  {caseData.defendant_response ? (
@@ -203,13 +204,13 @@ export default function DefendantCaseDetailPage() {
  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Submitted Response</p>
  <CheckCircle className="h-4 w-4 text-emerald-500" />
  </div>
- <p className="text-sm font-medium text-muted-foreground italic">{caseData.defendant_response}</p>
+ <p className="text-sm font-medium text-slate-400 italic">{caseData.defendant_response}</p>
  </div>
  ) : (
  <div className="space-y-4">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
- <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Document Type</Label>
+ <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Document Type</Label>
  <Select 
  value={responseForm.document_type} 
  onValueChange={(val) => setResponseForm({ ...responseForm, document_type: val })}
@@ -225,7 +226,7 @@ export default function DefendantCaseDetailPage() {
  </Select>
  </div>
  <div className="space-y-2">
- <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Supporting File</Label>
+ <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Supporting File</Label>
  <div className="relative">
  <Input 
  type="file" 
@@ -247,7 +248,7 @@ export default function DefendantCaseDetailPage() {
  </div>
 
  <div className="space-y-2">
- <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Statement Description</Label>
+ <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Statement Description</Label>
  <Textarea 
  placeholder="Provide a detailed description of this filing..."
  className="min-h-[140px] bg-muted/30 border-border rounded-2xl focus-visible:ring-primary/40 p-5 font-medium leading-relaxed"
@@ -269,49 +270,169 @@ export default function DefendantCaseDetailPage() {
  </CardContent>
  </Card>
 
- {/* Timeline */}
- <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
- <CardHeader className="p-8 pb-4">
- <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
- <History className="h-5 w-5 text-rose-500" />
- Legal Progression
- </CardTitle>
- </CardHeader>
- <CardContent className="p-8 pt-0">
- {timelineLoading ? (
- <div className="space-y-4 animate-pulse pt-4">
- {[1, 2].map(i => <div key={i} className="h-12 bg-muted/30 rounded-xl" />)}
- </div>
- ) : timeline?.length > 0 ? (
- <div className="space-y-4 pt-4">
- {timeline.map((event, idx) => (
- <div key={idx} className="flex items-center justify-between p-4 bg-muted/30 border border-border rounded-2xl group hover:bg-muted/50 transition-colors">
- <div className="flex items-center gap-4">
- <div className="h-10 w-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
- <Gavel className="h-5 w-5" />
- </div>
- <div>
- <p className="text-sm font-bold text-muted-foreground leading-none mb-1">{event.title || event.event_type}</p>
- <p className="text-[11px] text-muted-foreground font-medium">{event.description}</p>
- </div>
- </div>
- <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">{format(new Date(event.date), "MMM d, yyyy")}</span>
- </div>
- ))}
- </div>
- ) : (
- <p className="text-xs italic text-muted-foreground text-center py-10 border border-dashed border-border rounded-2xl">No legal events recorded yet.</p>
- )}
- </CardContent>
- </Card>
- </div>
+  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+  <CardHeader className="p-8 pb-4">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
+  <History className="h-5 w-5 text-rose-500" />
+  Legal Journey Milestones
+  </CardTitle>
+  </CardHeader>
+  <CardContent className="p-8 pt-0">
+  {(() => {
+    const milestones = [
+      { title: "Summons Issued", date: caseData.filing_date || caseData.created_at, description: "Official summons received by defendant", icon: Shield, color: "text-rose-500" },
+      ...(caseData.reviewed_at ? [{ title: "Legal Review Complete", date: caseData.reviewed_at, description: "Filing reviewed by court registrar", icon: CheckCircle, color: "text-emerald-500" }] : []),
+      ...(caseData.hearings?.map(h => ({ 
+        title: `Hearing ${h.status === "CONDUCTED" ? "Conducted" : "Scheduled"}`, 
+        date: h.scheduled_date, 
+        description: `${h.hearing_type} - ${h.location || "Online"}`,
+        icon: Clock,
+        color: h.status === "CONDUCTED" ? "text-emerald-500" : "text-blue-500"
+      })) || []),
+      ...(caseData.decisions?.map(d => ({ 
+        title: "Judgment Delivered", 
+        date: d.decision_date, 
+        description: `Verdict: ${d.verdict}`,
+        icon: Gavel,
+        color: "text-purple-500"
+      })) || []),
+      ...(caseData.closed_date ? [{ title: "Case Archived", date: caseData.closed_date, description: "Final proceedings completed", icon: CheckCircle, color: "text-slate-500" }] : []),
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    return milestones.length > 0 ? (
+      <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-muted/50 pt-4">
+        {milestones.map((m, idx) => (
+          <div key={idx} className="relative flex items-center gap-6 group">
+            <div className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#0f172a] bg-background shadow shrink-0 z-10 transition-all group-hover:scale-110",
+              m.color
+            )}>
+              <m.icon className="h-4 w-4" />
+            </div>
+            <div className="flex-1 p-5 rounded-2xl border border-border bg-background group-hover:bg-muted/30 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <h4 className="font-bold text-sm text-white">{m.title}</h4>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{format(new Date(m.date), "PPP")}</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">{m.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm italic text-slate-400 text-center py-10">Waiting for legal proceedings to populate timeline...</p>
+    );
+  })()}
+  </CardContent>
+  </Card>
+
+  {/* Hearings History */}
+  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
+  <CardHeader className="p-8 pb-4">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
+  <Clock className="h-5 w-5 text-rose-500" />
+  Defense Hearing Log
+  </CardTitle>
+  </CardHeader>
+  <CardContent className="p-8">
+  {caseData.hearings?.length > 0 ? (
+  <div className="space-y-4">
+  {caseData.hearings.map((h, i) => (
+  <div key={i} className="p-4 rounded-xl border border-border bg-muted/20 hover:bg-muted/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex items-center gap-4">
+      <div className={cn(
+        "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
+        h.status === "CONDUCTED" ? "bg-emerald-500/10 text-emerald-500" : "bg-blue-500/10 text-blue-500"
+      )}>
+        <Calendar className="h-6 w-6" />
+      </div>
+      <div>
+        <div className="flex items-center gap-2">
+          <p className="font-bold text-sm text-slate-100">{format(new Date(h.scheduled_date), "PPP")}</p>
+          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-rose-500/30 text-rose-500">{h.status}</Badge>
+        </div>
+        <p className="text-xs text-slate-400 font-medium">{h.scheduled_time} • {h.hearing_type}</p>
+      </div>
+    </div>
+    <div className="flex flex-col md:items-end">
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Presiding Judge</p>
+      <p className="text-xs font-bold text-slate-100">{h.judge_name || "Honorable Justice"}</p>
+      {h.location && <p className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" /> {h.location}</p>}
+    </div>
+  </div>
+  ))}
+  </div>
+  ) : (
+  <p className="text-sm italic text-slate-400 text-center py-6 border border-dashed border-border rounded-xl">No hearings scheduled at this time.</p>
+  )}
+  </CardContent>
+  </Card>
+
+  {/* Decision History (Only if Decided/Closed) */}
+  {["DECIDED", "CLOSED"].includes(caseData.status) && (
+  <Card className="bg-card shadow-sm border-border border-rose-500/20 shadow-2xl overflow-hidden">
+  <CardHeader className="p-8 pb-4 bg-rose-500/5">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3 text-rose-100">
+  <Gavel className="h-5 w-5 text-rose-500" />
+  Court Judgment
+  </CardTitle>
+  </CardHeader>
+  <CardContent className="p-8 space-y-6">
+  {caseData.decisions?.length > 0 ? (
+  caseData.decisions.map((d, i) => (
+  <div key={i} className="space-y-6 animate-in zoom-in-95 duration-500">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-muted/20 rounded-2xl border border-border">
+      <div className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-rose-500">Verdict</p>
+        <h4 className="text-xl font-black font-display text-white tracking-tight">{d.verdict}</h4>
+      </div>
+      <div className="flex flex-col md:items-end">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Decision Date</p>
+        <p className="text-sm font-bold text-white">{format(new Date(d.decision_date), "PPP")}</p>
+      </div>
+    </div>
+    <div className="space-y-3 px-2">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+        <FileText className="h-4 w-4" /> Court Remarks & Final Orders
+      </p>
+      <div className="p-6 rounded-2xl bg-background border border-border italic text-sm text-slate-400 leading-relaxed whitespace-pre-line">
+        {d.remarks}
+      </div>
+    </div>
+    <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 mt-6">
+      <div className="flex items-center gap-4">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary">{d.judge_name?.charAt(0)}</div>
+        <div>
+          <p className="text-[10px] font-black text-slate-300 uppercase leading-none">Delivered By</p>
+          <p className="text-sm font-bold mt-1 text-white truncate">{d.judge_name}</p>
+        </div>
+      </div>
+      {d.pdf_document && (
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="h-9 px-4 font-bold text-xs border-primary/20 hover:bg-primary/10"
+          onClick={() => downloadDocument(d.pdf_document, `Judgment_${caseData.file_number}`)}
+        >
+          <Download className="h-4 w-4 mr-2" /> Download PDF
+        </Button>
+      )}
+    </div>
+  ))
+  ) : (
+  <p className="text-sm italic text-slate-400 text-center py-6">Official judgment record pending publication.</p>
+  )}
+  </CardContent>
+  </Card>
+  )}
+  </div>
 
  {/* Sidebar - Right Column */}
  <div className="space-y-8">
  {/* Plaintiff Info */}
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-6 pb-2">
- <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Opposing Party</CardTitle>
+ <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Opposing Party</CardTitle>
  </CardHeader>
  <CardContent className="p-6 space-y-6">
  <div className="space-y-3">
@@ -321,8 +442,8 @@ export default function DefendantCaseDetailPage() {
  {(caseData.plaintiff_name || "P").charAt(0)}
  </div>
  <div className="flex flex-col min-w-0">
- <p className="font-bold text-sm text-muted-foreground truncate">{caseData.plaintiff_name || "Verified Plaintiff"}</p>
- <p className="text-xs text-muted-foreground font-medium truncate">Represented by State</p>
+ <p className="font-bold text-sm text-slate-400 truncate">{caseData.plaintiff_name || "Verified Plaintiff"}</p>
+ <p className="text-xs text-slate-400 font-medium truncate">Represented by State</p>
  </div>
  </div>
  </div>
@@ -332,57 +453,68 @@ export default function DefendantCaseDetailPage() {
  {/* Documents */}
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-6 pb-2">
- <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Claim Evidence</CardTitle>
- </CardHeader>
- <CardContent className="p-6 space-y-3">
- {docsLoading ? (
- <div className="space-y-2 animate-pulse">
- {[1, 2].map(i => <div key={i} className="h-10 bg-muted/30 rounded-xl" />)}
- </div>
- ) : documents?.length > 0 ? (
- documents.map((doc, i) => (
- <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background hover:bg-muted/30 transition-all">
- <div className="flex items-center gap-3">
- <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
- <FileText className="h-4 w-4" />
- </div>
- <div className="flex flex-col min-w-0">
- <span className="text-[10px] font-black uppercase tracking-widest text-primary/90">{doc.document_type}</span>
- <span className="text-xs font-bold truncate max-w-[120px]">{doc.description || "Untitled File"}</span>
- </div>
- </div>
- <div className="flex items-center gap-2">
- {doc.latest_version ? (
- <>
- <Button 
- variant="ghost" 
- size="icon" 
- className="h-8 w-8 text-muted-foreground hover:text-white hover:bg-muted/50"
- onClick={() => window.open(doc.latest_version.file_url, '_blank')}
- title="View"
- >
- <ExternalLink className="h-4 w-4" />
- </Button>
- <Button 
- variant="ghost" 
- size="icon" 
- className="h-8 w-8 text-primary hover:bg-primary/10"
- onClick={() => downloadDocument(doc.latest_version.file_url, doc.description || "legal_document")}
- title="Download"
- >
- <Download className="h-4 w-4" />
- </Button>
- </>
- ) : (
- <span className="text-[9px] text-muted-foreground italic">No file</span>
- )}
- </div>
- </div>
- ))
- ) : (
- <p className="text-[11px] italic text-muted-foreground text-center py-4">No claim documents attached.</p>
- )}
- </CardContent>
+ <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Claim Evidence</CardTitle>
+ </CardHeader>  <CardContent className="p-6 space-y-3">
+  {docsLoading ? (
+  <div className="space-y-2 animate-pulse">
+  {[1, 2].map(i => <div key={i} className="h-10 bg-muted/30 rounded-xl" />)}
+  </div>
+  ) : documents?.length > 0 ? (
+  documents.map((doc, i) => (
+  <div key={i} className="flex flex-col p-3 rounded-xl border border-border bg-background hover:bg-muted/30 transition-all gap-2">
+  <div className="flex items-center justify-between">
+  <div className="flex items-center gap-3">
+  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+  <FileText className="h-4 w-4" />
+  </div>
+  <div className="flex flex-col min-w-0">
+  <span className="text-[10px] font-black uppercase tracking-widest text-primary/90">{doc.document_type}</span>
+  <span className="text-xs font-bold truncate max-w-[120px]">{doc.description || "Untitled File"}</span>
+  </div>
+  </div>
+  <div className="flex items-center gap-1">
+  {doc.latest_version ? (
+  <>
+  <Button 
+  variant="ghost" 
+  size="icon" 
+  className="h-8 w-8 text-slate-400 hover:text-white hover:bg-muted/50"
+  onClick={() => window.open(doc.latest_version.file_url, '_blank')}
+  title="View"
+  >
+  <ExternalLink className="h-4 w-4" />
+  </Button>
+  <Button 
+  variant="ghost" 
+  size="icon" 
+  className="h-8 w-8 text-primary hover:bg-primary/10"
+  onClick={() => downloadDocument(doc.latest_version.file_url, doc.description || "legal_document")}
+  title="Download"
+  >
+  <Download className="h-4 w-4" />
+  </Button>
+  </>
+  ) : (
+  <span className="text-[9px] text-slate-400 italic">No file</span>
+  )}
+  </div>
+  </div>
+  <div className="flex items-center justify-between px-1 text-[9px] font-black uppercase tracking-widest text-slate-300">
+    <div className="flex items-center gap-1">
+      <User className="h-2.5 w-2.5" />
+      <span className="truncate max-w-[80px]">Uploaded by <span className="text-slate-100">{doc.uploaded_by_name || "Court"}</span></span>
+    </div>
+    <div className="flex items-center gap-1">
+      <Clock className="h-2.5 w-2.5" />
+      <span>{doc.created_at ? format(new Date(doc.created_at), "MMM d") : "N/A"}</span>
+    </div>
+  </div>
+  </div>
+  ))
+  ) : (
+  <p className="text-[11px] italic text-slate-400 text-center py-4">No claim documents attached.</p>
+  )}
+  </CardContent>
  </Card>
 
  {/* Next Session */}
@@ -395,8 +527,8 @@ export default function DefendantCaseDetailPage() {
  <CardContent className="p-6 pt-0 space-y-4">
  <div className="p-5 rounded-2xl bg-[#0f172a] border border-rose-500/20 space-y-3">
  <div className="space-y-1">
- <p className="text-[10px] font-black text-muted-foreground uppercase ">Summons Expiry</p>
- <p className="text-base font-black text-muted-foreground">{caseData.next_hearing_date ? format(new Date(caseData.next_hearing_date), "MMM d, yyyy") : "ASAP"}</p>
+ <p className="text-[10px] font-black text-slate-400 uppercase ">Summons Expiry</p>
+ <p className="text-base font-black text-slate-400">{caseData.next_hearing_date ? format(new Date(caseData.next_hearing_date), "MMM d, yyyy") : "ASAP"}</p>
  </div>
  <Badge variant="outline" className="text-[9px] font-black uppercase border-rose-500/30 text-rose-500">Legal Deadline</Badge>
  </div>

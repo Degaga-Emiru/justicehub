@@ -1,13 +1,22 @@
 from django.db.models import Count, Avg, F, ExpressionWrapper, fields, Max, Min, Q
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
 from .db_models import Case, User, CaseCategory
 from .services import ReportService
 
 class AnalyticsService:
-    @staticmethod
-    def get_case_type_analysis():
+    @classmethod
+    def _get_filtered_cases(cls, start_date=None, end_date=None):
+        start, end = ReportService.get_date_range(None, start_date, end_date)
         active_cases = ReportService.get_active_cases()
+        if start and end:
+            active_cases = active_cases.filter(created_at__range=(start, end))
+        return active_cases, start, end
+
+    @classmethod
+    def get_case_type_analysis(cls, start_date=None, end_date=None):
+        active_cases, start, end = cls._get_filtered_cases(start_date, end_date)
         total_cases = active_cases.count()
         analysis = active_cases.values('category__name').annotate(
             total=Count('id')
@@ -31,9 +40,9 @@ class AnalyticsService:
             "least_frequent": least_frequent
         }
 
-    @staticmethod
-    def get_dispute_analysis():
-        active_cases = ReportService.get_active_cases()
+    @classmethod
+    def get_dispute_analysis(cls, start_date=None, end_date=None):
+        active_cases, start, end = cls._get_filtered_cases(start_date, end_date)
         analysis = active_cases.values('category__name').annotate(
             total=Count('id')
         ).order_by('-total')
@@ -54,9 +63,9 @@ class AnalyticsService:
             "issue_ranking": [r['issue'] for r in results[:10]]
         }
 
-    @staticmethod
-    def get_court_problems():
-        active_cases = ReportService.get_active_cases()
+    @classmethod
+    def get_court_problems(cls, start_date=None, end_date=None):
+        active_cases, start, end = cls._get_filtered_cases(start_date, end_date)
         # 1. Most common issue (Fallback to category)
         most_common = active_cases.values('category__name').annotate(count=Count('id')).order_by('-count').first()
         
@@ -79,9 +88,9 @@ class AnalyticsService:
             ]
         }
 
-    @staticmethod
-    def get_resolution_time_metrics():
-        active_cases = ReportService.get_active_cases()
+    @classmethod
+    def get_resolution_time_metrics(cls, start_date=None, end_date=None):
+        active_cases, start, end = cls._get_filtered_cases(start_date, end_date)
         resolved_cases = active_cases.filter(status='CLOSED', closed_date__isnull=False)
         if not resolved_cases.exists():
             return {"average": 0, "fastest": 0, "slowest": 0}
@@ -101,9 +110,12 @@ class AnalyticsService:
             "max_days": metrics['max'].days if metrics['max'] else 0
         }
 
-    @staticmethod
-    def get_demographics():
+    @classmethod
+    def get_demographics(cls, start_date=None, end_date=None):
+        start, end = ReportService.get_date_range(None, start_date, end_date)
         users = User.objects.all()
+        if start and end:
+            users = users.filter(date_joined__range=(start, end))
         total_users = users.count()
         
         # Education
@@ -130,11 +142,14 @@ class AnalyticsService:
             "occupation_distribution": {item['occupation'] or "Not Specified": item['count'] for item in occ}
         }
 
-    @staticmethod
-    def get_decision_type_analysis():
+    @classmethod
+    def get_decision_type_analysis(cls, start_date=None, end_date=None):
         """Requirement 5: Mediation and Immediate Decisions."""
         from .db_models import Decision
+        start, end = ReportService.get_date_range(None, start_date, end_date)
         all_decisions = Decision.objects.all()
+        if start and end:
+            all_decisions = all_decisions.filter(created_at__range=(start, end))
         total = all_decisions.count()
         
         # Track mediation (IMMEDIATE + MEDIATED or SETTLEMENT)
@@ -154,55 +169,77 @@ class AnalyticsService:
             "distribution": {item['decision_type']: item['count'] for item in distribution}
         }
 
-    @staticmethod
-    def get_intelligence_insights():
-        active_cases = ReportService.get_active_cases()
-        total_cases = active_cases.count()
+    @classmethod
+    def get_intelligence_insights(cls, start_date=None, end_date=None):
+        from .db_models import JudgeAssignment
+        active_cases, start, end = cls._get_filtered_cases(start_date, end_date)
         
-        # 1. Most common issue (Retrieving most registered case type)
-        most_common = active_cases.values('category__name').annotate(count=Count('id')).order_by('-count').first()
-        common_txt = most_common['category__name'] if most_common else "N/A"
-
-        # 2. Least reported case type
-        case_types = active_cases.values('category__name').annotate(total=Count('id')).order_by('total')
-        least_txt = case_types.first()['category__name'] if case_types.exists() else "N/A"
-
-        # 3. Most active judge (Highest resolved count)
-        from .db_models import Decision
-        active_judge = Decision.objects.filter(status='FINALIZED')\
-            .values('judge__first_name', 'judge__last_name')\
-            .annotate(resolved_count=Count('id'))\
-            .order_by('-resolved_count').first()
-        judge_txt = f"{active_judge['judge__first_name']} {active_judge['judge__last_name']}" if active_judge else "N/A"
-
-        # 4. Biggest backlog (Category with most non-closed cases)
-        backlog = active_cases.exclude(status='CLOSED').values('category__name').annotate(count=Count('id')).order_by('-count').first()
-        backlog_txt = backlog['category__name'] if backlog else "N/A"
+        # Calculate system backlog (all non-closed active cases)
+        system_backlog = active_cases.exclude(status='CLOSED').count()
+        
+        # Overloaded judges (e.g. assigned to > 5 active cases)
+        overloaded_judges = JudgeAssignment.objects.filter(
+            is_active=True, 
+            case__is_deleted=False, 
+            case__status__in=['PENDING', 'IN_PROGRESS', 'HEARING_SCHEDULED']
+        ).values('judge').annotate(case_count=Count('id')).filter(case_count__gt=5).count()
+        
+        # Pending registrations
+        pending_registrations = User.objects.filter(is_active=False).count()
+        
+        warnings = []
+        if system_backlog > 50:
+            warnings.append(f"High system backlog detected ({system_backlog} pending cases).")
+        if overloaded_judges > 0:
+            warnings.append(f"{overloaded_judges} judges are currently overloaded (handling >5 active cases).")
+        if pending_registrations > 10:
+            warnings.append(f"There are {pending_registrations} user registrations waiting for approval.")
+        
+        bottlenecks = []
+        backlog_category = active_cases.exclude(status='CLOSED').values('category__name').annotate(count=Count('id')).order_by('-count').first()
+        if backlog_category:
+            bottlenecks.append(f"Most pending cases are in: {backlog_category['category__name']} ({backlog_category['count']} cases)")
+        
+        least_category = active_cases.values('category__name').annotate(count=Count('id')).order_by('count').first()
+        if least_category:
+            bottlenecks.append(f"Least reported case type: {least_category['category__name']}")
         
         return {
-            "insights": [
-                f"Most Common Issue: {common_txt}",
-                f"Least Reported Case Type: {least_txt}",
-                f"Most Active Judge: {judge_txt}",
-                f"Biggest Backlog: {backlog_txt} cases"
-            ],
-            "stats": {
-                "common_issue": common_txt,
-                "least_reported_type": least_txt,
-                "active_judge": judge_txt,
-                "backlog_category": backlog_txt
-            }
+            "warnings": warnings,
+            "bottlenecks": bottlenecks,
+            "overloaded_judges": overloaded_judges,
+            "system_backlog": system_backlog,
+            "pending_registrations": pending_registrations
         }
 
     @classmethod
-    def get_master_analytics(cls):
+    def get_master_analytics(cls, start_date=None, end_date=None):
         return {
-            "case_type_analysis": cls.get_case_type_analysis(),
-            "dispute_analysis": cls.get_dispute_analysis(),
-            "court_problems": cls.get_court_problems(),
-            "resolution_time_metrics": cls.get_resolution_time_metrics(),
-            "demographics": cls.get_demographics(),
-            "decision_analysis": cls.get_decision_type_analysis(),
-            "intelligence_insights": cls.get_intelligence_insights(),
+            "case_type_analysis": cls.get_case_type_analysis(start_date, end_date),
+            "dispute_analysis": cls.get_dispute_analysis(start_date, end_date),
+            "court_problems": cls.get_court_problems(start_date, end_date),
+            "resolution_time_metrics": cls.get_resolution_time_metrics(start_date, end_date),
+            "demographics": cls.get_demographics(start_date, end_date),
+            "decision_analysis": cls.get_decision_type_analysis(start_date, end_date),
+            "intelligence_insights": cls.get_intelligence_insights(start_date, end_date),
+            "volume_by_month": cls.get_volume_by_month(start_date, end_date),
             "generated_at": timezone.now()
         }
+
+    @classmethod
+    def get_volume_by_month(cls, start_date=None, end_date=None):
+        start, end = ReportService.get_date_range(None, start_date, end_date)
+        if start and end:
+            cases = Case.objects.filter(created_at__range=(start, end))
+        else:
+            six_months_ago = timezone.now() - timedelta(days=180)
+            cases = Case.objects.filter(created_at__gte=six_months_ago)
+            
+        volume = cases.annotate(month=TruncMonth('created_at')).values('month').annotate(count=Count('id')).order_by('month')
+        
+        result = {}
+        for item in volume:
+            if item['month']:
+                month_str = item['month'].strftime('%b')
+                result[month_str] = item['count']
+        return result

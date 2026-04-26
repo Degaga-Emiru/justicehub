@@ -73,20 +73,23 @@ class AnalyticsReportView(ReportBaseView):
     permission_classes = [IsAdminUserRole]
     def get(self, request):
         analytics_type = request.query_params.get('type', 'master')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
         if analytics_type == 'case-type':
-            data = AnalyticsService.get_case_type_analysis()
+            data = AnalyticsService.get_case_type_analysis(start_date, end_date)
         elif analytics_type == 'disputes':
-            data = AnalyticsService.get_dispute_analysis()
+            data = AnalyticsService.get_dispute_analysis(start_date, end_date)
         elif analytics_type == 'problem':
-            data = AnalyticsService.get_court_problems()
+            data = AnalyticsService.get_court_problems(start_date, end_date)
         elif analytics_type == 'resolution':
-            data = AnalyticsService.get_resolution_time_metrics()
+            data = AnalyticsService.get_resolution_time_metrics(start_date, end_date)
         elif analytics_type == 'demographic':
-            data = AnalyticsService.get_demographics()
+            data = AnalyticsService.get_demographics(start_date, end_date)
         elif analytics_type == 'intelligence':
-            data = AnalyticsService.get_intelligence_insights()
+            data = AnalyticsService.get_intelligence_insights(start_date, end_date)
         else:
-            data = AnalyticsService.get_master_analytics()
+            data = AnalyticsService.get_master_analytics(start_date, end_date)
         return Response(data)
 
 class ExportReportView(ReportBaseView):
@@ -106,7 +109,7 @@ class ExportReportView(ReportBaseView):
             title = "Judge Performance & Revenue Report"
             report_name = "judge"
         elif report_scope == 'analytics':
-            data = AnalyticsService.get_master_analytics()
+            data = AnalyticsService.get_master_analytics(start_date=start_date, end_date=end_date)
             title = "Advanced Case Intelligence Report"
             report_name = "analytics"
         else:

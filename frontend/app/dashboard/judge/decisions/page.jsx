@@ -657,7 +657,7 @@ export default function DecisionsPage() {
  <Button
  variant="ghost"
  className="rounded-xl font-bold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
- onClick={() => downloadDecisionPdf(currentDecisionId).catch(err => alert(err.message))}
+ onClick={() => downloadDecisionPdf(currentDecisionId).catch(err => toast.error(err.message))}
  >
  <Download className="mr-2 h-4 w-4" />
  PDF
@@ -675,10 +675,10 @@ export default function DecisionsPage() {
  setUploadingDoc(true);
  try {
  await uploadDecisionDocument(currentDecisionId, file);
- alert("Decision document uploaded.");
+ toast.success("Decision document uploaded.");
  queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
  } catch (err) {
- alert(err.message);
+ toast.error(err.message);
  } finally {
  setUploadingDoc(false);
  e.target.value = "";
