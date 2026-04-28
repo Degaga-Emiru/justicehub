@@ -695,6 +695,52 @@ export async function acknowledgeDefendantDecision(caseId, data) {
     } catch (e) { throw e; }
 }
 
+// ======================================
+// AI CHATBOT INTEGRATION
+// ======================================
+
+export async function createChatSession(data = {}) {
+    try {
+        const res = await fetch(`${getApiUrl()}/ai/chat/sessions/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error("Failed to create chat session");
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function sendChatMessage(sessionId, message) {
+    try {
+        const res = await fetch(`${getApiUrl()}/ai/chat/sessions/${sessionId}/messages/`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ message })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to send chat message");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
+export async function sendPublicChatMessage(message) {
+    try {
+        const res = await fetch(`${getApiUrl()}/ai/chat/public/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(formatError(errData) || "Failed to send public chat message");
+        }
+        return await res.json();
+    } catch (e) { throw e; }
+}
+
 export async function acknowledgeDefendantService(caseId) {
     try {
         const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/acknowledge-service/`, { 

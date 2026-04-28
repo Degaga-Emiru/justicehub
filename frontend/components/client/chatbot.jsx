@@ -5,14 +5,18 @@ import { MessageSquare, X, Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { chatMessages } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { createChatSession, sendChatMessage, sendPublicChatMessage } from "@/lib/api";
+import { useAuthStore } from "@/store/auth-store";
 
-export function Chatbot() {
+ export function Chatbot() {
  const [isOpen, setIsOpen] = useState(false);
- const [messages, setMessages] = useState(chatMessages);
+ const [messages, setMessages] = useState([]);
  const [inputValue, setInputValue] = useState("");
+ const [sessionId, setSessionId] = useState(null);
+ const [isLoading, setIsLoading] = useState(false);
  const scrollRef = useRef(null);
+ const { user } = useAuthStore();
 
  useEffect(() => {
  if (scrollRef.current) {
@@ -20,28 +24,76 @@ export function Chatbot() {
  }
  }, [messages, isOpen]);
 
- const handleSend = () => {
- if (!inputValue.trim()) return;
+ useEffect(() => {
+ if (isOpen && user && !sessionId && !isLoading) {
+ const initSession = async () => {
+ try {
+ const session = await createChatSession({ title: "New Chat" });
+ setSessionId(session.id);
+ setMessages([{
+ id: 'welcome',
+ sender: "bot",
+ text: "Hello! I am JusticeBot. How can I assist you with your legal matters today?",
+ time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+ }]);
+ } catch (err) {
+ console.error("Failed to initialize chat session", err);
+ }
+ };
+ initSession();
+ } else if (isOpen && !user && messages.length === 0) {
+ // Public greeting
+ setMessages([{
+ id: 'welcome',
+ sender: "bot",
+ text: "Hello! I am JusticeBot. How can I answer your general questions about JusticeHub today?",
+ time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+ }]);
+ }
+ }, [isOpen, sessionId, isLoading, user, messages.length]);
 
+ const handleSend = async () => {
+ if (!inputValue.trim() || isLoading) return;
+ if (user && !sessionId) return; // Wait for session if authenticated
+
+ const userText = inputValue.trim();
  const newUserMsg = {
- id: messages.length + 1,
+ id: Date.now(),
  sender: "user",
- text: inputValue,
- time: "Just now",
+ text: userText,
+ time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
  };
  setMessages((prev) => [...prev, newUserMsg]);
  setInputValue("");
+ setIsLoading(true);
 
- // Simulate bot response
- setTimeout(() => {
- const botResponse = {
- id: messages.length + 2,
+ try {
+ let response;
+ if (user) {
+ response = await sendChatMessage(sessionId, userText);
+ } else {
+ response = await sendPublicChatMessage(userText);
+ }
+ 
+ const botMsg = {
+ id: response.id || Date.now() + 100,
  sender: "bot",
- text: "I understand you're asking about that. Could you please provide your case number so I can look it up?",
- time: "Just now",
+ text: response.content,
+ time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
  };
- setMessages((prev) => [...prev, botResponse]);
- }, 1000);
+ setMessages((prev) => [...prev, botMsg]);
+ } catch (err) {
+ console.error("Failed to send message", err);
+ const errorMsg = {
+ id: Date.now() + 1,
+ sender: "bot",
+ text: "Sorry, I am having trouble connecting to the server. Please try again later.",
+ time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+ };
+ setMessages((prev) => [...prev, errorMsg]);
+ } finally {
+ setIsLoading(false);
+ }
  };
 
  return (
@@ -107,8 +159,9 @@ export function Chatbot() {
  value={inputValue}
  onChange={(e) => setInputValue(e.target.value)}
  className="flex-1"
+ disabled={isLoading}
  />
- <Button type="submit" size="icon" disabled={!inputValue.trim()}>
+ <Button type="submit" size="icon" disabled={!inputValue.trim() || isLoading}>
  <Send className="h-4 w-4" />
  </Button>
  </form>
