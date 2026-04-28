@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'payments',
     'audit_logs',
     'reports',
+    'ai',
 ]
 
 
@@ -283,6 +284,9 @@ LOGGING = {
         },
     },
 }
+
+# Ensure all Django responses use UTF-8 encoding
+DEFAULT_CHARSET = 'utf-8'
 
 # REST Framework settings
 REST_FRAMEWORK = {

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 import { useState, useEffect } from "react";
+import { Chatbot } from "@/components/client/chatbot";
 
 export default function LandingPage() {
  const { t, language, setLanguage } = useLanguage();
@@ -43,9 +44,6 @@ export default function LandingPage() {
  </Link>
  <Link className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#how-it-works">
  {t("howItWorksTitle")}
- </Link>
- <Link className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#about">
- {t("about")}
  </Link>
  </nav>
  <div className="flex items-center gap-4">
@@ -119,7 +117,7 @@ export default function LandingPage() {
  <div className="relative rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden aspect-[4/3] border-[6px] border-white/40 dark:border-border group floating-glow">
  <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent mix-blend-overlay z-10 transition-colors duration-700"></div>
  <img
- src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2000&v=1.1"
+ src="/lady_justice.png"
  alt="Lady Justice"
  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
  />
@@ -218,10 +216,6 @@ export default function LandingPage() {
  </div>
  </div>
  </div>
-
- <Button className="rounded-full shadow-xl shadow-primary/20 hover:shadow-primary/40 h-16 px-10 text-lg font-bold transition-all hover:-translate-y-1 bg-gradient-to-r from-primary to-blue-600 text-white" size="lg">
- {t("readDocs")} <BookOpen className="ml-2 h-6 w-6" />
- </Button>
  </div>
 
  <div className="flex-1 w-full relative group">
@@ -229,8 +223,8 @@ export default function LandingPage() {
  <div className="relative rounded-[3rem] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.15)] border-[8px] border-white/50 dark:border-border floating-glow">
  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40 z-10 transition-opacity duration-700 opacity-60 group-hover:opacity-30"></div>
  <img 
- src="https://images.unsplash.com/photo-1589216532372-1c2a11f90d6a?q=80&w=2000&v=1.1" 
- alt="Legal Documents" 
+ src="/legal_gavel.png" 
+ alt="Gavel and Legal Documents" 
  className="object-cover aspect-square md:aspect-[4/3] w-full transform group-hover:scale-110 transition-transform duration-1000 ease-out"
  />
  <div className="absolute bottom-10 left-10 z-20 space-y-2">
@@ -363,8 +357,8 @@ export default function LandingPage() {
 
  <footer className="w-full border-t py-24 bg-background border-border/40 relative">
  <div className="container mx-auto px-4 md:px-6">
- <div className="grid grid-cols-2 lg:grid-cols-6 gap-16 mb-24">
- <div className="col-span-2 space-y-8">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-24">
+ <div className="space-y-8">
  <div className="flex items-center gap-4 group cursor-pointer">
  <div className="bg-gradient-to-br from-primary to-blue-500 p-2 rounded-lg text-white shadow-lg group-hover:scale-110 transition-transform">
  <Scale className="h-6 w-6" />
@@ -383,36 +377,6 @@ export default function LandingPage() {
  </div>
  </div>
  </div>
-
- <div className="space-y-6">
- <h4 className="font-black font-display uppercase tracking-widest text-xs text-primary">{t("platform")}</h4>
- <ul className="space-y-4 text-base font-medium text-muted-foreground">
- <li><Link href="#" className="hover:text-primary transition-colors">{t("eFiling")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("caseSearch")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("analytics")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("integrations")}</Link></li>
- </ul>
- </div>
-
- <div className="space-y-6">
- <h4 className="font-black font-display uppercase tracking-widest text-xs text-primary">{t("resources")}</h4>
- <ul className="space-y-4 text-base font-medium text-muted-foreground">
- <li><Link href="#" className="hover:text-primary transition-colors">{t("helpCenter")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("documentation")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("devApi")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("community")}</Link></li>
- </ul>
- </div>
-
- <div className="space-y-6">
- <h4 className="font-black font-display uppercase tracking-widest text-xs text-primary">{t("company")}</h4>
- <ul className="space-y-4 text-base font-medium text-muted-foreground">
- <li><Link href="#" className="hover:text-primary transition-colors">{t("aboutUs")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("careers")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("privacyPolicy")}</Link></li>
- <li><Link href="#" className="hover:text-primary transition-colors">{t("termsOfService")}</Link></li>
- </ul>
- </div>
  </div>
 
  <div className="pt-12 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-8">
@@ -425,6 +389,7 @@ export default function LandingPage() {
  </div>
  </div>
  </footer>
+ <Chatbot />
  </div>
  );
 }
@@ -439,9 +404,6 @@ function FeatureCard({ icon, title, description, featured, t }) {
  <h3 className="text-2xl font-black font-display mb-3 text-foreground tracking-tight group-hover:text-primary transition-colors">{title}</h3>
  <p className="text-muted-foreground font-medium leading-relaxed flex-1 text-base">{description}</p>
 
- <div className="mt-8 flex items-center text-sm font-bold text-primary opacity-80 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
- {t("learnMore")} <ChevronRight className="ml-1 h-5 w-5" />
- </div>
  </div>
  );
 }

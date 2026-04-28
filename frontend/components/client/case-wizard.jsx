@@ -17,6 +17,7 @@ import { createCase, fetchCategories } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 
 // Schema for Step 1: Party Details
 const step1Schema = z.object({
@@ -28,8 +29,8 @@ const step1Schema = z.object({
 // Schema for Step 2: Case Details
 const step2Schema = z.object({
  categoryId: z.string().min(1, "Case category is required"),
- title: z.string().min(5, "Case title must be at least 5 characters"),
- description: z.string().min(20, "Please provide a detailed description (at least 20 chars)"),
+ title: z.string().min(3, "Case title must be at least 3 characters"),
+ description: z.string().min(10, "Please provide a detailed description (at least 10 chars)"),
  priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
 });
 
@@ -38,14 +39,15 @@ const step3Schema = z.object({
  documents: z.array(z.any()).optional(),
 });
 
-export function CaseWizard() {
- const [step, setStep] = useState(1);
- const [isLoading, setIsLoading] = useState(false);
- const [categories, setCategories] = useState([]);
- const { user } = useAuthStore();
- const router = useRouter();
+ export function CaseWizard() {
+  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const { user } = useAuthStore();
+  const router = useRouter();
+  const { t } = useLanguage();
 
- useEffect(() => {
+  useEffect(() => {
  let mounted = true;
  const loadCategories = async () => {
  const data = await fetchCategories();
@@ -117,11 +119,11 @@ export function CaseWizard() {
  }
 
  await createCase(formData);
- toast.success("Case registered successfully!");
+ toast.success(t("caseRegSuccess"));
  router.push("/dashboard/client");
  } catch (err) {
  console.error("Failed to register case", err);
- toast.error(err.message || "An unexpected error occurred. Please try again.");
+ toast.error(err.message || t("unexpectedError"));
  } finally {
  setIsLoading(false);
  }
@@ -131,7 +133,7 @@ export function CaseWizard() {
  <Card className="w-full max-w-3xl mx-auto shadow-lg">
  <CardHeader>
  <div className="flex items-center justify-between mb-4">
- <CardTitle>Register New Case</CardTitle>
+ <CardTitle>{t("wizardTitle")}</CardTitle>
  <div className="flex items-center space-x-2">
  {[1, 2, 3].map((i) => (
  <div
@@ -151,9 +153,9 @@ export function CaseWizard() {
  </div>
  </div>
  <CardDescription>
- {step === 1 && "Step 1: Enter details about the opposing party."}
- {step === 2 && "Step 2: Describe the legal matter and classify its type."}
- {step === 3 && "Step 3: Upload relevant evidence and documents."}
+ {step === 1 && t("wizardStep1Desc")}
+ {step === 2 && t("wizardStep2Desc")}
+ {step === 3 && t("wizardStep3Desc")}
  </CardDescription>
  </CardHeader>
  <Separator />
@@ -165,22 +167,22 @@ export function CaseWizard() {
  <div className="space-y-4 animate-fade-in">
  <div className="grid gap-4 sm:grid-cols-2">
  <div className="space-y-2">
- <Label htmlFor="plaintiff">Plaintiff (You)</Label>
+ <Label htmlFor="plaintiff">{t("lblPlaintiffYou")}</Label>
  <Input id="plaintiff" value={user?.name || ""} disabled className="bg-muted" />
  </div>
  <div className="space-y-2">
- <Label htmlFor="defendantName">Defendant Name</Label>
- <Input id="defendantName" placeholder="Individual or Company Name" {...register("defendantName")} />
+ <Label htmlFor="defendantName">{t("lblDefendantName")}</Label>
+ <Input id="defendantName" placeholder={t("phDefendantName")} {...register("defendantName")} />
  {errors.defendantName && <p className="text-xs text-destructive">{errors.defendantName.message}</p>}
  </div>
  </div>
  <div className="space-y-2">
- <Label htmlFor="defendantAddress">Defendant Address (Optional)</Label>
- <Input id="defendantAddress" placeholder="123 Main St, City, Country" {...register("defendantAddress")} />
+ <Label htmlFor="defendantAddress">{t("lblDefendantAddress")}</Label>
+ <Input id="defendantAddress" placeholder={t("phDefendantAddress")} {...register("defendantAddress")} />
  </div>
  <div className="space-y-2">
- <Label htmlFor="defendantEmail">Defendant Email (Optional)</Label>
- <Input id="defendantEmail" type="email" placeholder="contact@defendant.com" {...register("defendantEmail")} />
+ <Label htmlFor="defendantEmail">{t("lblDefendantEmail")}</Label>
+ <Input id="defendantEmail" type="email" placeholder={t("phDefendantEmail")} {...register("defendantEmail")} />
  {errors.defendantEmail && <p className="text-xs text-destructive">{errors.defendantEmail.message}</p>}
  </div>
  </div>
@@ -190,17 +192,17 @@ export function CaseWizard() {
  {step === 2 && (
  <div className="space-y-4 animate-fade-in">
  <div className="space-y-2">
- <Label htmlFor="title">Case Title</Label>
- <Input id="title" placeholder="e.g., Doe v. Smith - Breach of Contract" {...register("title")} />
+ <Label htmlFor="title">{t("lblCaseTitle")}</Label>
+ <Input id="title" placeholder={t("phCaseTitle")} {...register("title")} />
  {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
  </div>
 
  <div className="grid gap-4 sm:grid-cols-2">
  <div className="space-y-2">
- <Label>Case Category</Label>
+ <Label>{t("lblCaseCategory")}</Label>
  <Select onValueChange={(val) => setValue("categoryId", val)} value={watch("categoryId")}>
  <SelectTrigger>
- <SelectValue placeholder="Select category" />
+ <SelectValue placeholder={t("phSelectCategory")} />
  </SelectTrigger>
  <SelectContent>
  {categories.map((cat) => (
@@ -212,26 +214,26 @@ export function CaseWizard() {
  </div>
 
  <div className="space-y-2">
- <Label>Priority Level</Label>
+ <Label>{t("lblPriorityLevel")}</Label>
  <Select onValueChange={(val) => setValue("priority", val)} value={watch("priority")}>
  <SelectTrigger>
- <SelectValue placeholder="Select priority" />
+ <SelectValue placeholder={t("phSelectPriority")} />
  </SelectTrigger>
  <SelectContent>
- <SelectItem value="LOW">Low</SelectItem>
- <SelectItem value="MEDIUM">Medium</SelectItem>
- <SelectItem value="HIGH">High</SelectItem>
- <SelectItem value="CRITICAL">Critical</SelectItem>
+ <SelectItem value="LOW">{t("priorityLow")}</SelectItem>
+ <SelectItem value="MEDIUM">{t("priorityMedium")}</SelectItem>
+ <SelectItem value="HIGH">{t("priorityHigh")}</SelectItem>
+ <SelectItem value="CRITICAL">{t("priorityCritical")}</SelectItem>
  </SelectContent>
  </Select>
  </div>
  </div>
 
  <div className="space-y-2">
- <Label htmlFor="description">Case Description</Label>
+ <Label htmlFor="description">{t("lblCaseDescription")}</Label>
  <Textarea
  id="description"
- placeholder="Provide a detailed objective description of the facts..."
+ placeholder={t("phCaseDescription")}
  className="min-h-[150px]"
  {...register("description")}
  />
@@ -249,8 +251,8 @@ export function CaseWizard() {
  <UploadCloud className="h-6 w-6 text-primary" />
  </div>
  <div className="space-y-1">
- <p className="font-medium text-sm">Drag files to upload or click to browse</p>
- <p className="text-xs text-muted-foreground">PDF, JPEG, PNG (Max 10MB)</p>
+ <p className="font-medium text-sm">{t("dragFiles")}</p>
+ <p className="text-xs text-muted-foreground">{t("fileTypes")}</p>
  </div>
  <Input
  type="file"
@@ -260,14 +262,14 @@ export function CaseWizard() {
  onChange={handleFileUpload}
  />
  <Button variant="outline" size="sm" type="button" onClick={() => document.getElementById("file-upload").click()}>
- Browse Files
+ {t("btnBrowseFiles")}
  </Button>
  </div>
  </div>
 
  {uploadedFiles.length > 0 && (
  <div className="space-y-2">
- <h4 className="text-sm font-medium">Uploaded Documents</h4>
+ <h4 className="text-sm font-medium">{t("lblUploadedDocs")}</h4>
  <div className="space-y-2">
  {uploadedFiles.map((file, idx) => (
  <div key={idx} className="flex items-center justify-between p-3 border rounded-md bg-card">
@@ -292,16 +294,16 @@ export function CaseWizard() {
  onClick={prevStep}
  disabled={step === 1 || isLoading}
  >
- <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+ <ChevronLeft className="mr-2 h-4 w-4" /> {t("btnPrevious")}
  </Button>
 
  {step < 3 ? (
  <Button onClick={nextStep}>
- Next <ChevronRight className="ml-2 h-4 w-4" />
+ {t("btnNext")} <ChevronRight className="ml-2 h-4 w-4" />
  </Button>
  ) : (
  <Button onClick={handleSubmit(onSubmit)} disabled={isLoading}>
- {isLoading ? "Submitting..." : "Submit Case Registration"}
+ {isLoading ? t("btnSubmitting") : t("btnSubmitCase")}
  </Button>
  )}
  </CardFooter>
