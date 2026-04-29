@@ -64,6 +64,12 @@ class AuditLog(models.Model):
         DECISION_VIEWED = 'DECISION_VIEWED', 'Decision Viewed'
         DECISION_DOWNLOADED = 'DECISION_DOWNLOADED', 'Decision Downloaded'
         
+        # Payment Events
+        PAYMENT_INITIATED = 'PAYMENT_INITIATED', 'Payment Initiated'
+        PAYMENT_COMPLETED = 'PAYMENT_COMPLETED', 'Payment Completed'
+        PAYMENT_FAILED = 'PAYMENT_FAILED', 'Payment Failed'
+        PAYMENT_VERIFIED = 'PAYMENT_VERIFIED', 'Payment Verified'
+        
         # System Events
         API_ACCESS = 'API_ACCESS', 'API Access'
         EXPORT_DATA = 'EXPORT_DATA', 'Export Data'

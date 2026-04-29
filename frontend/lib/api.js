@@ -494,12 +494,12 @@ export async function fetchAuditLogs(filters = {}) {
     }
 }
 
-export async function purgeAuditLogs(days) {
+export async function purgeAuditLogs(payload) {
     try {
         const res = await fetch(`${getApiUrl()}/audit/logs/purge_old/`, {
             method: "POST",
             headers: getAuthHeaders(),
-            body: JSON.stringify({ days })
+            body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error("Failed to purge audit logs");
         return await res.json();

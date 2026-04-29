@@ -35,7 +35,7 @@ export default function AuditLogsPage() {
  const [actionFilter, setActionFilter] = useState("ALL");
  const [page, setPage] = useState(1);
  const [isPurgeOpen, setIsPurgeOpen] = useState(false);
- const [purgeDays, setPurgeDays] = useState("30");
+ const [purgePeriod, setPurgePeriod] = useState("days:30");
  const queryClient = useQueryClient();
 
  const filters = {};
@@ -112,16 +112,23 @@ export default function AuditLogsPage() {
  <div className="py-6 space-y-4">
  <div className="space-y-2">
  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Retention Period</label>
- <Select value={purgeDays} onValueChange={setPurgeDays}>
+ <Select value={purgePeriod} onValueChange={setPurgePeriod}>
  <SelectTrigger className="h-12 rounded-xl bg-muted/50">
  <SelectValue placeholder="Select period" />
  </SelectTrigger>
  <SelectContent>
- <SelectItem value="5">Older than 5 days</SelectItem>
- <SelectItem value="10">Older than 10 days</SelectItem>
- <SelectItem value="30">Older than 30 days (1 month)</SelectItem>
- <SelectItem value="90">Older than 90 days (3 months)</SelectItem>
- <SelectItem value="365">Older than 1 year</SelectItem>
+ <SelectItem value="hours:2">Older than 2 hours</SelectItem>
+ <SelectItem value="hours:3">Older than 3 hours</SelectItem>
+ <SelectItem value="hours:4">Older than 4 hours</SelectItem>
+ <SelectItem value="hours:12">Older than 12 hours</SelectItem>
+ <SelectItem value="days:1">Older than 1 day</SelectItem>
+ <SelectItem value="days:2">Older than 2 days</SelectItem>
+ <SelectItem value="days:3">Older than 3 days</SelectItem>
+ <SelectItem value="days:5">Older than 5 days</SelectItem>
+ <SelectItem value="days:10">Older than 10 days</SelectItem>
+ <SelectItem value="days:30">Older than 30 days (1 month)</SelectItem>
+ <SelectItem value="days:90">Older than 90 days (3 months)</SelectItem>
+ <SelectItem value="days:365">Older than 1 year</SelectItem>
  </SelectContent>
  </Select>
  </div>
@@ -131,7 +138,10 @@ export default function AuditLogsPage() {
  <Button 
  variant="destructive" 
  className="rounded-xl font-bold"
- onClick={() => purgeMutation.mutate(parseInt(purgeDays))}
+ onClick={() => {
+    const [unit, value] = purgePeriod.split(":");
+    purgeMutation.mutate({ [unit]: parseInt(value) });
+  }}
  disabled={purgeMutation.isPending}
  >
  {purgeMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}

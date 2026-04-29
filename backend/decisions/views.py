@@ -561,6 +561,14 @@ class MonthlyDecisionsReportView(generics.GenericAPIView):
             ).values('processing_time')
         }
         
+        # Log Audit
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.REPORT_GENERATED,
+            description=f"Generated Monthly Decisions Report for {month}/{year}",
+            entity_name=f"Report_{year}_{month}"
+        )
+        
         return Response(report)
 
 
@@ -591,5 +599,13 @@ class JudgeDecisionPerformanceView(generics.GenericAPIView):
                     avg_time=models.Avg('published_at - created_at')
                 ).values('avg_time').first()
             })
+        
+        # Log Audit
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.REPORT_GENERATED,
+            description="Generated Judge Decision Performance Report",
+            entity_name="Judge_Performance_Report"
+        )
         
         return Response(data)

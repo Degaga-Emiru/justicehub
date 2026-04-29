@@ -634,6 +634,14 @@ class UpcomingHearingsReportView(generics.GenericAPIView):
             'hearings': HearingCalendarSerializer(hearings, many=True).data
         }
         
+        # Log Audit
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.REPORT_GENERATED,
+            description=f"Generated Upcoming Hearings Report for next {days} days",
+            entity_name=f"Upcoming_Hearings_Report_{days}d"
+        )
+        
         return Response(report)
 
 
@@ -667,6 +675,14 @@ class JudgeHearingWorkloadView(generics.GenericAPIView):
                 'completed_hearings': completed,
                 'total': upcoming + completed
             })
+        
+        # Log Audit
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.REPORT_GENERATED,
+            description="Generated Judge Hearing Workload Report",
+            entity_name="Judge_Hearing_Workload_Report"
+        )
         
         return Response(data)
 

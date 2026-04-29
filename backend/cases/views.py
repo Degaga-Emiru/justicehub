@@ -219,6 +219,16 @@ class CaseViewSet(viewsets.ModelViewSet):
         # Default JSON handling
         return super().create(request, *args, **kwargs)
 
+    def perform_create(self, serializer):
+        case = serializer.save()
+        create_audit_log(
+            request=self.request,
+            action_type=AuditLog.ActionType.CASE_CREATED,
+            obj=case,
+            description=f"Case filed by {case.created_by.get_full_name() or case.created_by.email}",
+            entity_name=case.file_number or case.title
+        )
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         

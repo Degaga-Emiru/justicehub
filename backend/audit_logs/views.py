@@ -186,12 +186,18 @@ class AuditLogViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsAdminUser])
     def purge_old(self, request):
-        """Permanently delete logs older than X days"""
+        """Permanently delete logs older than X days or hours"""
         days = request.data.get('days')
-        if days is None:
-            return Response({"error": "days parameter required"}, status=400)
+        hours = request.data.get('hours')
+        
+        if days is None and hours is None:
+            return Response({"error": "days or hours parameter required"}, status=400)
             
-        cutoff = timezone.now() - timedelta(days=int(days))
+        if days is not None:
+            cutoff = timezone.now() - timedelta(days=float(days))
+        elif hours is not None:
+            cutoff = timezone.now() - timedelta(hours=float(hours))
+            
         old_logs = AuditLog.objects.filter(timestamp__lt=cutoff)
         count = old_logs.count()
         

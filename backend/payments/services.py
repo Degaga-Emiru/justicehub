@@ -9,6 +9,8 @@ from cases.constants import CaseStatus
 from cases.services import JudgeAssignmentService
 from notifications.services import create_notification
 from core.utils.email import send_email_template
+from audit_logs.services import create_audit_log
+from audit_logs.models import AuditLog
 from .models import Payment, Transaction
 import json
 import requests
@@ -134,6 +136,15 @@ class PaymentService:
         # 5. Send Email with payment link
         PaymentService._send_payment_required_email(payment)
         
+        # 6. Audit Log
+        create_audit_log(
+            action_type=AuditLog.ActionType.PAYMENT_INITIATED,
+            obj=payment,
+            description=f"Payment of ETB {amount} initiated for Case {case.file_number}",
+            user=user,
+            entity_name=payment.tx_ref
+        )
+        
         return payment
 
     @staticmethod
@@ -199,6 +210,15 @@ class PaymentService:
         # Email Confirmation
         PaymentService._send_confirmation_email(payment)
 
+        # Audit Log
+        create_audit_log(
+            action_type=AuditLog.ActionType.PAYMENT_COMPLETED,
+            obj=payment,
+            description=f"Chapa payment of ETB {payment.amount} verified and completed",
+            user=payment.user,
+            entity_name=payment.tx_ref
+        )
+
         # Trigger automatic judge assignment
         try:
             from cases.services import JudgeAssignmentService
@@ -252,6 +272,15 @@ class PaymentService:
                 message=f"Citizen {user.get_full_name()} submitted bank transfer proof for case {case.file_number or case.title}. Reference: {transaction_reference}. Please verify.",
                 case=case
             )
+
+        # Audit Log
+        create_audit_log(
+            action_type=AuditLog.ActionType.PAYMENT_INITIATED,
+            obj=payment,
+            description=f"Bank transfer proof submitted for {payment_amount} ETB. Ref: {transaction_reference}",
+            user=user,
+            entity_name=payment.tx_ref
+        )
 
         return payment
 
@@ -309,16 +338,16 @@ class PaymentService:
         )
 
         # 4. Audit Log
-        from cases.services import AuditService
-        AuditService.log_action(
+        create_audit_log(
+            action_type=AuditLog.ActionType.PAYMENT_VERIFIED,
+            obj=payment,
+            description=f"Manual payment confirmation for {amount} ETB",
             user=registrar,
-            action='PAYMENT_VERIFIED',
-            entity=case,
-            details={
-                'method': 'MANUAL',
-                'amount': str(amount),
-                'txn_id': transaction_id
-            }
+            changes={
+                'method': {'old': None, 'new': 'MANUAL'},
+                'txn_id': {'old': None, 'new': transaction_id}
+            },
+            entity_name=payment.tx_ref
         )
 
         # 5. Notifications
