@@ -37,9 +37,9 @@ export default function SignupPage() {
  {/* Decorative Elements */}
  <div className="absolute inset-0 -z-20">
  <img 
- src="https://images.unsplash.com/photo-1505664194779-8beaceb93744?q=80&w=2000" 
- alt="Court House" 
- className="w-full h-full object-cover opacity-50"
+ src="/lady_justice.jpg" 
+ alt="Lady Justice" 
+ className="w-full h-full object-cover opacity-90"
  />
  </div>
  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent -z-10"></div>

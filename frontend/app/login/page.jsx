@@ -37,7 +37,7 @@ export default function LoginPage() {
  {/* Left Branding Panel */}
  <div className="hidden lg:block relative overflow-hidden bg-black group">
  <img 
- src="/lady_justice.png" 
+ src="/lady_justice.jpg" 
  alt="Lady Justice" 
  className="absolute inset-0 w-full h-full object-cover transform scale-105 group-hover:scale-110 transition-transform duration-[20s] ease-out opacity-90"
  />

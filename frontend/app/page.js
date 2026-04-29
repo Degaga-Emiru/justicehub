@@ -114,10 +114,10 @@ export default function LandingPage() {
 
  {/* Hero Visual Mockup */}
  <div className="flex-1 w-full max-w-2xl lg:max-w-none relative animate-fade-up pl-0 lg:pl-10" style={{ animationDelay: "200ms", animationFillMode: "both" }}>
- <div className="relative rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden aspect-[4/3] border-[6px] border-white/40 dark:border-border group floating-glow">
+ <div className="relative rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden aspect-[4/5] border-[6px] border-white/40 dark:border-border group floating-glow">
  <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent mix-blend-overlay z-10 transition-colors duration-700"></div>
  <img
- src="/lady_justice.png"
+ src="/lady_justice.jpg"
  alt="Lady Justice"
  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
  />
@@ -238,7 +238,9 @@ export default function LandingPage() {
  </section>
 
  {/* 4. Features Section */}
- <section id="features" className="py-32 relative bg-muted/30 border-t">
+ <section id="features" className="py-32 relative bg-muted/30 border-t overflow-hidden">
+ <div className="absolute top-1/2 left-0 -z-10 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] -translate-x-1/2"></div>
+ 
  <div className="container mx-auto px-4 md:px-6">
  <div className="text-center mb-24 space-y-6 max-w-4xl mx-auto animate-fade-up">
  <h2 className="text-primary font-black tracking-[0.2em] uppercase text-xs flex items-center justify-center gap-4 font-display">
@@ -257,7 +259,23 @@ export default function LandingPage() {
  </p>
  </div>
 
- <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+ <div className="flex flex-col xl:flex-row gap-16 items-center">
+ <div className="xl:w-1/3 w-full group">
+ <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white/50 dark:border-border floating-glow aspect-[3/4]">
+ <img 
+ src="/high-tech-scales.jpg" 
+ alt="High Tech Scales of Justice" 
+ className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000"
+ />
+ <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+ <div className="absolute bottom-8 left-8 right-8">
+ <Badge className="mb-3 bg-primary text-white border-none">{t("popular")}</Badge>
+ <h4 className="text-white text-2xl font-black font-display tracking-tight">{t("secureFeature")} & {t("transparentFeature")}</h4>
+ </div>
+ </div>
+ </div>
+ 
+ <div className="xl:w-2/3 w-full grid md:grid-cols-2 gap-8">
  <FeatureCard
  icon={<FileText className="h-8 w-8" />}
  title={t("feat1Title")}
@@ -297,6 +315,62 @@ export default function LandingPage() {
  />
  </div>
  </div>
+ </div>
+ </section>
+
+ {/* About/Mission Section */}
+ <section id="about" className="py-32 bg-background relative overflow-hidden">
+ <div className="container mx-auto px-4 md:px-6">
+ <div className="flex flex-col lg:flex-row-reverse gap-20 items-center">
+ <div className="flex-1 space-y-10 animate-fade-up">
+ <div className="space-y-6">
+ <h2 className="text-primary font-black tracking-widest uppercase text-xs flex items-center gap-3 font-display">
+ <span className="h-px w-10 bg-primary"></span>
+ {t("aboutUs")}
+ </h2>
+ <h3 className="text-4xl md:text-5xl lg:text-6xl font-black font-display tracking-tight leading-tight">
+ Our Mission for <span className="text-primary">Justice</span>
+ </h3>
+ <p className="text-xl text-muted-foreground leading-relaxed font-medium">
+ JusticeHub is dedicated to modernizing the judicial infrastructure of Ethiopia, starting with local courts like the <span className="text-foreground font-bold">Hawassa Primary Court</span>. We believe that technology is the key to making justice faster, more transparent, and accessible to every citizen.
+ </p>
+ </div>
+ 
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+ <div className="p-6 rounded-2xl bg-muted/30 border border-border/50">
+ <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+ <Globe className="h-6 w-6" />
+ </div>
+ <h4 className="text-xl font-bold mb-2">Transparency</h4>
+ <p className="text-muted-foreground text-sm font-medium">Full visibility into case status and judicial proceedings for all parties involved.</p>
+ </div>
+ <div className="p-6 rounded-2xl bg-muted/30 border border-border/50">
+ <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">
+ <ShieldCheck className="h-6 w-6" />
+ </div>
+ <h4 className="text-xl font-bold mb-2">Efficiency</h4>
+ <p className="text-muted-foreground text-sm font-medium">Reducing the backlog of cases through automated scheduling and digital filing.</p>
+ </div>
+ </div>
+ </div>
+
+ <div className="flex-1 w-full relative group">
+ <div className="absolute inset-0 bg-primary/20 rounded-[3rem] blur-2xl opacity-30 group-hover:opacity-50 transition-opacity"></div>
+ <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white/20 dark:border-border">
+ <img 
+ src="/hawassa-primary-court.jpeg" 
+ alt="Hawassa Primary Court" 
+ className="w-full h-[600px] object-cover transform group-hover:scale-105 transition-transform duration-1000"
+ />
+ <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+ <div className="absolute bottom-10 left-10 text-white">
+ <p className="text-sm font-black uppercase tracking-[0.2em] text-primary-foreground/80 mb-2">Pioneering Location</p>
+ <h4 className="text-3xl font-black font-display">Hawassa Primary Court</h4>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
  </section>
 
  {/* 5. Stats Section */}
@@ -327,63 +401,120 @@ export default function LandingPage() {
  </section>
 
  {/* 6. CTA Section */}
- <section className="py-40 relative overflow-hidden bg-background">
- <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background"></div>
- <div className="absolute -top-1/2 -right-1/4 w-full max-w-4xl h-[1000px] bg-primary/15 blur-[150px] rounded-full mix-blend-multiply opacity-60 animate-pulse-slow"></div>
- <div className="absolute -bottom-1/2 -left-1/4 w-full max-w-4xl h-[1000px] bg-blue-500/10 blur-[150px] rounded-full mix-blend-multiply opacity-60"></div>
-
- <div className="container mx-auto px-4 md:px-6 relative z-10 text-center space-y-12 max-w-5xl animate-fade-up">
- <h2 className="text-6xl md:text-8xl lg:text-9xl font-black font-display tracking-tight text-foreground leading-[0.95] drop-shadow-sm">
- {t("ctaTitle")}
+ <section className="py-32 relative overflow-hidden bg-background">
+ <div className="container mx-auto px-4 md:px-6 relative z-10">
+ <div className="bg-gradient-to-br from-primary/95 via-blue-900 to-primary p-12 md:p-20 rounded-[3rem] text-white text-center shadow-2xl relative overflow-hidden group border border-white/10">
+ {/* Background decorative elements */}
+ <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-1000"></div>
+ <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
+ <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] mix-blend-overlay"></div>
+ 
+ <div className="max-w-3xl mx-auto space-y-8 relative z-10 animate-fade-up">
+ <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/90 text-xs font-black uppercase tracking-[0.2em] font-display mb-2">
+ <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+ {t("heroBadge")}
+ </div>
+ 
+ <h2 className="text-4xl md:text-6xl font-black font-display tracking-tight leading-[1.1] drop-shadow-sm">
+ Experience the Future of <br />
+ <span className="text-blue-300 drop-shadow-md">Digital Justice</span>
  </h2>
- <p className="text-2xl md:text-3xl text-muted-foreground font-medium max-w-3xl mx-auto leading-relaxed">
- {t("ctaDesc")}
+ 
+ <p className="text-lg md:text-xl text-white/80 font-medium leading-relaxed max-w-2xl mx-auto">
+ Join the growing community of Ethiopian legal professionals and citizens using our secure, transparent digital infrastructure.
  </p>
- <div className="flex flex-col sm:flex-row justify-center gap-8 pt-10">
- <Link href="/signup" className="w-full sm:w-auto">
- <Button size="lg" className="h-20 px-16 text-xl font-bold rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.15)] shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-2 transition-all duration-500 bg-gradient-to-r from-primary via-blue-600 to-primary text-white w-full">
- {t("ctaButton1")} <ArrowRight className="ml-3 h-8 w-8" />
+ 
+ <div className="flex flex-col sm:flex-row justify-center gap-6 pt-6">
+ <Link href="/signup">
+ <Button size="lg" className="bg-white text-primary hover:bg-blue-50 h-16 px-10 text-lg font-bold rounded-full shadow-2xl shadow-black/20 transition-all hover:-translate-y-1 active:scale-95 w-full sm:w-auto">
+ {t("ctaButton1")} <ArrowRight className="ml-2 h-5 w-5" />
  </Button>
  </Link>
- <Link href="/login" className="w-full sm:w-auto">
- <Button size="lg" variant="outline" className="h-20 px-16 text-xl font-bold rounded-full border-2 bg-background shadow-sm border-border hover:bg-muted/50 transition-all duration-500 w-full">
+ <Link href="/login">
+ <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 h-16 px-10 text-lg font-bold rounded-full transition-all hover:-translate-y-1 active:scale-95 w-full sm:w-auto">
  {t("ctaButton2")}
  </Button>
  </Link>
+ </div>
+ 
+ <div className="pt-8 flex items-center justify-center gap-8 text-white/60 text-xs font-bold uppercase tracking-widest">
+ <div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-400" /> SECURE</div>
+ <div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-400" /> TRANSPARENT</div>
+ <div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-emerald-400" /> IMMUTABLE</div>
+ </div>
+ </div>
  </div>
  </div>
  </section>
  </main>
 
- <footer className="w-full border-t py-24 bg-background border-border/40 relative">
+ <footer className="w-full border-t py-24 bg-background border-border/40 relative overflow-hidden">
+ <div className="absolute top-0 right-0 -z-10 w-[400px] h-[400px] bg-primary/5 rounded-full blur-[100px]"></div>
  <div className="container mx-auto px-4 md:px-6">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-24">
- <div className="space-y-8">
- <div className="flex items-center gap-4 group cursor-pointer">
+ <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-24">
+ {/* Column 1: Brand */}
+ <div className="col-span-2 md:col-span-1 space-y-6">
+ <div className="flex items-center gap-3 group cursor-pointer">
  <div className="bg-gradient-to-br from-primary to-blue-500 p-2 rounded-lg text-white shadow-lg group-hover:scale-110 transition-transform">
- <Scale className="h-6 w-6" />
+ <Scale className="h-5 w-5" />
  </div>
- <span className="text-2xl font-black font-display tracking-tight">{t("justiceHub")}</span>
+ <span className="text-xl font-black font-display tracking-tight">{t("justiceHub")}</span>
  </div>
- <p className="text-muted-foreground font-medium text-lg leading-relaxed max-w-sm">
+ <p className="text-muted-foreground font-medium text-sm leading-relaxed">
  {t("footerDesc")}
  </p>
- <div className="flex gap-6">
- <div className="h-12 w-12 rounded-xl bg-background shadow-sm border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
- <Building className="h-6 w-6 group-hover:rotate-12 transition-transform" />
+ <div className="flex gap-4">
+ <div className="h-10 w-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
+ <Building className="h-5 w-5 group-hover:rotate-12 transition-transform" />
  </div>
- <div className="h-12 w-12 rounded-xl bg-background shadow-sm border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
- <Globe className="h-6 w-6 group-hover:rotate-12 transition-transform" />
- </div>
+ <div className="h-10 w-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
+ <Globe className="h-5 w-5 group-hover:rotate-12 transition-transform" />
  </div>
  </div>
  </div>
 
+ {/* Column 2: Platform */}
+ <div className="space-y-6">
+ <h4 className="text-sm font-black uppercase tracking-widest text-foreground">{t("platform")}</h4>
+ <ul className="space-y-4">
+ {["eFiling", "caseSearch", "analytics", "integrations"].map((item) => (
+ <li key={item}>
+ <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
+ </li>
+ ))}
+ </ul>
+ </div>
+
+ {/* Column 3: Resources */}
+ <div className="space-y-6">
+ <h4 className="text-sm font-black uppercase tracking-widest text-foreground">{t("resources")}</h4>
+ <ul className="space-y-4">
+ {["helpCenter", "documentation", "devApi", "community"].map((item) => (
+ <li key={item}>
+ <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
+ </li>
+ ))}
+ </ul>
+ </div>
+
+ {/* Column 4: Company */}
+ <div className="space-y-6">
+ <h4 className="text-sm font-black uppercase tracking-widest text-foreground">{t("company")}</h4>
+ <ul className="space-y-4">
+ {["aboutUs", "careers", "privacyPolicy", "termsOfService"].map((item) => (
+ <li key={item}>
+ <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
+ </li>
+ ))}
+ </ul>
+ </div>
+ </div>
+
  <div className="pt-12 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-8">
- <p className="text-base font-medium text-muted-foreground/60">
+ <p className="text-sm font-medium text-muted-foreground/60">
  &copy; {new Date().getFullYear()} JusticeHub. {t("footerRights")}
  </p>
- <div className="flex items-center gap-6 text-base font-semibold text-muted-foreground/80">
+ <div className="flex items-center gap-6 text-sm font-semibold text-muted-foreground/80">
  <span className="flex items-center gap-2">Built with <span className="text-primary animate-pulse">✦</span> in Ethiopia</span>
  </div>
  </div>
