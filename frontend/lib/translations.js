@@ -108,6 +108,7 @@ export const translations = {
         navSearch: "Case Search",
         navHearings: "Hearings",
         navAuditLogs: "Audit Logs",
+        navClosedCases: "Closed Cases",
         navAllCases: "Cases",
         navCategories: "Categories",
         navJudges: "Judges",

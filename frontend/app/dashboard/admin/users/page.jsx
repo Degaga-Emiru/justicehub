@@ -30,7 +30,11 @@ export default function UserManagementPage() {
  const [createSuccess, setCreateSuccess] = useState("");
  const [isSubmitting, setIsSubmitting] = useState(false);
  const { t } = useLanguage();
- const router = useRouter();
+  const router = useRouter();
+
+  // Role and status filter state
+  const [filterRole, setFilterRole] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("ALL");
 
  // Change Role state
  const [isRoleOpen, setIsRoleOpen] = useState(false);
@@ -46,20 +50,20 @@ export default function UserManagementPage() {
  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
  const { data: users, isLoading, refetch } = useQuery({
- queryKey: ["users"],
- queryFn: () => fetchUsers(),
+  queryKey: ["users", filterRole, filterStatus, searchTerm],
+  queryFn: () => fetchUsers({
+  role: filterRole !== "ALL" ? filterRole : "",
+  status: filterStatus !== "ALL" ? filterStatus : "",
+  search: searchTerm
+  }),
  });
 
  const { data: categories } = useQuery({
- queryKey: ["categories"],
- queryFn: () => fetchCategories(),
+  queryKey: ["categories"],
+  queryFn: () => fetchCategories(),
  });
 
- const filteredUsers = users?.filter(u =>
- (u.full_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
- (u.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
- (u.role || "").toLowerCase().includes(searchTerm.toLowerCase())
- ) || [];
+ const filteredUsers = users || [];
 
  const handleCreateUser = async () => {
  setCreateError("");
@@ -154,26 +158,45 @@ export default function UserManagementPage() {
  };
 
  const handleExportCSV = () => {
- if (!users || users.length === 0) return;
- const headers = ["First Name", "Last Name", "Email", "Role", "Phone Number", "Status", "Joined"];
- const csvData = users.map(u => [
- `"${u.first_name || ''}"`,
- `"${u.last_name || ''}"`,
- `"${u.email || ''}"`,
- u.role,
- `"${u.phone_number || ''}"`,
- u.is_active !== false ? "Active" : "Inactive",
- u.date_joined ? new Date(u.date_joined).toISOString().split('T')[0] : ""
- ]);
- const csvContent = [headers.join(","), ...csvData.map(row => row.join(","))].join("\n");
- const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
- const url = URL.createObjectURL(blob);
- const link = document.createElement("a");
- link.setAttribute("href", url);
- link.setAttribute("download", `justicehub_users_${new Date().toISOString().split('T')[0]}.csv`);
- document.body.appendChild(link);
- link.click();
- document.body.removeChild(link);
+  const filters = {
+  role: filterRole !== "ALL" ? filterRole : "",
+  status: filterStatus !== "ALL" ? filterStatus : "",
+  search: searchTerm
+  };
+  const url = getAdminUsersExportUrl(filters);
+  
+  const token = localStorage.getItem('access_token');
+  if (!token) {
+  toast.error("Authentication required for export.");
+  return;
+  }
+  
+  toast.promise(
+  fetch(url, {
+   headers: {
+   'Authorization': `Bearer ${token}`
+   }
+  })
+  .then(res => {
+   if (!res.ok) throw new Error("Export failed");
+   return res.blob();
+  })
+  .then(blob => {
+   const downloadUrl = window.URL.createObjectURL(blob);
+   const link = document.createElement("a");
+   link.href = downloadUrl;
+   link.download = `justicehub_users_${new Date().toISOString().split('T')[0]}.csv`;
+   document.body.appendChild(link);
+   link.click();
+   document.body.removeChild(link);
+   window.URL.revokeObjectURL(downloadUrl);
+  }),
+  {
+   loading: 'Preparing export...',
+   success: 'Users exported successfully!',
+   error: 'Failed to export users.'
+  }
+  );
  };
 
  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -215,15 +238,44 @@ export default function UserManagementPage() {
 
  {/* Controls */}
  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
- <div className="relative w-full md:max-w-md group">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
- <Input
- placeholder={t("searchUsers")}
- className="pl-11 h-12 bg-muted/30 border-border rounded-2xl bg-background shadow-sm border-border focus-visible:ring-primary/50 focus-visible:border-primary transition-all font-medium"
- value={searchTerm}
- onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
- />
- </div>
+  <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto items-center">
+  <div className="relative w-full md:max-w-xs group">
+  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+  <Input
+  placeholder={t("searchUsers")}
+  className="pl-11 h-12 bg-muted/30 border-border rounded-2xl bg-background shadow-sm border-border focus-visible:ring-primary/50 focus-visible:border-primary transition-all font-medium"
+  value={searchTerm}
+  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+  />
+  </div>
+  
+  <Select value={filterRole} onValueChange={(val) => { setFilterRole(val); setCurrentPage(1); }}>
+  <SelectTrigger className="h-12 w-full md:w-40 rounded-2xl border-border bg-background shadow-sm font-bold">
+   <SelectValue placeholder="All Roles" />
+  </SelectTrigger>
+  <SelectContent>
+   <SelectItem value="ALL">All Roles</SelectItem>
+   <SelectItem value="ADMIN">Admins</SelectItem>
+   <SelectItem value="JUDGE">Judges</SelectItem>
+   <SelectItem value="REGISTRAR">Registrars</SelectItem>
+   <SelectItem value="CLERK">Clerks</SelectItem>
+   <SelectItem value="LAWYER">Lawyers</SelectItem>
+   <SelectItem value="DEFENDANT">Defendants</SelectItem>
+   <SelectItem value="CITIZEN">Citizens</SelectItem>
+  </SelectContent>
+  </Select>
+
+  <Select value={filterStatus} onValueChange={(val) => { setFilterStatus(val); setCurrentPage(1); }}>
+  <SelectTrigger className="h-12 w-full md:w-40 rounded-2xl border-border bg-background shadow-sm font-bold">
+   <SelectValue placeholder="All Status" />
+  </SelectTrigger>
+  <SelectContent>
+   <SelectItem value="ALL">All Status</SelectItem>
+   <SelectItem value="active">Active</SelectItem>
+   <SelectItem value="inactive">Inactive</SelectItem>
+  </SelectContent>
+  </Select>
+  </div>
  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/20 border border-border">
  <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Directory size:</span>
  <span className="text-sm font-black text-foreground">{filteredUsers.length}</span>

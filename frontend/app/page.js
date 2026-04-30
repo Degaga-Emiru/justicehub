@@ -121,39 +121,6 @@ export default function LandingPage() {
  alt="Lady Justice"
  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000 ease-out"
  />
- {/* Glassmorphism overlay card */}
- <div className="absolute bottom-6 left-6 right-6 p-5 sm:p-6 rounded-2xl bg-background shadow-sm border-border z-20 flex items-center justify-between group-hover:translate-y-[-4px] transition-transform duration-500">
- <div>
- <h4 className="font-bold font-display text-foreground text-lg">{t("activeCases")}</h4>
- <p className="text-sm font-medium text-muted-foreground flex items-center gap-1 mt-1">
- <TrendingUp className="h-3.5 w-3.5 text-emerald-500" /> {t("resolutionRate")} - 99%
- </p>
- </div>
- <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 text-white flex items-center justify-center shadow-lg shadow-primary/30">
- <LayoutDashboard className="h-6 w-6" />
- </div>
- </div>
- </div>
-
- {/* Floating Elements */}
- <div className="absolute -left-6 sm:-left-12 top-1/4 bg-background shadow-sm border-border p-4 rounded-2xl shadow-xl shadow-primary/10 flex items-center gap-4 animate-[fade-up_1s_ease-out_1s_both] z-30 hover:scale-105 transition-transform duration-300">
- <div className="bg-emerald-100 dark:bg-emerald-500/20 p-2.5 rounded-full shadow-inner">
- <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
- </div>
- <div>
- <div className="text-sm font-bold font-display">{t("caseApproved")}</div>
- <div className="text-xs font-medium text-muted-foreground">{t("justNow")}</div>
- </div>
- </div>
-
- <div className="absolute -right-4 sm:-right-8 bottom-1/3 bg-background shadow-sm border-border p-4 rounded-2xl shadow-xl shadow-secondary/10 flex items-center gap-4 animate-[fade-up_1s_ease-out_1.5s_both] z-30 hover:scale-105 transition-transform duration-300">
- <div className="bg-secondary p-2.5 rounded-full shadow-inner">
- <FileText className="h-5 w-5 text-secondary-foreground" />
- </div>
- <div>
- <div className="text-sm font-bold font-display">{t("documentFiled")}</div>
- <div className="text-xs font-medium text-muted-foreground">{t("twoMinsAgo")}</div>
- </div>
  </div>
  </div>
  </div>
@@ -225,7 +192,7 @@ export default function LandingPage() {
  <img 
  src="/legal_gavel.png" 
  alt="Gavel and Legal Documents" 
- className="object-cover aspect-square md:aspect-[4/3] w-full transform group-hover:scale-110 transition-transform duration-1000 ease-out"
+ className="object-cover w-full transform group-hover:scale-110 transition-transform duration-1000 ease-out" style={{ height: "700px", minHeight: "500px", objectPosition: "center" }}
  />
  <div className="absolute bottom-10 left-10 z-20 space-y-2">
  <Badge className="bg-muted backdrop-blur-md text-white border-white/30 text-xs uppercase font-black tracking-widest">{t("professional")}</Badge>
@@ -259,13 +226,14 @@ export default function LandingPage() {
  </p>
  </div>
 
- <div className="flex flex-col xl:flex-row gap-16 items-center">
+ <div className="flex flex-col xl:flex-row gap-16 items-stretch">
  <div className="xl:w-1/3 w-full group">
- <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white/50 dark:border-border floating-glow aspect-[3/4]">
+ <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl border-8 border-white/50 dark:border-border floating-glow ">
  <img 
  src="/high-tech-scales.jpg" 
  alt="High Tech Scales of Justice" 
- className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000"
+ className="w-full object-cover transform group-hover:scale-110 transition-transform duration-1000"
+  style={{ height: "700px", minHeight: "500px", objectPosition: "center" }}
  />
  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
  <div className="absolute bottom-8 left-8 right-8">

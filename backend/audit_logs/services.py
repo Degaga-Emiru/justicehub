@@ -9,7 +9,8 @@ def create_audit_log(
     description="", 
     changes=None, 
     user=None,
-    entity_name=None
+    entity_name=None,
+    is_suspicious=False
 ):
     """
     Comprehensive service function to create an audit log.
@@ -19,12 +20,14 @@ def create_audit_log(
     - ContentType and entity ID
     - User email and role snapshots
     - Field-level changes
+    - Security suspicious flags
     """
     log_data = {
         'action_type': action_type,
         'action_status': action_status,
         'description': description,
         'changes': changes,
+        'is_suspicious': is_suspicious,
     }
 
     # Capture User and Request Metadata

@@ -112,6 +112,8 @@ class AuditLog(models.Model):
     # Field-level change tracking
     changes = models.JSONField(null=True, blank=True) # {"field": {"old": val, "new": val}}
     
+    is_suspicious = models.BooleanField(default=False, db_index=True)
+    
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

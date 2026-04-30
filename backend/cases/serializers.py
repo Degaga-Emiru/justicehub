@@ -138,6 +138,11 @@ class JudgeProfileSerializer(serializers.ModelSerializer):
         required=False
     )
     specializations = CaseCategorySerializer(many=True, read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    closed_cases_count = serializers.SerializerMethodField()
+    workload_percentage = serializers.SerializerMethodField()
+    average_resolution_time = serializers.SerializerMethodField()
+    load_ratio = serializers.SerializerMethodField()
     active_cases_count = serializers.SerializerMethodField()
     can_take_more = serializers.SerializerMethodField()
     
@@ -145,14 +150,48 @@ class JudgeProfileSerializer(serializers.ModelSerializer):
         model = JudgeProfile
         fields = [
             'id', 'user', 'user_details', 'specializations', 'specialization_ids',
-            'max_active_cases', 'active_cases_count', 'can_take_more',
+            'max_active_cases', 'active_cases_count', 'closed_cases_count',
+            'workload_percentage', 'average_resolution_time', 'load_ratio',
+            'status', 'status_display', 'can_take_more',
             'bar_certificate_number', 'years_of_experience', 'is_active',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'active_cases_count', 'can_take_more']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'active_cases_count', 'can_take_more', 'status_display']
 
     def get_active_cases_count(self, obj):
         return obj.get_active_case_count()
+
+    def get_closed_cases_count(self, obj):
+        return JudgeAssignment.objects.filter(
+            judge=obj.user,
+            case__status='CLOSED'
+        ).count()
+
+    def get_workload_percentage(self, obj):
+        active = obj.get_active_case_count()
+        if obj.max_active_cases > 0:
+            return min(100, (active / obj.max_active_cases) * 100)
+        return 0
+
+    def get_average_resolution_time(self, obj):
+        from django.db.models import Avg, F
+        stats = JudgeAssignment.objects.filter(
+            judge=obj.user,
+            case__status='CLOSED'
+        ).annotate(
+            duration=F('case__closed_date') - F('case__filing_date')
+        ).aggregate(Avg('duration'))
+        
+        avg_duration = stats['duration__avg']
+        if avg_duration:
+            return avg_duration.days
+        return 0
+
+    def get_load_ratio(self, obj):
+        active = obj.get_active_case_count()
+        if active > 0:
+            return round(obj.max_active_cases / active, 2)
+        return obj.max_active_cases # If 0 cases, ratio is max capacity
 
     def get_can_take_more(self, obj):
         return obj.can_take_more_cases()
@@ -245,6 +284,7 @@ class CaseListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     category_code = serializers.CharField(source='category.code', read_only=True)
     category_fee = serializers.DecimalField(source='category.fee', max_digits=10, decimal_places=2, read_only=True)
+    parent_category_name = serializers.CharField(source='category.parent.name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
     client_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
@@ -256,9 +296,10 @@ class CaseListSerializer(serializers.ModelSerializer):
         model = Case
         fields = [
             'id', 'title', 'description', 'file_number', 'category_name', 'category_code', 'category_fee',
-            'status', 'status_display', 'priority', 'priority_display',
-            'client_name', 'client_email', 'assigned_judge', 'created_at', 'defendant_name',
-            'defendant_address', 'rejection_reason', 'defendant'
+            'parent_category_name', 'status', 'status_display', 'priority', 'priority_display',
+            'client_name', 'client_email', 'assigned_judge', 'created_at', 'closed_date',
+            'defendant_name', 'defendant_address', 'rejection_reason', 'defendant',
+            'has_defendant_responded', 'responded_at'
         ]
 
     def to_representation(self, instance):
@@ -410,7 +451,7 @@ class CaseDetailSerializer(serializers.ModelSerializer):
             'reviewed_by', 'reviewed_at', 'rejection_reason',
             'filing_date', 'closed_date', 'created_at', 'updated_at',
             'documents', 'document_count', 'current_assignment', 'days_pending',
-            'hearings', 'decisions'
+            'hearings', 'decisions', 'has_defendant_responded', 'responded_at'
         ]
         read_only_fields = [
             'id', 'file_number', 'filing_date',

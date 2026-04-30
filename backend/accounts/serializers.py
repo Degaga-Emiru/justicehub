@@ -338,18 +338,27 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    judge_specializations = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'id', 'first_name', 'last_name', 'full_name', 'email', 
             'phone_number', 'role', 'is_verified', 'is_active', 
-            'date_joined', 'last_login', 'address', 'profile_picture'
+            'date_joined', 'last_login', 'address', 'profile_picture',
+            'judge_specializations'
         ]
         read_only_fields = ['id', 'email', 'role', 'is_verified', 'date_joined', 'last_login']
     
     def get_full_name(self, obj):
         return obj.get_full_name()
+        
+    def get_judge_specializations(self, obj):
+        if obj.role == 'JUDGE':
+            profile = getattr(obj, 'judge_profile', None)
+            if profile:
+                return list(profile.specializations.values_list('name', flat=True))
+        return []
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):

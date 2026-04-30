@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import Q
-from .models import Case, CaseDocument, CaseDocumentVersion, CaseActionRequest
+from django.utils import timezone
+from .models import Case, CaseDocument, CaseDocumentVersion, CaseActionRequest, CaseCategory
 from .serializers import (
     DefendantCaseListSerializer, 
     DefendantCaseDetailSerializer,
@@ -16,7 +17,7 @@ from .serializers import (
 from .permissions import IsDefendantOfCase
 from decisions.models import Decision, DecisionDelivery
 from decisions.serializers import DecisionSerializer
-from notifications.services import create_notification
+from notifications.services import create_notification, notify_case_participants
 
 class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -59,16 +60,42 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
         court documents, legal filings, reports, judgments
         """
         case = self.get_object()
-        # General documents = everything that is NOT classified as EVIDENCE and NOT by the current user
-        # or explicitly tagged as court docs.
-        # We also filter out confidential docs unless the user has permission (handled by serializer usually, but good to filter here too)
-        docs = case.documents.filter(
-            Q(document_type__in=['ORDER', 'JUDGMENT', 'PETITION', 'AFFIDAVIT', 'OTHER']) |
-            Q(uploaded_by__role__in=['JUDGE', 'REGISTRAR', 'CLERK'])
-        ).exclude(uploaded_by=request.user).distinct()
         
-        serializer = CaseDocumentSerializer(docs, many=True, context={'request': request})
-        return Response(serializer.data)
+        # We include:
+        # 1. Documents where the defendant is the author
+        # 2. Non-confidential documents from others
+        # 3. Decision documents if published
+        
+        docs = case.documents.filter(
+            Q(uploaded_by=request.user) |
+            Q(is_confidential=False)
+        ).distinct()
+        
+        data = CaseDocumentSerializer(docs, many=True, context={'request': request}).data
+        
+        # Add published decision if it exists
+        decision = Decision.objects.filter(case=case, status='PUBLISHED').first()
+        if decision:
+            # We wrap decision in a similar format as CaseDocument for the frontend
+            # or the frontend can handle it separately.
+            # Let's add it to the list as a special type.
+            decision_data = {
+                'document_id': f"decision-{decision.id}",
+                'document_type': 'JUDGMENT',
+                'document_type_display': 'Final Judgment',
+                'description': f"Final Decision: {decision.title}",
+                'uploaded_by_name': decision.judge.get_full_name(),
+                'uploaded_by_role': 'JUDGE',
+                'created_at': decision.published_at or decision.created_at,
+                'latest_version': {
+                    'file_url': request.build_absolute_uri(decision.file.url) if decision.file else None,
+                    'uploaded_at': decision.published_at or decision.created_at,
+                    'status': 'APPROVED'
+                }
+            }
+            data.append(decision_data)
+            
+        return Response(data)
 
     @action(detail=True, methods=['post'], url_path='submit-response', parser_classes=[MultiPartParser, FormParser, JSONParser])
     @transaction.atomic
@@ -101,8 +128,12 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
                     status='PENDING'
                 )
             
+            # Update Case Status
+            case.has_defendant_responded = True
+            case.responded_at = timezone.now()
+            case.save()
+
             # Notify Plaintiff & Judge (if assigned)
-            from notifications.services import notify_case_participants
             notify_case_participants(
                 case=case,
                 type='DEFENSE_RESPONSE_SUBMITTED',

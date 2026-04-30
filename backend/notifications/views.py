@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status, generics, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -18,9 +18,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+class NotificationViewSet(mixins.RetrieveModelMixin,
+                          mixins.ListModelMixin,
+                          mixins.DestroyModelMixin,
+                          viewsets.GenericViewSet):
     """
-    ViewSet for viewing notifications
+    ViewSet for viewing and deleting notifications
     """
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
@@ -32,6 +35,22 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
             user=self.request.user
         ).select_related('case').order_by('-created_at')
     
+    @action(detail=False, methods=['post'])
+    def bulk_delete(self, request):
+        """
+        Delete multiple notifications at once
+        """
+        notification_ids = request.data.get('notification_ids', [])
+        if not notification_ids:
+            return Response({'error': 'No notification IDs provided'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        deleted = Notification.objects.filter(
+            id__in=notification_ids,
+            user=request.user
+        ).delete()
+        
+        return Response({'deleted': deleted[0]})
+
     @action(detail=False, methods=['post'])
     def mark_read(self, request):
         """

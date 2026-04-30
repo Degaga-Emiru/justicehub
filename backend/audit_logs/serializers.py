@@ -14,7 +14,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
             'action_type', 'action_type_display', 'action_status', 'action_status_display',
             'description', 'content_type', 'content_type_name', 'object_id', 'entity_name',
             'ip_address', 'user_agent', 'request_method', 'request_path',
-            'changes', 'timestamp'
+            'changes', 'is_suspicious', 'timestamp'
         ]
         read_only_fields = fields
 

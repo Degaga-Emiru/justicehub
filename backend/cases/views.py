@@ -27,6 +27,7 @@ from .permissions import (
     IsRegistrar, IsJudge, IsAssignedJudge, IsAdmin,
     CanReviewCases, CanManageDocuments, IsPartyToCase
 )
+from accounts.permissions import IsClerk
 from .filters import CaseFilter
 from .pagination import StandardResultsSetPagination
 from .services import JudgeAssignmentService, CaseReviewService
@@ -762,6 +763,18 @@ class CitizenDocumentViewSet(viewsets.ViewSet):
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             
         from django.http import FileResponse
+        
+        # Log Document Download
+        from audit_logs.utils import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_DOWNLOADED,
+            obj=document,
+            description=f"User {user.get_full_name()} downloaded {document.get_document_type_display()} (v{version.version_number})",
+            entity_name=version.file_name
+        )
+        
         return FileResponse(version.file.open('rb'), as_attachment=True, filename=version.file_name)
 
     def destroy(self, request, pk=None):
@@ -821,6 +834,18 @@ class JudgeDocumentViewSet(viewsets.ViewSet):
         version.status = 'APPROVED'
         version.review_notes = request.data.get('notes', '')
         version.save()
+        
+        # Log Document Approved
+        from audit_logs.utils import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_APPROVED,
+            obj=document,
+            description=f"Judge {request.user.get_full_name()} approved {document.get_document_type_display()} (v{version.version_number})",
+            entity_name=version.file_name
+        )
+        
         return Response({"message": "Document version approved"})
 
     @action(detail=True, methods=['post'], url_path='reject')
@@ -838,6 +863,18 @@ class JudgeDocumentViewSet(viewsets.ViewSet):
         version.status = 'REJECTED'
         version.review_notes = reason
         version.save()
+        
+        # Log Document Rejected
+        from audit_logs.utils import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_REJECTED,
+            obj=document,
+            description=f"Judge {request.user.get_full_name()} rejected {document.get_document_type_display()} (v{version.version_number}). Reason: {reason}",
+            entity_name=version.file_name
+        )
+        
         return Response({"message": "Document version rejected"})
 
     @action(detail=True, methods=['post'], url_path='restore')
@@ -854,6 +891,17 @@ class JudgeDocumentViewSet(viewsets.ViewSet):
         document.versions.update(is_active=False)
         version_to_restore.is_active = True
         version_to_restore.save()
+        
+        # Log Version Restored
+        from audit_logs.utils import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_RESTORED,
+            obj=document,
+            description=f"Judge {request.user.get_full_name()} restored {document.get_document_type_display()} to v{version_to_restore.version_number}",
+            entity_name=version_to_restore.file_name
+        )
         
         return Response({"message": f"Version {version_to_restore.version_number} restored"})
 
@@ -929,8 +977,81 @@ class JudgeProfileViewSet(viewsets.ModelViewSet):
     """
     queryset = JudgeProfile.objects.all().select_related('user')
     serializer_class = JudgeProfileSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated, IsAdmin]
+        else:
+            permission_classes = [IsAuthenticated, IsAdmin | IsRegistrar | IsClerk]
+        return [permission() for permission in permission_classes]
+    
+    def perform_create(self, serializer):
+        profile = serializer.save()
+        from audit_logs.services import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=self.request,
+            action_type=AuditLog.ActionType.USER_UPDATED,
+            obj=profile.user,
+            description=f"Admin created judge profile for {profile.user.email}",
+            entity_name=profile.user.email
+        )
+
+    def perform_update(self, serializer):
+        from audit_logs.services import track_model_changes, create_audit_log
+        from audit_logs.models import AuditLog
+        from notifications.services import create_notification
+        
+        old_instance = self.get_object()
+        old_specializations = set(old_instance.specializations.values_list('id', flat=True))
+        
+        profile = serializer.save()
+        new_specializations = set(profile.specializations.values_list('id', flat=True))
+        
+        # Track important fields
+        tracked_fields = ['max_active_cases', 'is_active', 'years_of_experience', 'status']
+        changes = track_model_changes(old_instance, profile, tracked_fields)
+        
+        # Specialization changes
+        added = new_specializations - old_specializations
+        removed = old_specializations - new_specializations
+        
+        if added or removed:
+            changes['specializations'] = {
+                'added': list(added),
+                'removed': list(removed)
+            }
+            
+            # Send notifications
+            if added:
+                cats = CaseCategory.objects.filter(id__in=added)
+                cat_names = ", ".join([c.name for c in cats])
+                create_notification(
+                    user=profile.user,
+                    type='SYSTEM',
+                    title='New Specializations Assigned',
+                    message=f"You have been assigned to new case categories: {cat_names}"
+                )
+            
+            if removed:
+                cats = CaseCategory.objects.filter(id__in=removed)
+                cat_names = ", ".join([c.name for c in cats])
+                create_notification(
+                    user=profile.user,
+                    type='SYSTEM',
+                    title='Specializations Removed',
+                    message=f"You have been removed from the following case categories: {cat_names}"
+                )
+        
+        create_audit_log(
+            request=self.request,
+            action_type=AuditLog.ActionType.USER_UPDATED,
+            obj=profile.user,
+            description=f"Admin updated judge profile for {profile.user.email}",
+            changes=changes,
+            entity_name=profile.user.email
+        )
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
     def available(self, request):
@@ -1292,19 +1413,19 @@ class ExportCasesCSVView(generics.GenericAPIView):
                 current_judge.judge.get_full_name() if current_judge else ''
             ])
         
-        # Log Document Downloaded
-        # Note: 'instance' and 'file_name' are not defined in this context.
-        # This log entry might be intended for a single document download,
-        # not a bulk CSV export.
-        # For a CSV export, you might log the type of report downloaded.
-        # create_audit_log(
-        #     request=request,
-        #     action_type=AuditLog.ActionType.DOCUMENT_DOWNLOADED,
-        #     obj=instance, # Undefined
-        #     description=f"Document {instance.file_name} downloaded", # Undefined
-        #     entity_name=instance.file_name # Undefined
-        # )
-
+        # Log Export
+        from audit_logs.utils import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.REPORT_DOWNLOADED,
+            details={
+                "format": "CSV",
+                "filename": "cases_export.csv",
+                "count": cases.count()
+            }
+        )
+        
         return response
 
 
@@ -1330,3 +1451,125 @@ class ExportCasesPDFView(generics.GenericAPIView):
         response['Content-Disposition'] = 'attachment; filename="cases_report.pdf"'
         
         return response
+class ClosedCaseAnalyticsView(generics.GenericAPIView):
+    """
+    View for comprehensive analytics on closed cases for Registrars.
+    """
+    permission_classes = [IsAuthenticated, IsRegistrar | IsAdmin]
+
+    def get(self, request):
+        from django.db.models import Avg, Count, Max, Min, F, ExpressionWrapper, DurationField
+        from django.db.models.functions import TruncMonth
+        from django.utils import timezone
+        from datetime import timedelta
+
+        closed_cases = Case.objects.filter(status='CLOSED', closed_date__isnull=False, filing_date__isnull=False)
+        total_closed = closed_cases.count()
+
+        if total_closed == 0:
+            return Response({
+                "kpis": {
+                    "total_closed": 0,
+                    "avg_resolution_days": 0,
+                    "min_resolution_days": 0,
+                    "max_resolution_days": 0
+                },
+                "trend": [],
+                "categories": [],
+                "judge_performance": [],
+                "outcomes": [],
+                "insights": ["No closed cases found in the system yet."]
+            })
+
+        # KPI Calculations
+        resolution_expr = ExpressionWrapper(F('closed_date') - F('filing_date'), output_field=DurationField())
+        stats = closed_cases.annotate(duration=resolution_expr).aggregate(
+            avg_duration=Avg('duration'),
+            min_duration=Min('duration'),
+            max_duration=Max('duration')
+        )
+
+        avg_days = stats['avg_duration'].days if stats['avg_duration'] else 0
+        min_days = stats['min_duration'].days if stats['min_duration'] else 0
+        max_days = stats['max_duration'].days if stats['max_duration'] else 0
+
+        # Trend Data (Last 12 Months)
+        one_year_ago = timezone.now() - timedelta(days=365)
+        trend = closed_cases.filter(closed_date__gte=one_year_ago).annotate(
+            month=TruncMonth('closed_date')
+        ).values('month').annotate(
+            count=Count('id')
+        ).order_by('month')
+
+        trend_data = [{"month": t['month'].strftime('%b %Y'), "count": t['count']} for t in trend]
+
+        # Categories Breakdown
+        categories = closed_cases.values('category__name').annotate(
+            count=Count('id'),
+            avg_days=Avg(resolution_expr)
+        ).order_by('-count')
+
+        category_data = [{
+            "name": c['category__name'], 
+            "count": c['count'], 
+            "avg_days": c['avg_days'].days if c['avg_days'] else 0
+        } for c in categories]
+
+        # Judge Performance
+        judge_perf = closed_cases.filter(judge_assignments__is_active=True).values(
+            'judge_assignments__judge__first_name', 
+            'judge_assignments__judge__last_name'
+        ).annotate(
+            count=Count('id'),
+            avg_days=Avg(resolution_expr)
+        ).order_by('-count')
+
+        judge_data = [{
+            "name": f"{j['judge_assignments__judge__first_name']} {j['judge_assignments__judge__last_name']}",
+            "count": j['count'],
+            "avg_days": j['avg_days'].days if j['avg_days'] else 0
+        } for j in judge_perf]
+
+        # Outcome Distribution
+        # Note: In this system, outcomes are usually the last decision status or similar
+        from decisions.models import Decision
+        outcomes = Decision.objects.filter(case__status='CLOSED').values('status').annotate(
+            count=Count('id')
+        ).order_by('-count')
+        
+        outcome_data = [{"status": o['status'], "count": o['count']} for o in outcomes]
+
+        # Insights
+        insights = []
+        if total_closed > 0:
+            # Category Insight
+            for c in category_data:
+                if c['avg_days'] > avg_days * 1.3:
+                    insights.append(f"⚠️ {c['name']} cases take {round(((c['avg_days']/avg_days)-1)*100)}% longer than average.")
+            
+            # Judge Insight
+            if judge_data:
+                top_judge = min(judge_data, key=lambda x: x['avg_days'] if x['avg_days'] > 0 else 9999)
+                if top_judge['avg_days'] < avg_days * 0.8:
+                    insights.append(f"✅ {top_judge['name']} resolves cases {round((1-(top_judge['avg_days']/avg_days))*100)}% faster than average.")
+
+            # Trend Insight
+            if len(trend_data) >= 2:
+                last_month = trend_data[-1]['count']
+                prev_month = trend_data[-2]['count']
+                if last_month < prev_month:
+                    insights.append("📉 Case closure rate dropped compared to last month.")
+
+        return Response({
+            "kpis": {
+                "total_closed": total_closed,
+                "avg_resolution_days": avg_days,
+                "min_resolution_days": min_days,
+                "max_resolution_days": max_days
+            },
+            "trend": trend_data,
+            "categories": category_data,
+            "judge_performance": judge_data,
+            "outcomes": outcome_data,
+            "insights": insights
+        })

@@ -134,8 +134,8 @@ export default function SchedulePage() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">Court Schedule</h1>
-          <p className="text-muted-foreground font-medium">Track your upcoming hearings and appearances.</p>
+          <h1 className="text-3xl font-black tracking-tight text-[#1A202C]">Court Schedule</h1>
+          <p className="text-[#4A5568] font-bold opacity-100">Track your upcoming hearings and appearances.</p>
         </div>
         <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full md:w-auto">
           <TabsList className="grid grid-cols-3 md:flex h-12 p-1 bg-slate-200 rounded-xl">
@@ -178,10 +178,10 @@ export default function SchedulePage() {
           <Card className="border-none shadow-2xl bg-white overflow-hidden">
             <div className="h-1.5 w-full bg-primary" />
             <CardHeader>
-              <CardTitle className="text-xl font-black flex items-center gap-2">
+              <CardTitle className="text-xl font-black flex items-center gap-2 text-[#1A202C]">
                 <CalendarIcon className="h-5 w-5 text-primary" /> Select Date
               </CardTitle>
-              <CardDescription className="font-medium text-xs uppercase tracking-widest">Click a date to filter events</CardDescription>
+              <CardDescription className="font-black text-[10px] uppercase tracking-widest text-[#2D3748] opacity-100">Click a date to filter events</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center p-4">
               <Calendar
@@ -208,8 +208,8 @@ export default function SchedulePage() {
             <CardContent className="p-6 flex gap-4 items-start">
               <Info className="h-6 w-6 text-primary shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="text-sm font-bold text-primary">Status Guide</p>
-                <p className="text-xs font-medium text-muted-foreground leading-relaxed">
+                <p className="text-sm font-black text-primary">Status Guide</p>
+                <p className="text-xs font-bold text-[#4A5568] leading-relaxed opacity-100">
                   Default view shows active upcoming hearings. Switch tabs to see cancelled or completed proceedings.
                 </p>
               </div>
@@ -255,22 +255,22 @@ export default function SchedulePage() {
                                 <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest h-5">
                                   {hearing.hearing_type}
                                 </Badge>
-                                <span className="text-xs font-bold text-muted-foreground">#{hearing.hearing_number || "1"}</span>
+                                <span className="text-xs font-black text-[#4A5568] opacity-100">#{hearing.hearing_number || "1"}</span>
                               </div>
-                              <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors">{hearing.case?.title || hearing.title}</h4>
+                              <h4 className="font-black text-lg tracking-tight group-hover:text-primary transition-colors text-[#1A202C]">{hearing.case?.title || hearing.title}</h4>
                             </div>
-                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border bg-background px-3 py-1">
+                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-primary/20 bg-background px-3 py-1 text-primary">
                               {hearing.status}
                             </Badge>
                           </div>
                           
                           <div className="flex flex-wrap gap-6 items-center pt-2 border-t border-border/50">
-                            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-                              <Clock className="h-4 w-4 text-primary" />
+                            <div className="flex items-center gap-2 text-xs font-black text-[#4A5568] opacity-100">
+                              <Clock className="h-4 w-4 text-primary/80" />
                               {format(new Date(hearing.scheduled_date || hearing.date), "h:mm a")}
                             </div>
-                            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground truncate max-w-[200px]">
-                              <MapPin className="h-4 w-4 text-primary" />
+                            <div className="flex items-center gap-2 text-xs font-black text-[#4A5568] truncate max-w-[200px] opacity-100">
+                              <MapPin className="h-4 w-4 text-primary/80" />
                               {hearing.courtroom || hearing.location || "TBD"}
                             </div>
                             <div className="flex-1 flex justify-end">

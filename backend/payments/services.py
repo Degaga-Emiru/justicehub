@@ -32,7 +32,7 @@ class ChapaService:
         }
 
     @classmethod
-    def initialize_transaction(cls, amount, email, first_name, last_name, tx_ref, callback_url, description="Case Payment"):
+    def initialize_transaction(cls, amount, email, first_name, last_name, tx_ref, callback_url, return_url=None, description="Case Payment"):
         """Initialize a transaction with Chapa"""
         endpoint = f"{cls.BASE_URL}/transaction/initialize"
         payload = {
@@ -48,7 +48,9 @@ class ChapaService:
                 "description": description
             }
         }
-        
+        if return_url:
+            payload["return_url"] = return_url
+            
         try:
             response = requests.post(endpoint, json=payload, headers=cls._get_headers(), timeout=15)
             response_data = response.json()
@@ -110,6 +112,7 @@ class PaymentService:
 
         # 4. Call Chapa to initialize
         callback_url = f"{settings.BACKEND_URL}/api/payments/callback/"
+        return_url = f"{settings.FRONTEND_URL}/dashboard/client/payment-success/"
         checkout_url = ChapaService.initialize_transaction(
             amount=amount,
             email=user.email,
@@ -117,6 +120,7 @@ class PaymentService:
             last_name=user.last_name or "User",
             tx_ref=tx_ref,
             callback_url=callback_url,
+            return_url=return_url,
             description=description
         )
 

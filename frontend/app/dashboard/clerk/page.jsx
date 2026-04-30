@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
  MoreHorizontal, ShieldCheck, Search, UserCheck, FileCheck, XCircle, 
@@ -23,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ const STATUS_COLORS = {
  IN_PROGRESS: "bg-purple-500/10 text-purple-600",
  CLOSED: "bg-slate-500/10 text-muted-foreground",
  REJECTED: "bg-rose-500/10 text-rose-600",
+ ASSIGNMENT_FAILED: "bg-red-500/10 text-red-600",
 };
 
 const STATUS_LABELS = {
@@ -45,6 +47,7 @@ const STATUS_LABELS = {
  IN_PROGRESS: "In Progress",
  CLOSED: "Closed",
  REJECTED: "Rejected",
+ ASSIGNMENT_FAILED: "Assignment Failed",
 };
 
 export default function ClerkDashboardPage() {
@@ -56,14 +59,7 @@ export default function ClerkDashboardPage() {
  const [isAssignOpen, setIsAssignOpen] = useState(false);
  const [targetCase, setTargetCase] = useState(null);
  const [selectedJudgeId, setSelectedJudgeId] = useState("");
-
- // Review Modal State
- const [isReviewOpen, setIsReviewOpen] = useState(false);
- const [reviewTarget, setReviewTarget] = useState(null);
- const [rejectionReason, setRejectionReason] = useState("");
- const [reviewAction, setReviewAction] = useState(""); // "accept" or "reject"
- const [courtName, setCourtName] = useState("");
- const [courtRoom, setCourtRoom] = useState("");
+ const [assignmentNotes, setAssignmentNotes] = useState("");
 
  // Create Defendant Account Modal State
  const [isDefendantOpen, setIsDefendantOpen] = useState(false);
@@ -91,13 +87,6 @@ export default function ClerkDashboardPage() {
  queryFn: () => fetchTransactions(),
  });
 
- // Fetch details for deeply nested documents when a case is picked for review
- const { data: activeReviewCase, isLoading: reviewLoading } = useQuery({
- queryKey: ["clerk-caseDetails", reviewTarget?.id],
- queryFn: () => fetchCaseById(reviewTarget?.id),
- enabled: !!reviewTarget?.id && isReviewOpen
- });
-
  const { data: users = [] } = useQuery({
  queryKey: ["users"],
  queryFn: () => fetchUsers()
@@ -110,34 +99,20 @@ export default function ClerkDashboardPage() {
 
  // Mutations
  const assignMutation = useMutation({
- mutationFn: ({ caseId, judgeId }) => assignJudge(caseId, { judge_id: judgeId }),
- onSuccess: () => {
- queryClient.invalidateQueries(["clerk-cases"]);
- queryClient.invalidateQueries(["clerk-stats"]);
- setIsAssignOpen(false);
- setTargetCase(null);
- setSelectedJudgeId("");
- toast.success("Judge assigned successfully.");
- },
- onError: (err) => toast.error(err.message || "Failed to assign judge")
- });
-
- const reviewMutation = useMutation({
- mutationFn: ({ caseId, action, rejection_reason, court_name, court_room }) => 
- reviewCase(caseId, { action, rejection_reason, court_name, court_room }),
- onSuccess: () => {
- queryClient.invalidateQueries(["clerk-pendingIntake"]);
- queryClient.invalidateQueries(["clerk-cases"]);
- queryClient.invalidateQueries(["clerk-stats"]);
- setIsReviewOpen(false);
- setReviewTarget(null);
- setRejectionReason("");
- setCourtName("");
- setCourtRoom("");
- setReviewAction("");
- toast.success("Case review submitted.");
- },
- onError: (err) => toast.error(err.message || "Failed to submit review")
+  mutationFn: ({ caseId, judgeId, notes }) => assignJudge(caseId, { 
+    judge_id: judgeId,
+    assignment_notes: notes 
+  }),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["clerk-cases"] });
+    queryClient.invalidateQueries(["clerk-stats"]);
+    setIsAssignOpen(false);
+    setAssignmentNotes("");
+    toast.success("Judge assigned successfully!");
+  },
+  onError: (error) => {
+    toast.error(error.message || "Failed to assign judge.");
+  },
  });
 
  const defendantMutation = useMutation({
@@ -163,7 +138,7 @@ export default function ClerkDashboardPage() {
   String(c.title || "").toLowerCase().includes(searchTerm.toLowerCase())
   ));
 
- const pendingAssignment = filteredCases.filter(c => c.status === "PAID" || c.status === "APPROVED");
+ const pendingAssignment = filteredCases.filter(c => c.status === "ASSIGNMENT_FAILED" || c.status === "PAID" || c.status === "APPROVED");
 
  const filteredIntake = pendingIntake.filter(c =>
  String(c.file_number || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -173,14 +148,12 @@ export default function ClerkDashboardPage() {
  const handleAssignClick = (caseItem) => {
  setTargetCase(caseItem);
  setSelectedJudgeId("");
+ setAssignmentNotes("");
  setIsAssignOpen(true);
  };
 
  const handleReviewClick = (caseItem) => {
- setReviewTarget(caseItem);
- setRejectionReason("");
- setReviewAction("");
- setIsReviewOpen(true);
+ router.push(`/dashboard/clerk/cases/${caseItem.id}`);
  };
 
  const handleDefendantClick = (caseItem) => {
@@ -386,10 +359,11 @@ export default function ClerkDashboardPage() {
  <Table>
  <TableHeader className="bg-muted/30">
  <TableRow className="border-border hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Status</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
+  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
+  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
+  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Jurisdiction</TableHead>
+  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Status</TableHead>
+  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -404,6 +378,7 @@ export default function ClerkDashboardPage() {
  <TableCell className="py-6">
  <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{c.title}</span>
  </TableCell>
+  <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category_name || "GENERAL"}</TableCell>
  <TableCell>
  <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", STATUS_COLORS[c.status])}>
  {STATUS_LABELS[c.status] || c.status}
@@ -411,11 +386,7 @@ export default function ClerkDashboardPage() {
  </TableCell>
  <TableCell className="text-right pr-8">
  <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
- {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
- <Button size="sm" variant="outline" className="rounded-xl font-bold text-xs" onClick={(e) => { e.stopPropagation(); handleDefendantClick(c); }}>
- + Defendant
- </Button>
- )}
+
  <Button size="sm" className="rounded-xl font-bold text-xs" onClick={(e) => { e.stopPropagation(); handleAssignClick(c); }}>
  Assign Judge
  </Button>
@@ -425,7 +396,7 @@ export default function ClerkDashboardPage() {
  ))
  ) : (
  <TableRow>
- <TableCell colSpan={4} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
+ <TableCell colSpan={5} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
  No cases awaiting assignment.
  </TableCell>
  </TableRow>
@@ -531,7 +502,7 @@ export default function ClerkDashboardPage() {
  >
  <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number || "—"}</TableCell>
  <TableCell className="py-6 font-black font-display text-sm tracking-tight group-hover:text-primary transition-colors">{c.title}</TableCell>
- <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category?.name || "GENERAL"}</TableCell>
+  <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category_name || "GENERAL"}</TableCell>
  <TableCell>
  <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", STATUS_COLORS[c.status])}>
  {STATUS_LABELS[c.status] || c.status}
@@ -560,131 +531,49 @@ export default function ClerkDashboardPage() {
  <DialogTitle>Assign Judge</DialogTitle>
  <DialogDescription>Select the officer presiding over this matter.</DialogDescription>
  </DialogHeader>
- <div className="py-4">
+ <div className="py-4 space-y-4">
  <Select value={selectedJudgeId} onValueChange={setSelectedJudgeId}>
  <SelectTrigger className="h-12 rounded-xl">
  <SelectValue placeholder="Select a Judge" />
  </SelectTrigger>
  <SelectContent>
- {judges.map(j => (
- <SelectItem key={j.id} value={j.id}>Judge {j.full_name || j.email}</SelectItem>
- ))}
+ {(() => {
+   const caseCategory = (targetCase?.category?.name || "").trim().toLowerCase();
+   const filteredJudges = judges.filter(j => 
+    j.judge_specializations?.some(s => s.trim().toLowerCase() === caseCategory)
+   );
+   
+   if (filteredJudges.length === 0) {
+    return <div className="p-4 text-xs text-center text-muted-foreground font-bold uppercase tracking-widest">No Judges specialized in {targetCase?.category?.name || "this category"}</div>;
+   }
+   
+   return filteredJudges.map(j => (
+    <SelectItem key={j.id} value={j.id}>Judge {j.full_name || j.email}</SelectItem>
+   ));
+  })()}
  </SelectContent>
  </Select>
+ 
+ <div className="space-y-2">
+  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Assignment Notes</label>
+  <Textarea 
+  placeholder="Enter reason or instructions for this assignment..."
+  value={assignmentNotes}
+  onChange={(e) => setAssignmentNotes(e.target.value)}
+  className="min-h-[100px] bg-background border-border rounded-xl resize-none"
+  />
+  </div>
  </div>
  <DialogFooter>
  <Button variant="outline" onClick={() => setIsAssignOpen(false)}>Cancel</Button>
- <Button onClick={() => assignMutation.mutate({ caseId: targetCase.id, judgeId: selectedJudgeId })} disabled={!selectedJudgeId || assignMutation.isPending}>
+ <Button onClick={() => assignMutation.mutate({ 
+    caseId: targetCase.id, 
+    judgeId: selectedJudgeId,
+    notes: assignmentNotes 
+  })} disabled={!selectedJudgeId || assignMutation.isPending}>
  Confirm Assignment
  </Button>
  </DialogFooter>
- </DialogContent>
- </Dialog>
-
- {/* Review Case Details & Document Modal (Simplified High-Fidelity) */}
- <Dialog open={isReviewOpen} onOpenChange={(open) => setIsReviewOpen(open)}>
- <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
- <DialogHeader>
- <DialogTitle>Review Filing Details</DialogTitle>
- </DialogHeader>
- {reviewLoading ? <div className="py-20 text-center uppercase font-black text-xs tracking-widest animate-pulse">Loading Metadata...</div> : activeReviewCase && (
- <div className="space-y-6">
- <div className="grid grid-cols-2 gap-4 text-sm p-4 bg-muted/20 rounded-2xl border border-border">
- <div><p className="text-[10px] font-black uppercase text-muted-foreground">Title</p><p className="font-bold">{activeReviewCase.title}</p></div>
- <div><p className="text-[10px] font-black uppercase text-muted-foreground">Category</p><p className="font-bold">{activeReviewCase.category?.name}</p></div>
- <div className="col-span-2"><p className="text-[10px] font-black uppercase text-muted-foreground">Description</p><p className="test-xs">{activeReviewCase.description}</p></div>
- </div>
- 
- <div className="flex gap-3">
- <Button 
- className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold" 
- onClick={() => setReviewAction("accept")} 
- disabled={reviewMutation.isPending}
- >
- Accept Filing
- </Button>
- <Button 
- variant="destructive" 
- className="w-full rounded-xl font-bold" 
- onClick={() => setReviewAction("reject")} 
- disabled={reviewMutation.isPending}
- >
- Reject Filing
- </Button>
- </div>
- 
- {reviewAction === "accept" && (
- <div className="space-y-4 pt-4 border-t border-border animate-in fade-in slide-in-from-top-2">
- <div className="grid grid-cols-2 gap-4">
- <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Court Name</label>
- <Input 
- placeholder="e.g. Federal High Court" 
- value={courtName} 
- onChange={(e) => setCourtName(e.target.value)} 
- className="rounded-xl bg-muted/30 h-11" 
- />
- </div>
- <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Room/Bench</label>
- <Input 
- placeholder="e.g. Bench 04" 
- value={courtRoom} 
- onChange={(e) => setCourtRoom(e.target.value)} 
- className="rounded-xl bg-muted/30 h-11" 
- />
- </div>
- </div>
- <div className="flex gap-3">
- <Button variant="outline" className="w-full rounded-xl" onClick={() => setReviewAction("")}>Cancel</Button>
- <Button 
- className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
- onClick={() => reviewMutation.mutate({ 
- caseId: activeReviewCase.id, 
- action: "accept", 
- court_name: courtName,
- court_room: courtRoom
- })}
- disabled={!courtName.trim() || reviewMutation.isPending}
- >
- {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
- Confirm Acceptance
- </Button>
- </div>
- </div>
- )}
-
- {reviewAction === "reject" && (
- <div className="space-y-4 pt-4 border-t border-border animate-in fade-in slide-in-from-top-2">
- <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rejection Reason</label>
- <Textarea 
- placeholder="Detail why this filing is being rejected..." 
- value={rejectionReason} 
- onChange={(e) => setRejectionReason(e.target.value)} 
- className="rounded-xl bg-muted/30 min-h-[100px]" 
- />
- </div>
- <div className="flex gap-3">
- <Button variant="outline" className="w-full rounded-xl" onClick={() => setReviewAction("")}>Cancel</Button>
- <Button 
- variant="destructive" 
- className="w-full rounded-xl font-bold" 
- onClick={() => reviewMutation.mutate({ 
- caseId: activeReviewCase.id, 
- action: "reject", 
- rejection_reason: rejectionReason 
- })} 
- disabled={!rejectionReason.trim() || reviewMutation.isPending}
- >
- {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
- Confirm Rejection
- </Button>
- </div>
- </div>
- )}
- </div>
- )}
  </DialogContent>
  </Dialog>
 

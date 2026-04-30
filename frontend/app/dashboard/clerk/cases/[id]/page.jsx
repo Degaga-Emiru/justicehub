@@ -12,8 +12,14 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, FileText, Download, User, Calendar, Scale, Loader2, UserPlus, Mail, Phone } from "lucide-react";
+import { 
+  ArrowLeft, FileText, Download, User, Calendar, Scale, 
+  Loader2, UserPlus, Mail, Phone, CheckCircle, XCircle 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { reviewCase } from "@/lib/api";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 const BACKEND_URL = "http://127.0.0.1:8000";
 
@@ -48,6 +54,12 @@ export default function ClerkCaseDetailPage() {
  last_name: "",
  });
 
+ // Decision Section State
+ const [reviewAction, setReviewAction] = useState(""); // "accept" or "reject"
+ const [rejectionReason, setRejectionReason] = useState("");
+ const [courtName, setCourtName] = useState("");
+ const [courtRoom, setCourtRoom] = useState("");
+
  const { data: caseData, isLoading, isError } = useQuery({
  queryKey: ["case-detail", id],
  queryFn: () => fetchCaseById(id),
@@ -60,7 +72,25 @@ export default function ClerkCaseDetailPage() {
  queryClient.invalidateQueries(["case-detail", id]);
  setIsDefendantOpen(false);
  setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "" });
- }
+ toast.success("Defendant account created and linked.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to create defendant account")
+ });
+
+ const reviewMutation = useMutation({
+ mutationFn: ({ caseId, action, rejection_reason, court_name, court_room }) => 
+ reviewCase(caseId, { action, rejection_reason, court_name, court_room }),
+ onSuccess: () => {
+ queryClient.invalidateQueries(["case-detail", id]);
+ queryClient.invalidateQueries(["clerk-pendingIntake"]);
+ queryClient.invalidateQueries(["clerk-cases"]);
+ setReviewAction("");
+ setRejectionReason("");
+ setCourtName("");
+ setCourtRoom("");
+ toast.success("Case review submitted.");
+ },
+ onError: (err) => toast.error(err.message || "Failed to submit review")
  });
 
  const handleDefendantClick = () => {
@@ -292,6 +322,109 @@ export default function ClerkCaseDetailPage() {
  )}
  </CardContent>
  </Card>
+
+ {/* Decision Section */}
+ {isStaff && caseData.status === "PENDING_REVIEW" && (
+ <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+ <CardHeader className="p-8 border-b border-border bg-muted/10">
+ <div className="flex items-center justify-between">
+ <div className="space-y-1">
+ <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
+ <Scale className="h-5 w-5 text-primary" />
+ Intake Decision
+ </CardTitle>
+ <CardDescription className="text-muted-foreground font-medium">Review the filing and make a final decision to accept or reject.</CardDescription>
+ </div>
+ <Badge className="bg-amber-500/20 text-amber-600 border-none text-[10px] font-black h-6 px-2 uppercase tracking-widest">Awaiting Action</Badge>
+ </div>
+ </CardHeader>
+ <CardContent className="p-8 space-y-6">
+ {!reviewAction ? (
+ <div className="flex gap-4">
+ <Button 
+ className="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95" 
+ onClick={() => setReviewAction("accept")}
+ >
+ <CheckCircle className="mr-2 h-5 w-5" /> Accept Filing
+ </Button>
+ <Button 
+ variant="outline" 
+ className="flex-1 h-14 rounded-2xl border-rose-500/20 text-rose-500 hover:bg-rose-500/10 font-black text-xs uppercase tracking-widest transition-all active:scale-95" 
+ onClick={() => setReviewAction("reject")}
+ >
+ <XCircle className="mr-2 h-5 w-5" /> Reject Filing
+ </Button>
+ </div>
+ ) : reviewAction === "accept" ? (
+ <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+ <div className="grid grid-cols-2 gap-6">
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Court Name</label>
+ <Input 
+ placeholder="e.g. Federal High Court" 
+ value={courtName} 
+ onChange={(e) => setCourtName(e.target.value)} 
+ className="rounded-xl bg-muted/30 h-12 border-border focus:ring-emerald-500/20" 
+ />
+ </div>
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Room/Bench</label>
+ <Input 
+ placeholder="e.g. Bench 04" 
+ value={courtRoom} 
+ onChange={(e) => setCourtRoom(e.target.value)} 
+ className="rounded-xl bg-muted/30 h-12 border-border focus:ring-emerald-500/20" 
+ />
+ </div>
+ </div>
+ <div className="flex gap-4">
+ <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setReviewAction("")}>Cancel</Button>
+ <Button 
+ className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20"
+ onClick={() => reviewMutation.mutate({ 
+ caseId: id, 
+ action: "accept", 
+ court_name: courtName,
+ court_room: courtRoom
+ })}
+ disabled={!courtName.trim() || reviewMutation.isPending}
+ >
+ {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+ Confirm Acceptance
+ </Button>
+ </div>
+ </div>
+ ) : (
+ <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Rejection Reason <span className="text-rose-500">*</span></label>
+ <Textarea 
+ placeholder="Detail why this filing is being rejected..." 
+ value={rejectionReason} 
+ onChange={(e) => setRejectionReason(e.target.value)} 
+ className="rounded-xl bg-muted/30 min-h-[120px] border-border focus:ring-rose-500/20" 
+ />
+ </div>
+ <div className="flex gap-4">
+ <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setReviewAction("")}>Cancel</Button>
+ <Button 
+ className="flex-1 h-12 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-500/20"
+ onClick={() => reviewMutation.mutate({ 
+ caseId: id, 
+ action: "reject", 
+ rejection_reason: rejectionReason 
+ })} 
+ disabled={!rejectionReason.trim() || reviewMutation.isPending}
+ >
+ {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+ Confirm Rejection
+ </Button>
+ </div>
+ </div>
+ )}
+ </CardContent>
+ </Card>
+ )}
 
  {/* Create Defendant Account Dialog */}
  <Dialog open={isDefendantOpen} onOpenChange={(open) => !defendantMutation.isPending && setIsDefendantOpen(open)}>

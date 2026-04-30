@@ -106,10 +106,10 @@ export function DashboardLayout({ children }) {
  </Button>
  
  <div className="relative max-w-md w-full hidden sm:block group">
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+ <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4A5568] group-focus-within:text-primary transition-colors opacity-100" />
  <Input
  placeholder={t("searchCasesDocs")}
- className="h-11 pl-11 bg-muted/30 border-border rounded-2xl focus-visible:ring-primary/20 focus-visible:bg-muted/50 transition-all font-medium text-sm"
+ className="h-11 pl-11 bg-muted/30 border-border rounded-2xl focus-visible:ring-primary/20 focus-visible:bg-muted/50 transition-all font-bold text-sm text-[#1A202C]"
  />
  </div>
  </div>
@@ -121,8 +121,8 @@ export function DashboardLayout({ children }) {
 
  <Link href={`/dashboard/${normalizedRole}/settings`} className="flex items-center gap-3 group cursor-pointer">
  <div className="text-right hidden sm:block">
- <p className="text-xs font-black text-foreground font-display uppercase tracking-wider group-hover:text-primary transition-colors">{user.name}</p>
- <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mt-0.5">{user.role}</p>
+ <p className="text-xs font-black text-[#1A202C] font-display uppercase tracking-wider group-hover:text-primary transition-colors opacity-100">{user.name}</p>
+ <p className="text-[10px] font-black text-[#4A5568] uppercase tracking-widest leading-none mt-0.5 opacity-100">{user.role}</p>
  </div>
  {user.profile_picture ? (
  <div className="h-10 w-10 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-sm transform group-hover:scale-105 transition-transform">
@@ -143,7 +143,7 @@ export function DashboardLayout({ children }) {
  </main>
 
  <footer className="py-8 px-10 border-t border-border/40 text-center">
- <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.2em] font-display">
+ <p className="text-[10px] font-black text-[#4A5568] uppercase tracking-[0.2em] font-display opacity-100">
  © {new Date().getFullYear()} JusticeHub Global Platform • Secure Infrastructure
  </p>
  </footer>

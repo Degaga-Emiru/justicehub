@@ -29,6 +29,69 @@ const getAuthHeaders = () => {
     };
 };
 
+async function apiRequest(url, options = {}) {
+    const authHeaders = getAuthHeaders();
+    if (options.body instanceof FormData) {
+        delete authHeaders['Content-Type'];
+    }
+
+    const res = await fetch(url, {
+        ...options,
+        headers: {
+            ...authHeaders,
+            ...options.headers
+        }
+    });
+
+    if (res.status === 401) {
+        // Try refreshing the token
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+            // Retry the original request with the new token
+            return await fetch(url, {
+                ...options,
+                headers: {
+                    ...getAuthHeaders(),
+                    ...options.headers,
+                    "Authorization": `Bearer ${newToken}`
+                }
+            });
+        }
+    }
+
+    return res;
+}
+
+export async function refreshAccessToken() {
+    const refresh = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
+    if (!refresh) return null;
+
+    try {
+        const res = await fetch(`${getApiUrl()}/auth/token/refresh/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem("access_token", data.access);
+            return data.access;
+        } else {
+            // If refresh fails, clear tokens so the user is forced to re-login
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            if (typeof window !== "undefined") {
+                window.location.href = "/auth/login?expired=true";
+            }
+            return null;
+        }
+    } catch (error) {
+        console.error("refreshAccessToken error:", error);
+        return null;
+    }
+}
+
 export async function verifyOtp(email, otp) {
     try {
         const res = await fetch(`${getApiUrl()}/auth/verify-otp/`, {
@@ -80,9 +143,7 @@ export async function setupAccountPassword(data) {
 export async function fetchCases(filters = {}) {
     try {
         const queryParams = new URLSearchParams(filters).toString();
-        const res = await fetch(`${getApiUrl()}/cases/?${queryParams}`, {
-            headers: getAuthHeaders()
-        });
+        const res = await apiRequest(`${getApiUrl()}/cases/?${queryParams}`);
         if (!res.ok) throw new Error("Failed to fetch cases");
         const data = await res.json();
         return Array.isArray(data) ? data : (data.results || []);
@@ -156,6 +217,7 @@ export async function createJudgeProfile(data) {
 }
 
 export async function fetchAllJudgeProfiles() {
+    if (typeof window === "undefined") return [];
     try {
         const res = await fetch(`${getApiUrl()}/cases/judge-profiles/`, {
             headers: getAuthHeaders()
@@ -164,7 +226,8 @@ export async function fetchAllJudgeProfiles() {
         const data = await res.json();
         return Array.isArray(data) ? data : (data.results || []);
     } catch (error) {
-        console.error("fetchAllJudgeProfiles error:", error);
+        // Suppress console.error in Next.js dev to prevent error overlays
+        // console.error("fetchAllJudgeProfiles error:", error);
         return [];
     }
 }
@@ -187,11 +250,22 @@ export async function updateJudgeProfile(id, data) {
     }
 }
 
-export async function fetchCaseById(id) {
+export async function fetchJudgeProfileById(id) {
     try {
-        const res = await fetch(`${getApiUrl()}/cases/${id}/`, {
+        const res = await fetch(`${getApiUrl()}/cases/judge-profiles/${id}/`, {
             headers: getAuthHeaders()
         });
+        if (!res.ok) throw new Error("Failed to fetch judge profile");
+        return await res.json();
+    } catch (error) {
+        console.error("fetchJudgeProfileById error:", error);
+        return null;
+    }
+}
+
+export async function fetchCaseById(id) {
+    try {
+        const res = await apiRequest(`${getApiUrl()}/cases/${id}/`);
         if (!res.ok) throw new Error("Failed to fetch case");
         return await res.json();
     } catch (error) {
@@ -204,9 +278,8 @@ export async function fetchHearings(filters = {}) {
     try {
         const queryParams = new URLSearchParams(filters).toString();
         const url = `${getApiUrl()}/hearings/${queryParams ? '?' + queryParams : ''}`;
-        const res = await fetch(url, {
-            headers: getAuthHeaders()
-        });
+        const res = await apiRequest(url);
+        
         if (!res.ok) {
             const errText = await res.text();
             console.error("fetchHearings API error:", res.status, errText);
@@ -239,6 +312,7 @@ export async function fetchHearingById(id) {
 }
 
 export async function fetchUsers(filters = {}) {
+    if (typeof window === "undefined") return [];
     try {
         // Typically role-based access for this, but let's assume there is a users endpoint or fallback
         const queryParams = new URLSearchParams(filters).toString();
@@ -249,7 +323,7 @@ export async function fetchUsers(filters = {}) {
         const data = await res.json();
         return Array.isArray(data) ? data : (data.results || []);
     } catch (error) {
-        console.error("fetchUsers error:", error);
+        // console.error("fetchUsers error:", error);
         return [];
     }
 }
@@ -445,8 +519,9 @@ export async function adminResetPassword(userId, sendEmail = true) {
     }
 }
 
-export function getAdminUsersExportUrl() {
-    return `${getApiUrl()}/admin/users/export/`;
+export function getAdminUsersExportUrl(filters = {}) {
+    const queryParams = new URLSearchParams(filters).toString();
+    return `${getApiUrl()}/accounts/admin/users/export/?${queryParams}`;
 }
 
 export async function adminDeleteUser(userId) {
@@ -476,6 +551,19 @@ export async function fetchDashboardStats() {
     } catch (error) {
         console.error("fetchDashboardStats error:", error);
         return {};
+    }
+}
+
+export async function fetchClosedAnalytics() {
+    try {
+        const res = await fetch(`${getApiUrl()}/cases/statistics/closed-analytics/`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to fetch closed analytics");
+        return await res.json();
+    } catch (error) {
+        console.error("fetchClosedAnalytics error:", error);
+        throw error;
     }
 }
 
@@ -576,6 +664,7 @@ export function getReportDownloadUrl(format = 'pdf', type = 'system', filters = 
 
 
 export async function fetchNotifications(filters = {}) {
+    if (typeof window === "undefined") return [];
     try {
         const queryParams = new URLSearchParams(filters).toString();
         const res = await fetch(`${getApiUrl()}/notifications/?${queryParams}`, {
@@ -585,10 +674,41 @@ export async function fetchNotifications(filters = {}) {
         const data = await res.json();
         return Array.isArray(data) ? data : (data.results || []);
     } catch (error) {
-        console.error("fetchNotifications error:", error);
+        // console.error("fetchNotifications error:", error);
         return [];
     }
 }
+
+export async function deleteNotification(id) {
+    try {
+        const res = await fetch(`${getApiUrl()}/notifications/${id}/`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to delete notification");
+        return true;
+    } catch (error) {
+        console.error("deleteNotification error:", error);
+        throw error;
+    }
+}
+
+export async function bulkDeleteNotifications(ids) {
+    try {
+        const res = await fetch(`${getApiUrl()}/notifications/bulk_delete/`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ notification_ids: ids })
+        });
+        if (!res.ok) throw new Error("Failed to delete notifications");
+        return true;
+    } catch (error) {
+        console.error("bulkDeleteNotifications error:", error);
+        throw error;
+    }
+}
+
+
 
 export async function scheduleHearing(data) {
     try {
@@ -650,7 +770,7 @@ export async function rescheduleHearing(id, data) {
 
 export async function fetchDefendantCases() {
     try {
-        const res = await fetch(`${getApiUrl()}/defendant/cases/`, { headers: getAuthHeaders() });
+        const res = await apiRequest(`${getApiUrl()}/defendant/cases/`);
         if (!res.ok) throw new Error("Failed to fetch defendant cases");
         const data = await res.json();
         return Array.isArray(data) ? data : (data.results || []);
@@ -659,7 +779,7 @@ export async function fetchDefendantCases() {
 
 export async function fetchDefendantHearings() {
     try {
-        const res = await fetch(`${getApiUrl()}/defendant/hearings/`, { headers: getAuthHeaders() });
+        const res = await apiRequest(`${getApiUrl()}/defendant/hearings/`);
         if (!res.ok) throw new Error("Failed to fetch defendant hearings");
         const data = await res.json();
         return Array.isArray(data) ? data : (data.results || []);
@@ -668,14 +788,9 @@ export async function fetchDefendantHearings() {
 
 export async function submitDefendantResponse(caseId, data) {
     try {
-        const isFormData = data instanceof FormData;
-        const headers = getAuthHeaders();
-        if (isFormData) delete headers['Content-Type'];
-
-        const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/submit-response/`, { 
+        const res = await apiRequest(`${getApiUrl()}/defendant/cases/${caseId}/submit-response/`, { 
             method: "POST", 
-            headers, 
-            body: isFormData ? data : JSON.stringify(data)
+            body: data
         });
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -777,7 +892,7 @@ export async function declineHearingAttendance(hearingId, reason, role = "Defend
 
 export async function fetchDefendantDocuments(caseId) {
     try {
-        const res = await fetch(`${getApiUrl()}/defendant/cases/${caseId}/documents/`, { headers: getAuthHeaders() });
+        const res = await apiRequest(`${getApiUrl()}/defendant/cases/${caseId}/documents/`);
         if (!res.ok) throw new Error("Failed to fetch documents");
         return await res.json();
     } catch (e) { throw e; }
@@ -785,13 +900,10 @@ export async function fetchDefendantDocuments(caseId) {
 
 export async function fetchDefendantCaseById(id) {
     try {
-        const res = await fetch(`${getApiUrl()}/defendant/cases/${id}/`, { headers: getAuthHeaders() });
+        const res = await apiRequest(`${getApiUrl()}/defendant/cases/${id}/`);
         if (!res.ok) throw new Error("Failed to fetch case details");
         return await res.json();
-    } catch (e) {
-        console.error("fetchDefendantCaseById error:", e);
-        return null;
-    }
+    } catch (e) { throw e; }
 }
 
 export async function assignJudge(caseId, data) {
@@ -1373,7 +1485,7 @@ export async function uploadCitizenDocument(caseId, data) {
 }
 
 export async function fetchCitizenCaseDocuments(caseId) {
-    const res = await fetch(`${getApiUrl()}/cases/citizen/cases/${caseId}/documents/`, { headers: getAuthHeaders() });
+    const res = await apiRequest(`${getApiUrl()}/cases/citizen/cases/${caseId}/documents/`);
     if (!res.ok) return [];
     return await res.json();
 }

@@ -8,8 +8,8 @@ export default function RegisterCasePage() {
  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest mb-2">
  <FilePlus className="h-3 w-3" /> New Filing
  </div>
- <h1 className="text-4xl font-black font-display tracking-tight text-foreground">File a New Case</h1>
- <p className="text-muted-foreground font-medium text-lg">Follow the steps below to submit your case to the registry.</p>
+ <h1 className="text-4xl font-black font-display tracking-tight text-[#1A202C]">File a New Case</h1>
+ <p className="text-[#4A5568] font-bold text-lg opacity-100">Follow the steps below to submit your case to the registry.</p>
  </div>
  <CaseWizard />
  </div>

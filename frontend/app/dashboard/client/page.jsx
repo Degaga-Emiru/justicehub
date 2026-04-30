@@ -52,8 +52,8 @@ export default function ClientDashboard() {
     <div className="space-y-10 animate-fade-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div className="space-y-1">
-          <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{t("overview")}</h1>
-          <p className="text-muted-foreground font-medium text-lg leading-relaxed">
+          <h1 className="text-4xl font-black font-display tracking-tight text-[#1A202C]">{t("overview")}</h1>
+          <p className="text-[#4A5568] font-bold text-lg leading-relaxed opacity-100">
             {t("welcomeBackName").replace("{name}", user?.name || "Client")}
           </p>
         </div>
@@ -70,28 +70,28 @@ export default function ClientDashboard() {
         <Card className="bg-card shadow-sm border-border hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-primary/10 transition-colors"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t("activeCasesOverview")}</CardTitle>
+            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-[#2D3748] opacity-100">{t("activeCasesOverview")}</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <FileText className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black font-display text-foreground">{activeCases.length}</div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Assigned &amp; In Progress</p>
+            <div className="text-4xl font-black font-display text-[#1A202C]">{activeCases.length}</div>
+            <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">Assigned &amp; In Progress</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card shadow-sm border-border hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-primary/10 transition-colors"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t("pendingReview")}</CardTitle>
+            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-[#2D3748] opacity-100">{t("pendingReview")}</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
               <Clock className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black font-display text-foreground">{pendingCases.length}</div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t("awaitingRegistrar")}</p>
+            <div className="text-4xl font-black font-display text-[#1A202C]">{pendingCases.length}</div>
+            <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">{t("awaitingRegistrar")}</p>
           </CardContent>
         </Card>
 
@@ -101,19 +101,19 @@ export default function ClientDashboard() {
         )}>
           {awaitingPayment.length > 0 && <div className="absolute inset-0 bg-blue-500/5 animate-pulse-slow"></div>}
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Awaiting Payment</CardTitle>
+            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-[#2D3748] opacity-100">Awaiting Payment</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
               <CreditCard className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-black font-display text-foreground">{awaitingPayment.length}</div>
+            <div className="text-4xl font-black font-display text-[#1A202C]">{awaitingPayment.length}</div>
             {awaitingPayment.length > 0 ? (
               <Link href="/dashboard/client/cases" className="inline-flex items-center text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-wider mt-2 group/pay">
                 Pay now <ArrowRight className="ml-1 h-3 w-3 group-hover/pay:translate-x-1 transition-transform" />
               </Link>
             ) : (
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">No pending fees</p>
+              <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">No pending fees</p>
             )}
           </CardContent>
         </Card>
@@ -136,14 +136,14 @@ export default function ClientDashboard() {
         ) : (
           <Card className="bg-card shadow-sm border-border hover:border-primary/30 transition-all duration-500 overflow-hidden relative group">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t("upcomingHearings")}</CardTitle>
+              <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-[#2D3748] opacity-100">{t("upcomingHearings")}</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                 <Calendar className="h-5 w-5" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-black font-display text-foreground">{myHearings.length}</div>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t("next30Days")}</p>
+              <div className="text-4xl font-black font-display text-[#1A202C]">{myHearings.length}</div>
+              <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">{t("next30Days")}</p>
             </CardContent>
           </Card>
         )}
@@ -155,10 +155,10 @@ export default function ClientDashboard() {
           <CardHeader className="p-8 pb-4">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-black font-display tracking-tight">{t("recentCases")}</CardTitle>
-                <CardDescription className="text-muted-foreground font-medium">{t("recentCasesDesc")}</CardDescription>
+                <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">{t("recentCases")}</CardTitle>
+                <CardDescription className="text-[#4A5568] font-bold opacity-100">{t("recentCasesDesc")}</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="font-bold text-primary group" asChild>
+              <Button variant="ghost" size="sm" className="font-black text-primary group" asChild>
                 <Link href="/dashboard/client/cases">
                   {t("viewAll")} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -186,9 +186,9 @@ export default function ClientDashboard() {
                           {STATUS_LABELS[caseItem.status] || caseItem.status}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">
-                        <span className="flex items-center gap-1.5"><FileText className="h-3 w-3" /> {caseItem.file_number || "—"}</span>
-                        <span className="flex items-center gap-1.5"><PlusCircle className="h-3 w-3" /> {caseItem.category?.name || caseItem.category || "General"}</span>
+                      <div className="flex items-center gap-4 text-xs font-black text-[#4A5568] uppercase tracking-widest leading-none opacity-100">
+                        <span className="flex items-center gap-1.5"><FileText className="h-3 w-3 text-primary/80" /> {caseItem.file_number || "—"}</span>
+                        <span className="flex items-center gap-1.5"><PlusCircle className="h-3 w-3 text-primary/80" /> {caseItem.parent_category_name ? `${caseItem.parent_category_name} - ${caseItem.category_name}` : (caseItem.category_name || "General")}</span>
                       </div>
                       {caseItem.status === "REJECTED" && caseItem.rejection_reason && (
                         <div className="flex items-start gap-2 p-3 mt-3 rounded-xl bg-destructive/5 border border-destructive/10 animate-in fade-in duration-500">

@@ -196,21 +196,39 @@ class JudgeAssignmentService:
         """Handle case when no judges are available"""
         logging.getLogger(__name__).warning(f"No judges available for case {case.id} in category {case.category.name}")
         
-        # Notify all registrars
-        registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'])
-        for registrar in registrars:
+        # Change status to ASSIGNMENT_FAILED
+        case.status = CaseStatus.ASSIGNMENT_FAILED
+        case.save()
+        
+        # Notify all registrars, clerks, and admins
+        staff_users = User.objects.filter(role__in=['REGISTRAR', 'CLERK', 'ADMIN'])
+        
+        for user in staff_users:
             create_notification(
-                user=registrar,
+                user=user,
                 type='SYSTEM_ALERT',
                 title='Judge Assignment Failed',
                 message=(
                     f"No judges available for case '{case.title}' "
-                    f"in category {case.category.name}. Manual intervention required."
+                    f"(File No: {case.file_number}) in category {case.category.name}. "
+                    "Please assign the judge manually."
                 ),
                 case=case,
                 priority='HIGH'
             )
             
+        # Send email to staff users
+        staff_emails = list(staff_users.values_list('email', flat=True))
+        if staff_emails:
+            send_email_template(
+                subject=f"Action Required: Judge Assignment Failed - {case.file_number}",
+                template_name="emails/assignment_failed.html",
+                context={
+                    "case": case,
+                    "frontend_url": settings.FRONTEND_URL
+                },
+                recipient_list=staff_emails
+            )
     
     @classmethod
     def _send_assignment_notifications(cls, assignment):
@@ -231,25 +249,7 @@ class JudgeAssignmentService:
             message=messages
         )
     
-    @classmethod
-    def _handle_no_judges_available(cls, case):
-        """Handle case when no judges are available"""
-        logging.getLogger(__name__).warning(f"No judges available for case {case.id} in category {case.category.name}")
-        
-        # Notify all registrars
-        registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'])
-        for registrar in registrars:
-            create_notification(
-                user=registrar,
-                type='SYSTEM_ALERT',
-                title='Judge Assignment Failed',
-                message=(
-                    f"No judges available for case '{case.title}' "
-                    f"in category {case.category.name}. Manual intervention required."
-                ),
-                case=case,
-                priority='HIGH'
-            )
+
     
 class CaseReviewService:
     """Service for case review operations"""

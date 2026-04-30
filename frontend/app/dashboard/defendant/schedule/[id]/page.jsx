@@ -51,7 +51,7 @@ export default function DefendantHearingDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <AlertCircle className="h-12 w-12 text-destructive" />
-        <h2 className="text-xl font-bold text-slate-900">Hearing Not Found</h2>
+        <h2 className="text-xl font-bold text-[#1A202C]">Hearing Not Found</h2>
         <Button onClick={() => router.back()}>Go Back</Button>
       </div>
     );
@@ -72,8 +72,8 @@ export default function DefendantHearingDetailsPage() {
           <ArrowLeft className="h-5 w-5 text-slate-600" />
         </Button>
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">{hearing.title || "Hearing Details"}</h1>
-          <p className="text-slate-500 font-medium font-semibold">Case: {caseDetails.file_number} — {caseDetails.title}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#1A202C]">{hearing.title || "Hearing Details"}</h1>
+          <p className="text-[#4A5568] font-bold opacity-100">Case: {caseDetails.file_number} — {caseDetails.title}</p>
         </div>
       </div>
 
@@ -91,8 +91,8 @@ export default function DefendantHearingDetailsPage() {
                   <Badge className={cn("mb-2 uppercase tracking-widest px-3 py-1 font-black text-[10px]", statusColors[hearing.status])}>
                     {hearing.status}
                   </Badge>
-                  <CardTitle className="text-2xl font-black text-slate-900">{hearing.hearing_type}</CardTitle>
-                  <CardDescription className="text-base font-bold text-slate-500">Scheduled sequence #{hearing.hearing_number}</CardDescription>
+                  <CardTitle className="text-2xl font-bold text-[#1A202C]">{hearing.hearing_type}</CardTitle>
+                  <CardDescription className="text-base font-bold text-[#4A5568] opacity-100">Scheduled sequence #{hearing.hearing_number}</CardDescription>
                 </div>
                 <div className="bg-primary/10 p-4 rounded-2xl text-primary text-center min-w-[80px]">
                   <span className="block text-xs font-black uppercase tracking-widest">{format(new Date(hearing.scheduled_date), "MMM")}</span>
@@ -107,8 +107,8 @@ export default function DefendantHearingDetailsPage() {
                     <Clock className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Time</p>
-                    <p className="font-black text-slate-900 text-lg">{format(new Date(hearing.scheduled_date), "h:mm a")} ({hearing.duration_minutes} mins)</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D3748] opacity-100">Time</p>
+                    <p className="font-bold text-[#1A202C] text-lg">{format(new Date(hearing.scheduled_date), "h:mm a")} ({hearing.duration_minutes} mins)</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -116,18 +116,18 @@ export default function DefendantHearingDetailsPage() {
                     <MapPin className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</p>
-                    <p className="font-black text-slate-900 text-lg">{hearing.location}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#2D3748] opacity-100">Location</p>
+                    <p className="font-bold text-[#1A202C] text-lg">{hearing.location}</p>
                   </div>
                 </div>
               </div>
 
               {hearing.agenda && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-black tracking-tight flex items-center gap-2 text-slate-900">
+                  <h3 className="text-lg font-bold tracking-tight flex items-center gap-2 text-[#1A202C]">
                     <FileText className="h-5 w-5 text-primary" /> Agenda
                   </h3>
-                  <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 leading-relaxed text-slate-800 font-bold whitespace-pre-wrap">
+                  <div className="p-6 rounded-3xl bg-slate-50 border border-slate-200 leading-relaxed text-[#4A5568] font-bold whitespace-pre-wrap opacity-100">
                     {hearing.agenda || "No agenda provided for this hearing."}
                   </div>
                 </div>
@@ -146,10 +146,10 @@ export default function DefendantHearingDetailsPage() {
               
               {hearing.summary && (
                 <div className="space-y-3">
-                  <h3 className="text-lg font-black tracking-tight flex items-center gap-2 text-emerald-600">
+                  <h3 className="text-lg font-bold tracking-tight flex items-center gap-2 text-emerald-700">
                     <CheckCircle className="h-5 w-5" /> Hearing Summary
                   </h3>
-                  <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 leading-relaxed font-bold text-slate-800">
+                  <div className="p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 leading-relaxed font-bold text-[#4A5568] opacity-100">
                     {hearing.summary}
                   </div>
                 </div>
@@ -168,13 +168,13 @@ export default function DefendantHearingDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100/50 space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/70">Plaintiff</p>
-                <p className="font-black text-slate-900 text-xl">{caseDetails.plaintiff || "N/A"}</p>
+              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-700 opacity-100">Plaintiff</p>
+                <p className="font-bold text-[#1A202C] text-xl">{caseDetails.plaintiff || "N/A"}</p>
               </div>
-              <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100/50 space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-rose-600/70">Defendant</p>
-                <p className="font-black text-slate-900 text-xl">{caseDetails.defendant || "N/A"}</p>
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#C53030] opacity-100">Defendant</p>
+                <p className="font-bold text-[#1A202C] text-xl">{caseDetails.defendant || "N/A"}</p>
               </div>
               <div className="pt-4 border-t border-slate-100">
                 <Link href={`/dashboard/defendant/cases`} className="text-xs font-black text-primary hover:underline flex items-center gap-2">
@@ -204,8 +204,8 @@ export default function DefendantHearingDetailsPage() {
                         <FileText className="h-4 w-4 text-primary" />
                       </div>
                       <div className="overflow-hidden">
-                        <p className="text-sm font-bold truncate text-slate-900">{doc.document_type_display || doc.document_type}</p>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">
+                        <p className="text-sm font-bold truncate text-[#1A202C]">{doc.document_type_display || doc.document_type}</p>
+                        <p className="text-[10px] font-bold text-[#4A5568] uppercase opacity-100">
                           {doc.latest_version?.uploaded_at 
                             ? format(new Date(doc.latest_version.uploaded_at), "MMM d, yyyy") 
                             : "No Date"}

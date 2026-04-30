@@ -142,6 +142,17 @@ class ExportReportView(ReportBaseView):
 
         response = HttpResponse(content, content_type=content_type)
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        # Log Report Generation
+        from audit_logs.services import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.REPORT_GENERATED,
+            description=f"Generated {export_format.upper()} report for {report_scope} scope.",
+            entity_name=filename
+        )
+
         return response
 
 class ReportViewSet(viewsets.ModelViewSet):
@@ -196,6 +207,18 @@ class ReportViewSet(viewsets.ModelViewSet):
             
         response = HttpResponse(report.file.read(), content_type=content_type)
         response['Content-Disposition'] = f'attachment; filename="{report.file.name.split("/")[-1]}"'
+
+        # Log Report Download
+        from audit_logs.services import create_audit_log
+        from audit_logs.models import AuditLog
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.DOCUMENT_DOWNLOADED,
+            obj=report,
+            description=f"Downloaded report: {report.title}",
+            entity_name=report.title
+        )
+
         return response
 
     @decorators.action(detail=False, methods=['get'], url_path='download')

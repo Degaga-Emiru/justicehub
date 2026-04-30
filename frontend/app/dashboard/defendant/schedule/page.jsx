@@ -133,8 +133,8 @@ export default function DefendantSchedulePage() {
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">Court Schedule</h1>
-          <p className="text-slate-500 font-semibold">Monitor your legal appearances and requirements.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#1A202C]">Court Schedule</h1>
+          <p className="text-[#4A5568] font-bold opacity-100">Monitor your legal appearances and requirements.</p>
         </div>
         <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full md:w-auto">
           <TabsList className="grid grid-cols-3 md:flex h-12 p-1 bg-slate-200 rounded-xl">
@@ -177,10 +177,10 @@ export default function DefendantSchedulePage() {
           <Card className="border-none shadow-2xl bg-white overflow-hidden">
             <div className="h-1.5 w-full bg-primary" />
             <CardHeader>
-              <CardTitle className="text-xl font-black flex items-center gap-2 text-slate-900">
+              <CardTitle className="text-xl font-bold flex items-center gap-2 text-[#1A202C]">
                 <CalendarIcon className="h-5 w-5 text-primary" /> Calendar View
               </CardTitle>
-              <CardDescription className="font-bold text-[10px] uppercase tracking-widest">Select a day to inspect</CardDescription>
+              <CardDescription className="font-bold text-[10px] uppercase tracking-widest text-[#2D3748] opacity-100">Select a day to inspect</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center p-4">
               <Calendar
@@ -207,8 +207,8 @@ export default function DefendantSchedulePage() {
             <CardContent className="p-6 flex gap-4 items-start text-slate-700">
               <Shield className="h-6 w-6 text-primary shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="text-sm font-black text-primary uppercase tracking-widest">Legal Standing</p>
-                <p className="text-xs font-semibold text-slate-600 leading-relaxed">
+                <p className="text-sm font-bold text-primary uppercase tracking-widest">Legal Standing</p>
+                <p className="text-xs font-bold text-[#4A5568] leading-relaxed opacity-100">
                   Hearings listed here are mandatory unless cancelled by the court. Attendance tracking is live.
                 </p>
               </div>
@@ -218,10 +218,10 @@ export default function DefendantSchedulePage() {
 
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-black tracking-tight text-slate-900">
+            <h3 className="text-xl font-bold tracking-tight text-[#1A202C]">
               {hasUserSelectedDate ? format(date, "MMMM do, yyyy") : `${statusFilter.charAt(0) + statusFilter.slice(1).toLowerCase()} Proceedings`}
             </h3>
-            <Badge variant="outline" className="font-black text-[10px] px-3 py-1 bg-slate-100 border-none uppercase tracking-[0.1em] text-slate-500">
+            <Badge variant="outline" className="font-bold text-[10px] px-3 py-1 bg-slate-100 border-none uppercase tracking-[0.1em] text-[#4A5568] opacity-100">
               {filteredHearings.length} Found
             </Badge>
           </div>
@@ -254,21 +254,21 @@ export default function DefendantSchedulePage() {
                                 <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest h-5">
                                   {hearing.hearing_type}
                                 </Badge>
-                                <span className="text-xs font-bold text-slate-400">#{hearing.hearing_number || "1"}</span>
+                                <span className="text-xs font-bold text-[#4A5568]">#{hearing.hearing_number || "1"}</span>
                               </div>
-                              <h4 className="font-black text-lg tracking-tight text-slate-900 group-hover:text-primary transition-colors">{hearing.case?.title || hearing.title}</h4>
+                              <h4 className="font-bold text-lg tracking-tight text-[#1A202C] group-hover:text-primary transition-colors">{hearing.case?.title || hearing.title}</h4>
                             </div>
-                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-slate-200 bg-slate-50 px-3 py-1 text-slate-600">
+                            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest border-slate-200 bg-slate-50 px-3 py-1 text-[#4A5568] opacity-100">
                               {hearing.status}
                             </Badge>
                           </div>
                           
                           <div className="flex flex-wrap gap-6 items-center pt-2 border-t border-slate-100">
-                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+                            <div className="flex items-center gap-2 text-xs font-bold text-[#4A5568] opacity-100">
                               <Clock className="h-4 w-4 text-primary" />
                               {format(new Date(hearing.scheduled_date || hearing.date), "h:mm a")}
                             </div>
-                            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 truncate max-w-[200px]">
+                            <div className="flex items-center gap-2 text-xs font-bold text-[#4A5568] truncate max-w-[200px] opacity-100">
                               <MapPin className="h-4 w-4 text-primary" />
                               {hearing.courtroom || hearing.location || "TBD"}
                             </div>

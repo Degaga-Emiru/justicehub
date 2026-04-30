@@ -131,116 +131,116 @@ const step3Schema = z.object({
 
  return (
  <Card className="w-full max-w-3xl mx-auto shadow-lg">
- <CardHeader>
- <div className="flex items-center justify-between mb-4">
- <CardTitle>{t("wizardTitle")}</CardTitle>
- <div className="flex items-center space-x-2">
- {[1, 2, 3].map((i) => (
- <div
- key={i}
- className={cn(
- "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors",
- step === i
- ? "bg-primary text-primary-foreground"
- : step > i
- ? "bg-green-600 text-white"
- : "bg-muted text-muted-foreground"
- )}
- >
- {step > i ? <CheckCircle2 className="h-5 w-5" /> : i}
- </div>
- ))}
- </div>
- </div>
- <CardDescription>
- {step === 1 && t("wizardStep1Desc")}
- {step === 2 && t("wizardStep2Desc")}
- {step === 3 && t("wizardStep3Desc")}
- </CardDescription>
- </CardHeader>
+  <CardHeader>
+  <div className="flex items-center justify-between mb-4">
+  <CardTitle className="text-2xl font-black font-display text-[#1A202C]">{t("wizardTitle")}</CardTitle>
+  <div className="flex items-center space-x-2">
+  {[1, 2, 3].map((i) => (
+  <div
+  key={i}
+  className={cn(
+  "flex h-8 w-8 items-center justify-center rounded-full text-xs font-black transition-colors",
+  step === i
+  ? "bg-primary text-primary-foreground"
+  : step > i
+  ? "bg-green-600 text-white"
+  : "bg-muted text-[#4A5568]"
+  )}
+  >
+  {step > i ? <CheckCircle2 className="h-5 w-5" /> : i}
+  </div>
+  ))}
+  </div>
+  </div>
+  <CardDescription className="text-[#4A5568] font-bold opacity-100">
+  {step === 1 && t("wizardStep1Desc")}
+  {step === 2 && t("wizardStep2Desc")}
+  {step === 3 && t("wizardStep3Desc")}
+  </CardDescription>
+  </CardHeader>
  <Separator />
 
  <CardContent className="pt-6">
  <form id="case-wizard-form" onSubmit={handleSubmit(onSubmit)}>
  {/* Step 1: Party Details */}
- {step === 1 && (
- <div className="space-y-4 animate-fade-in">
- <div className="grid gap-4 sm:grid-cols-2">
- <div className="space-y-2">
- <Label htmlFor="plaintiff">{t("lblPlaintiffYou")}</Label>
- <Input id="plaintiff" value={user?.name || ""} disabled className="bg-muted" />
- </div>
- <div className="space-y-2">
- <Label htmlFor="defendantName">{t("lblDefendantName")}</Label>
- <Input id="defendantName" placeholder={t("phDefendantName")} {...register("defendantName")} />
- {errors.defendantName && <p className="text-xs text-destructive">{errors.defendantName.message}</p>}
- </div>
- </div>
- <div className="space-y-2">
- <Label htmlFor="defendantAddress">{t("lblDefendantAddress")}</Label>
- <Input id="defendantAddress" placeholder={t("phDefendantAddress")} {...register("defendantAddress")} />
- </div>
- <div className="space-y-2">
- <Label htmlFor="defendantEmail">{t("lblDefendantEmail")}</Label>
- <Input id="defendantEmail" type="email" placeholder={t("phDefendantEmail")} {...register("defendantEmail")} />
- {errors.defendantEmail && <p className="text-xs text-destructive">{errors.defendantEmail.message}</p>}
- </div>
- </div>
- )}
+  {step === 1 && (
+  <div className="space-y-4 animate-fade-in">
+  <div className="grid gap-4 sm:grid-cols-2">
+  <div className="space-y-2">
+  <Label htmlFor="plaintiff" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblPlaintiffYou")}</Label>
+  <Input id="plaintiff" value={user?.name || ""} disabled className="bg-muted font-bold text-[#1A202C]" />
+  </div>
+  <div className="space-y-2">
+  <Label htmlFor="defendantName" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantName")}</Label>
+  <Input id="defendantName" placeholder={t("phDefendantName")} {...register("defendantName")} className="font-bold text-[#1A202C]" />
+  {errors.defendantName && <p className="text-xs text-destructive font-bold">{errors.defendantName.message}</p>}
+  </div>
+  </div>
+  <div className="space-y-2">
+  <Label htmlFor="defendantAddress" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantAddress")}</Label>
+  <Input id="defendantAddress" placeholder={t("phDefendantAddress")} {...register("defendantAddress")} className="font-bold text-[#1A202C]" />
+  </div>
+  <div className="space-y-2">
+  <Label htmlFor="defendantEmail" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantEmail")}</Label>
+  <Input id="defendantEmail" type="email" placeholder={t("phDefendantEmail")} {...register("defendantEmail")} className="font-bold text-[#1A202C]" />
+  {errors.defendantEmail && <p className="text-xs text-destructive font-bold">{errors.defendantEmail.message}</p>}
+  </div>
+  </div>
+  )}
 
  {/* Step 2: Case Details */}
- {step === 2 && (
- <div className="space-y-4 animate-fade-in">
- <div className="space-y-2">
- <Label htmlFor="title">{t("lblCaseTitle")}</Label>
- <Input id="title" placeholder={t("phCaseTitle")} {...register("title")} />
- {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
- </div>
-
- <div className="grid gap-4 sm:grid-cols-2">
- <div className="space-y-2">
- <Label>{t("lblCaseCategory")}</Label>
- <Select onValueChange={(val) => setValue("categoryId", val)} value={watch("categoryId")}>
- <SelectTrigger>
- <SelectValue placeholder={t("phSelectCategory")} />
- </SelectTrigger>
- <SelectContent>
- {categories.map((cat) => (
- <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
- ))}
- </SelectContent>
- </Select>
- {errors.categoryId && <p className="text-xs text-destructive">{errors.categoryId.message}</p>}
- </div>
-
- <div className="space-y-2">
- <Label>{t("lblPriorityLevel")}</Label>
- <Select onValueChange={(val) => setValue("priority", val)} value={watch("priority")}>
- <SelectTrigger>
- <SelectValue placeholder={t("phSelectPriority")} />
- </SelectTrigger>
- <SelectContent>
- <SelectItem value="LOW">{t("priorityLow")}</SelectItem>
- <SelectItem value="MEDIUM">{t("priorityMedium")}</SelectItem>
- <SelectItem value="HIGH">{t("priorityHigh")}</SelectItem>
- <SelectItem value="CRITICAL">{t("priorityCritical")}</SelectItem>
- </SelectContent>
- </Select>
- </div>
- </div>
-
- <div className="space-y-2">
- <Label htmlFor="description">{t("lblCaseDescription")}</Label>
- <Textarea
- id="description"
- placeholder={t("phCaseDescription")}
- className="min-h-[150px]"
- {...register("description")}
- />
- {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
- </div>
- </div>
- )}
+  {step === 2 && (
+  <div className="space-y-4 animate-fade-in">
+  <div className="space-y-2">
+  <Label htmlFor="title" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblCaseTitle")}</Label>
+  <Input id="title" placeholder={t("phCaseTitle")} {...register("title")} className="font-bold text-[#1A202C]" />
+  {errors.title && <p className="text-xs text-destructive font-bold">{errors.title.message}</p>}
+  </div>
+ 
+  <div className="grid gap-4 sm:grid-cols-2">
+  <div className="space-y-2">
+  <Label className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblCaseCategory")}</Label>
+  <Select onValueChange={(val) => setValue("categoryId", val)} value={watch("categoryId")}>
+  <SelectTrigger className="font-bold text-[#1A202C]">
+  <SelectValue placeholder={t("phSelectCategory")} />
+  </SelectTrigger>
+  <SelectContent>
+  {categories.map((cat) => (
+  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+  ))}
+  </SelectContent>
+  </Select>
+  {errors.categoryId && <p className="text-xs text-destructive font-bold">{errors.categoryId.message}</p>}
+  </div>
+ 
+  <div className="space-y-2">
+  <Label className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblPriorityLevel")}</Label>
+  <Select onValueChange={(val) => setValue("priority", val)} value={watch("priority")}>
+  <SelectTrigger className="font-bold text-[#1A202C]">
+  <SelectValue placeholder={t("phSelectPriority")} />
+  </SelectTrigger>
+  <SelectContent>
+  <SelectItem value="LOW">{t("priorityLow")}</SelectItem>
+  <SelectItem value="MEDIUM">{t("priorityMedium")}</SelectItem>
+  <SelectItem value="HIGH">{t("priorityHigh")}</SelectItem>
+  <SelectItem value="CRITICAL">{t("priorityCritical")}</SelectItem>
+  </SelectContent>
+  </Select>
+  </div>
+  </div>
+ 
+  <div className="space-y-2">
+  <Label htmlFor="description" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblCaseDescription")}</Label>
+  <Textarea
+  id="description"
+  placeholder={t("phCaseDescription")}
+  className="min-h-[150px] font-bold text-[#1A202C]"
+  {...register("description")}
+  />
+  {errors.description && <p className="text-xs text-destructive font-bold">{errors.description.message}</p>}
+  </div>
+  </div>
+  )}
 
  {/* Step 3: Documents */}
  {step === 3 && (
@@ -250,10 +250,10 @@ const step3Schema = z.object({
  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
  <UploadCloud className="h-6 w-6 text-primary" />
  </div>
- <div className="space-y-1">
- <p className="font-medium text-sm">{t("dragFiles")}</p>
- <p className="text-xs text-muted-foreground">{t("fileTypes")}</p>
- </div>
+  <div className="space-y-1">
+  <p className="font-black text-sm text-[#1A202C]">{t("dragFiles")}</p>
+  <p className="text-xs font-bold text-[#4A5568] opacity-100">{t("fileTypes")}</p>
+  </div>
  <Input
  type="file"
  multiple
@@ -267,22 +267,22 @@ const step3Schema = z.object({
  </div>
  </div>
 
- {uploadedFiles.length > 0 && (
- <div className="space-y-2">
- <h4 className="text-sm font-medium">{t("lblUploadedDocs")}</h4>
- <div className="space-y-2">
- {uploadedFiles.map((file, idx) => (
- <div key={idx} className="flex items-center justify-between p-3 border rounded-md bg-card">
- <div className="flex items-center gap-3">
- <FileText className="h-4 w-4 text-primary" />
- <span className="text-sm truncate max-w-[200px]">{file.name}</span>
- </div>
- <span className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
- </div>
- ))}
- </div>
- </div>
- )}
+  {uploadedFiles.length > 0 && (
+  <div className="space-y-2">
+  <h4 className="text-sm font-black text-[#2D3748] opacity-100 uppercase tracking-widest">{t("lblUploadedDocs")}</h4>
+  <div className="space-y-2">
+  {uploadedFiles.map((file, idx) => (
+  <div key={idx} className="flex items-center justify-between p-3 border rounded-md bg-card">
+  <div className="flex items-center gap-3">
+  <FileText className="h-4 w-4 text-primary" />
+  <span className="text-sm font-bold text-[#1A202C] truncate max-w-[200px]">{file.name}</span>
+  </div>
+  <span className="text-xs font-black text-[#4A5568] opacity-100 uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+  </div>
+  ))}
+  </div>
+  </div>
+  )}
  </div>
  )}
  </form>

@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Search, Loader2, Shield, ChevronLeft, ChevronRight, Trash2, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const actionBadgeColors = {
  LOGIN: "bg-blue-100 text-blue-800",
  LOGOUT: "bg-slate-100 text-slate-800",
  USER_CREATED: "bg-green-100 text-green-800",
+ USER_UPDATED: "bg-blue-50 text-blue-700",
+ USER_DELETED: "bg-rose-100 text-rose-800",
  CASE_CREATED: "bg-emerald-100 text-emerald-800",
  CASE_VIEWED: "bg-sky-100 text-sky-800",
  CASE_REVIEWED: "bg-violet-100 text-violet-800",
@@ -28,6 +31,12 @@ const actionBadgeColors = {
  HEARING_COMPLETED: "bg-green-100 text-green-800",
  HEARING_ATTENDANCE: "bg-purple-100 text-purple-800",
  DECISION_ISSUED: "bg-yellow-100 text-yellow-800",
+ DECISION_CREATED: "bg-yellow-50 text-yellow-700",
+ DECISION_UPDATED: "bg-amber-50 text-amber-700",
+ DECISION_PUBLISHED: "bg-emerald-100 text-emerald-800",
+ REPORT_GENERATED: "bg-indigo-100 text-indigo-800",
+ JUDGE_PROFILE_UPDATED: "bg-purple-100 text-purple-800",
+ LOGIN_FAILED: "bg-red-200 text-red-900 border-red-300",
 };
 
 export default function AuditLogsPage() {
@@ -36,6 +45,8 @@ export default function AuditLogsPage() {
  const [page, setPage] = useState(1);
  const [isPurgeOpen, setIsPurgeOpen] = useState(false);
  const [purgePeriod, setPurgePeriod] = useState("days:30");
+ const [selectedLog, setSelectedLog] = useState(null);
+ const [isDetailOpen, setIsDetailOpen] = useState(false);
  const queryClient = useQueryClient();
 
  const filters = {};
@@ -214,7 +225,17 @@ export default function AuditLogsPage() {
  </TableRow>
  ) : (
  logs.map((log) => (
- <TableRow key={log.id} className="border-border hover:bg-muted/30 transition-colors group">
+  <TableRow 
+   key={log.id} 
+   className={cn(
+    "border-border hover:bg-muted/30 transition-colors group cursor-pointer",
+    log.is_suspicious && "bg-rose-50/50 border-rose-200 hover:bg-rose-100/50"
+   )}
+   onClick={() => {
+    setSelectedLog(log);
+    setIsDetailOpen(true);
+   }}
+  >
  <TableCell className="pl-8 py-5">
  <div className="flex flex-col">
  <span className="text-sm font-bold text-foreground">
@@ -225,16 +246,21 @@ export default function AuditLogsPage() {
  </span>
  </div>
  </TableCell>
- <TableCell>
- <div className="flex flex-col">
- <span className="text-sm font-black font-display truncate max-w-[200px]">
- {log.user_email || log.user?.email || "System"}
- </span>
- <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
- IP: {log.ip_address || "Internal"}
- </span>
- </div>
- </TableCell>
+  <TableCell>
+  <div className="flex flex-col">
+  <div className="flex items-center gap-2">
+   <span className="text-sm font-black font-display truncate max-w-[200px]">
+   {log.user_email || log.user?.email || "System"}
+   </span>
+   {log.is_suspicious && (
+    <Badge className="bg-rose-500 text-white border-none text-[8px] h-4 px-1 animate-pulse">SUSPICIOUS</Badge>
+   )}
+  </div>
+  <span className="text-[10px] font-bold text-muted-foreground tracking-widest uppercase">
+  IP: {log.ip_address || "Internal"}
+  </span>
+  </div>
+  </TableCell>
  <TableCell>
  <Badge
  variant="outline"
@@ -248,17 +274,17 @@ export default function AuditLogsPage() {
  {log.description || "—"}
  </p>
  </TableCell>
- <TableCell className="text-right pr-8">
- <Button 
- variant="ghost" 
- size="sm" 
- className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
- onClick={() => handleDelete(log.id)}
- disabled={deleteMutation.isPending}
- >
- <Trash2 className="h-4 w-4" />
- </Button>
- </TableCell>
+  <TableCell className="text-right pr-8" onClick={(e) => e.stopPropagation()}>
+  <Button 
+  variant="ghost" 
+  size="sm" 
+  className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+  onClick={() => handleDelete(log.id)}
+  disabled={deleteMutation.isPending}
+  >
+  <Trash2 className="h-4 w-4" />
+  </Button>
+  </TableCell>
  </TableRow>
  ))
  )}
@@ -294,6 +320,94 @@ export default function AuditLogsPage() {
  </Button>
  </div>
  </div>
+  <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+   <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+    <DialogHeader>
+     <DialogTitle className="flex items-center gap-3">
+      <Shield className={cn("h-5 w-5", selectedLog?.is_suspicious ? "text-rose-500" : "text-primary")} />
+      Audit Log Detail
+      {selectedLog?.is_suspicious && (
+       <Badge className="bg-rose-500 text-white ml-2">SUSPICIOUS ACTIVITY</Badge>
+      )}
+     </DialogTitle>
+     <DialogDescription>
+      Detailed activity record for {selectedLog?.timestamp && new Date(selectedLog.timestamp).toLocaleString()}
+     </DialogDescription>
+    </DialogHeader>
+    
+    {selectedLog && (
+     <div className="space-y-6 py-4">
+      <div className="grid grid-cols-2 gap-4">
+       <div className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Action Type</p>
+        <p className="font-bold text-foreground">{(selectedLog.action_type || "").replace(/_/g, " ")}</p>
+       </div>
+       <div className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</p>
+        <Badge variant={selectedLog.action_status === 'SUCCESS' ? 'default' : 'destructive'} className="rounded-md">
+         {selectedLog.action_status}
+        </Badge>
+       </div>
+       <div className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Subject</p>
+        <p className="font-bold text-foreground">{selectedLog.user_email || "System/Anonymous"}</p>
+       </div>
+       <div className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">IP Address</p>
+        <p className="font-mono text-sm">{selectedLog.ip_address || "Internal"}</p>
+       </div>
+      </div>
+
+      <div className="space-y-1">
+       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Description</p>
+       <div className="p-3 bg-muted/30 rounded-xl border border-border text-sm italic">
+        {selectedLog.description}
+       </div>
+      </div>
+
+      {selectedLog.changes && Object.keys(selectedLog.changes).length > 0 && (
+       <div className="space-y-3">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">State Changes</p>
+        <div className="border border-border rounded-xl overflow-hidden">
+         <Table>
+          <TableHeader className="bg-muted/50">
+           <TableRow>
+            <TableHead className="text-[10px] font-black uppercase py-2">Field</TableHead>
+            <TableHead className="text-[10px] font-black uppercase py-2">Before</TableHead>
+            <TableHead className="text-[10px] font-black uppercase py-2">After</TableHead>
+           </TableRow>
+          </TableHeader>
+          <TableBody>
+           {Object.entries(selectedLog.changes).map(([field, delta]) => (
+            <TableRow key={field}>
+             <TableCell className="font-bold text-xs py-2">{field}</TableCell>
+             <TableCell className="text-xs py-2 text-rose-500 line-through decoration-rose-500/30">
+              {JSON.stringify(delta.old) === 'null' ? '—' : String(delta.old)}
+             </TableCell>
+             <TableCell className="text-xs py-2 text-emerald-600 font-medium">
+              {String(delta.new)}
+             </TableCell>
+            </TableRow>
+           ))}
+          </TableBody>
+         </Table>
+        </div>
+       </div>
+      )}
+
+      <div className="space-y-1">
+       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">User Agent</p>
+       <p className="text-[10px] font-mono text-muted-foreground break-all bg-muted/10 p-2 rounded border border-border/50">
+        {selectedLog.user_agent}
+       </p>
+      </div>
+     </div>
+    )}
+    <DialogFooter>
+     <Button onClick={() => setIsDetailOpen(false)}>Close Activity View</Button>
+    </DialogFooter>
+   </DialogContent>
+  </Dialog>
  </div>
  );
 }

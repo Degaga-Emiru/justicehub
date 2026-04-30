@@ -76,7 +76,7 @@ export default function DefendantCasesPage() {
 
  const needsAction = allCases.filter(c => 
  (c.status === "DECIDED" && !c.is_defendant_acknowledged) ||
- (c.status === "ASSIGNED" && !c.defendant_response)
+ (c.status === "ASSIGNED" && !c.has_defendant_responded)
  );
  const activeCases = allCases.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(c.status));
 
@@ -85,11 +85,11 @@ export default function DefendantCasesPage() {
  {/* Header */}
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
- <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Legal Standings</h1>
- <p className="text-muted-foreground font-semibold text-lg leading-relaxed flex items-center gap-2">
- <Shield className="h-5 w-5 text-primary" />
- Review all claims filed against you and manage your formal defense responses.
- </p>
+ <h1 className="text-4xl font-bold font-display tracking-tight text-[#1A202C]">Legal Standings</h1>
+ <p className="text-[#4A5568] font-bold text-lg leading-relaxed flex items-center gap-2 opacity-100">
+  <Shield className="h-5 w-5 text-[#C53030]" />
+  Review all claims filed against you and manage your formal defense responses.
+  </p>
  </div>
  </div>
 
@@ -130,8 +130,8 @@ export default function DefendantCasesPage() {
  <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-2xl font-black font-display tracking-tight">Dispute History</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">A complete record of all legal filings where you are named as defendant.</CardDescription>
+ <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">Dispute History</CardTitle>
+ <CardDescription className="text-[#4A5568] font-bold opacity-100">A complete record of all legal filings where you are named as defendant.</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {isLoadingCases ? (
@@ -153,8 +153,8 @@ export default function DefendantCasesPage() {
  <AlertTriangle className="h-5 w-5" />
  </div>
  <div>
- <CardTitle className="text-2xl font-black font-display tracking-tight">Defenses Required</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Cases awaiting your response or decision acknowledgment.</CardDescription>
+ <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">Defenses Required</CardTitle>
+ <CardDescription className="text-[#4A5568] font-bold opacity-100">Cases awaiting your response or decision acknowledgment.</CardDescription>
  </div>
  </div>
  </CardHeader>
@@ -178,8 +178,8 @@ export default function DefendantCasesPage() {
  <Scale className="h-5 w-5" />
  </div>
  <div>
- <CardTitle className="text-2xl font-black font-display tracking-tight">Ongoing Proceedings</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Cases currently being heard in court.</CardDescription>
+ <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">Ongoing Proceedings</CardTitle>
+ <CardDescription className="text-[#4A5568] font-bold opacity-100">Cases currently being heard in court.</CardDescription>
  </div>
  </div>
  </CardHeader>
@@ -240,12 +240,12 @@ function CaseTable({ data, router, emptyMessage, onAcknowledge }) {
  <Table>
  <TableHeader className="bg-muted/30">
  <TableRow className="border-border hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground pl-8">File Number</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Dispute Title</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Category</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Last Update</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground">Standing</TableHead>
- <TableHead className="py-5 font-black uppercase text-[11px] tracking-[0.2em] text-muted-foreground text-right pr-8">Actions</TableHead>
+ <TableHead className="py-5 font-bold uppercase text-[11px] tracking-[0.2em] text-[#2D3748] pl-8">File Number</TableHead>
+ <TableHead className="py-5 font-bold uppercase text-[11px] tracking-[0.2em] text-[#2D3748]">Dispute Title</TableHead>
+ <TableHead className="py-5 font-bold uppercase text-[11px] tracking-[0.2em] text-[#2D3748]">Category</TableHead>
+ <TableHead className="py-5 font-bold uppercase text-[11px] tracking-[0.2em] text-[#2D3748]">Last Update</TableHead>
+ <TableHead className="py-5 font-bold uppercase text-[11px] tracking-[0.2em] text-[#2D3748]">Standing</TableHead>
+ <TableHead className="py-5 font-bold uppercase text-[11px] tracking-[0.2em] text-[#2D3748] text-right pr-8">Actions</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -260,13 +260,13 @@ function CaseTable({ data, router, emptyMessage, onAcknowledge }) {
  </TableCell>
  <TableCell className="py-6">
  <div className="flex flex-col gap-1">
- <span className="font-black font-display text-base tracking-tight text-white group-hover:text-primary transition-colors">{item.title}</span>
- <span className="text-xs text-muted-foreground font-bold flex items-center gap-1.5 mt-1">
- <Clock className="h-3.5 w-3.5 text-primary/90" /> Filed {new Date(item.filing_date || item.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+ <span className="font-bold font-display text-base tracking-tight text-[#1A202C] group-hover:text-primary transition-colors">{item.title}</span>
+ <span className="text-xs text-[#4A5568] font-bold flex items-center gap-1.5 mt-1 opacity-100">
+ <Clock className="h-3.5 w-3.5 text-primary" /> Filed {new Date(item.filing_date || item.created_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
  </span>
  </div>
  </TableCell>
- <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.category?.name || "General"}</TableCell>
+ <TableCell className="text-[10px] font-bold uppercase tracking-widest text-[#4A5568] opacity-100">{item.parent_category_name ? `${item.parent_category_name} - ${item.category_name}` : (item.category_name || "General")}</TableCell>
  <TableCell className="text-xs font-bold">
  {new Date(item.updated_at || item.created_at).toLocaleDateString()}
  </TableCell>
@@ -287,13 +287,13 @@ function CaseTable({ data, router, emptyMessage, onAcknowledge }) {
  Acknowledge
  </Button>
  )}
- {!item.defendant_response && item.status === "ASSIGNED" ? (
+ {!item.has_defendant_responded && item.status === "ASSIGNED" ? (
  <Button 
  size="sm" 
  className="h-8 rounded-lg font-black text-[10px] uppercase tracking-widest bg-primary/20 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
  onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/defendant/cases/${item.id}`); }}
  >
- Respond
+ Respond Now
  </Button>
  ) : (
  ["PAID", "ASSIGNED", "IN_PROGRESS"].includes(item.status) && (

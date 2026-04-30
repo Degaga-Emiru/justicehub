@@ -14,11 +14,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, FileText, Download, User, Calendar, Scale, Loader2, Shield, History, CheckCircle, AlertTriangle, Send, Gavel, UserCheck, Clock, FileUp, ExternalLink } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, FileText, Download, User, Calendar, Scale, Loader2, Shield, History, CheckCircle, AlertTriangle, Send, Gavel, UserCheck, Clock, FileUp, ExternalLink, MapPin } from "lucide-react";
+import { format, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 import { statusColors } from "@/lib/mock-data";
 import { toast } from "sonner";
+import Link from "next/link";
+
+const safeFormat = (dateStr, formatStr = "PPP") => {
+  if (!dateStr) return "TBD";
+  const date = new Date(dateStr);
+  if (!isValid(date)) return "TBD";
+  return format(date, formatStr);
+};
 
 const STATUS_LABELS = {
  PENDING_REVIEW: "Case Under Review",
@@ -64,6 +72,7 @@ export default function DefendantCaseDetailPage() {
  mutationFn: () => updateCaseStatus(id, { is_defendant_acknowledged: true }),
  onSuccess: () => {
  queryClient.invalidateQueries(["case-detail", id]);
+ queryClient.invalidateQueries(["defendant-cases"]);
  toast.success("Decision acknowledged successfully.");
  }
  });
@@ -72,6 +81,7 @@ export default function DefendantCaseDetailPage() {
  mutationFn: (formData) => submitDefendantResponse(id, formData),
  onSuccess: () => {
  queryClient.invalidateQueries(["case-detail", id]);
+ queryClient.invalidateQueries(["defendant-cases"]);
  queryClient.invalidateQueries(["case-documents-defendant", id]);
  toast.success("Response submitted successfully.");
  setResponseForm({ description: "", document_type: "EVIDENCE", file: null });
@@ -149,11 +159,11 @@ export default function DefendantCaseDetailPage() {
  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-[0.2em] px-2 mb-1 border-rose-500/30 text-rose-500 bg-rose-500/5">
  Defense Record
  </Badge>
- <CardTitle className="text-3xl font-black font-display tracking-tight text-slate-100">{caseData.title}</CardTitle>
+ <CardTitle className="text-3xl font-bold font-display tracking-tight text-[#1A202C]">{caseData.title}</CardTitle>
  <div className="flex items-center gap-4 text-sm font-semibold text-slate-400 pt-1">
  <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-rose-500" /> {caseData.file_number}</span>
  <span className="">•</span>
- <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-rose-500" /> Summons Received {format(new Date(caseData.created_at || caseData.filing_date), "MMM d, yyyy")}</span>
+ <span className="flex items-center gap-2"><Calendar className="h-4 w-4 text-rose-500" /> Summons Received {safeFormat(caseData.created_at || caseData.filing_date, "MMM d, yyyy")}</span>
  </div>
  </div>
  <Badge className={cn("px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest border-none shadow-lg h-fit", statusColors[caseData.status])}>
@@ -198,19 +208,29 @@ export default function DefendantCaseDetailPage() {
  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2">
  <Send className="h-4 w-4 text-primary" /> Formal Defense Response
  </h3>
- {caseData.defendant_response ? (
+ {caseData.has_defendant_responded ? (
  <div className="p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 space-y-3">
  <div className="flex items-center justify-between">
- <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Submitted Response</p>
+ <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Formal Response Submitted</p>
  <CheckCircle className="h-4 w-4 text-emerald-500" />
  </div>
- <p className="text-sm font-medium text-slate-400 italic">{caseData.defendant_response}</p>
+ <p className="text-sm font-bold text-[#1A202C] opacity-100">You have already submitted a formal response for this case.</p>
+ <div className="pt-2">
+  <Button 
+   variant="outline" 
+   size="sm" 
+   className="h-9 rounded-xl font-bold text-[10px] uppercase tracking-widest border-emerald-500/30 text-emerald-600 hover:bg-emerald-500 hover:text-white"
+   onClick={() => setResponseForm({ ...responseForm, description: "" })}
+  >
+   Submit Additional Evidence
+  </Button>
+ </div>
  </div>
  ) : (
  <div className="space-y-4">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
- <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Document Type</Label>
+ <Label className="text-[10px] font-bold uppercase tracking-widest text-[#2D3748] ml-1">Document Type</Label>
  <Select 
  value={responseForm.document_type} 
  onValueChange={(val) => setResponseForm({ ...responseForm, document_type: val })}
@@ -226,7 +246,7 @@ export default function DefendantCaseDetailPage() {
  </Select>
  </div>
  <div className="space-y-2">
- <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Supporting File</Label>
+ <Label className="text-[10px] font-bold uppercase tracking-widest text-[#2D3748] ml-1">Supporting File</Label>
  <div className="relative">
  <Input 
  type="file" 
@@ -248,7 +268,7 @@ export default function DefendantCaseDetailPage() {
  </div>
 
  <div className="space-y-2">
- <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Statement Description</Label>
+ <Label className="text-[10px] font-bold uppercase tracking-widest text-[#2D3748] ml-1">Statement Description</Label>
  <Textarea 
  placeholder="Provide a detailed description of this filing..."
  className="min-h-[140px] bg-muted/30 border-border rounded-2xl focus-visible:ring-primary/40 p-5 font-medium leading-relaxed"
@@ -273,7 +293,7 @@ export default function DefendantCaseDetailPage() {
   <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
   <CardHeader className="p-8 pb-4">
   <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-3">
-  <History className="h-5 w-5 text-rose-500" />
+  <History className="h-5 w-5 text-[#C53030]" />
   Legal Journey Milestones
   </CardTitle>
   </CardHeader>
@@ -311,10 +331,10 @@ export default function DefendantCaseDetailPage() {
             </div>
             <div className="flex-1 p-5 rounded-2xl border border-border bg-background group-hover:bg-muted/30 transition-colors">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                <h4 className="font-bold text-sm text-white">{m.title}</h4>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{format(new Date(m.date), "PPP")}</span>
+                <h4 className="font-bold text-sm text-[#1A202C]">{m.title}</h4>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#4A5568] opacity-100">{safeFormat(m.date)}</span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed font-medium">{m.description}</p>
+              <p className="text-xs text-[#4A5568] leading-relaxed font-bold opacity-100">{m.description}</p>
             </div>
           </div>
         ))}
@@ -339,26 +359,26 @@ export default function DefendantCaseDetailPage() {
   <div className="space-y-4">
   {caseData.hearings.map((h, i) => (
   <div key={i} className="p-4 rounded-xl border border-border bg-muted/20 hover:bg-muted/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div className="flex items-center gap-4">
-      <div className={cn(
-        "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
-        h.status === "CONDUCTED" ? "bg-emerald-500/10 text-emerald-500" : "bg-blue-500/10 text-blue-500"
-      )}>
-        <Calendar className="h-6 w-6" />
-      </div>
-      <div>
-        <div className="flex items-center gap-2">
-          <p className="font-bold text-sm text-slate-100">{format(new Date(h.scheduled_date), "PPP")}</p>
-          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-rose-500/30 text-rose-500">{h.status}</Badge>
+      <div className="flex items-center gap-4">
+        <div className={cn(
+          "h-12 w-12 rounded-xl flex items-center justify-center shrink-0",
+          h.status === "CONDUCTED" ? "bg-emerald-500/10 text-emerald-600" : "bg-blue-500/10 text-blue-600"
+        )}>
+          <Calendar className="h-6 w-6" />
         </div>
-        <p className="text-xs text-slate-400 font-medium">{h.scheduled_time} • {h.hearing_type}</p>
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="font-bold text-sm text-[#1A202C]">{safeFormat(h.scheduled_date)}</p>
+            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-rose-500/30 text-rose-600">{h.status}</Badge>
+          </div>
+          <p className="text-xs text-[#4A5568] font-bold opacity-100">{h.scheduled_time} • {h.hearing_type}</p>
+        </div>
       </div>
-    </div>
-    <div className="flex flex-col md:items-end">
-      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Presiding Judge</p>
-      <p className="text-xs font-bold text-slate-100">{h.judge_name || "Honorable Justice"}</p>
-      {h.location && <p className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1"><MapPin className="h-3 w-3" /> {h.location}</p>}
-    </div>
+      <div className="flex flex-col md:items-end">
+        <p className="text-[10px] font-black uppercase tracking-widest text-[#2D3748] mb-1 opacity-100">Presiding Judge</p>
+        <p className="text-xs font-bold text-[#1A202C]">{h.judge_name || "Honorable Justice"}</p>
+        {h.location && <p className="text-[10px] font-bold text-[#4A5568] mt-1 flex items-center gap-1 opacity-100"><MapPin className="h-3 w-3" /> {h.location}</p>}
+      </div>
   </div>
   ))}
   </div>
@@ -383,19 +403,19 @@ export default function DefendantCaseDetailPage() {
   <div key={i} className="space-y-6 animate-in zoom-in-95 duration-500">
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-muted/20 rounded-2xl border border-border">
       <div className="space-y-1">
-        <p className="text-[10px] font-black uppercase tracking-widest text-rose-500">Verdict</p>
-        <h4 className="text-xl font-black font-display text-white tracking-tight">{d.verdict}</h4>
+        <p className="text-[10px] font-black uppercase tracking-widest text-rose-600">Verdict</p>
+        <h4 className="text-xl font-black font-display text-[#1A202C] tracking-tight">{d.verdict}</h4>
       </div>
       <div className="flex flex-col md:items-end">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Decision Date</p>
-        <p className="text-sm font-bold text-white">{format(new Date(d.decision_date), "PPP")}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-[#2D3748] mb-1 opacity-100">Decision Date</p>
+        <p className="text-sm font-bold text-[#1A202C]">{safeFormat(d.decision_date)}</p>
       </div>
     </div>
     <div className="space-y-3 px-2">
-      <p className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+      <p className="text-xs font-black uppercase tracking-widest text-[#2D3748] flex items-center gap-2 opacity-100">
         <FileText className="h-4 w-4" /> Court Remarks & Final Orders
       </p>
-      <div className="p-6 rounded-2xl bg-background border border-border italic text-sm text-slate-400 leading-relaxed whitespace-pre-line">
+      <div className="p-6 rounded-2xl bg-background border border-border italic text-sm text-[#4A5568] leading-relaxed whitespace-pre-line font-bold opacity-100">
         {d.remarks}
       </div>
     </div>
@@ -403,8 +423,8 @@ export default function DefendantCaseDetailPage() {
       <div className="flex items-center gap-4">
         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary">{d.judge_name?.charAt(0)}</div>
         <div>
-          <p className="text-[10px] font-black text-slate-300 uppercase leading-none">Delivered By</p>
-          <p className="text-sm font-bold mt-1 text-white truncate">{d.judge_name}</p>
+          <p className="text-[10px] font-black text-[#2D3748] uppercase leading-none opacity-100">Delivered By</p>
+          <p className="text-sm font-bold mt-1 text-[#1A202C] truncate">{d.judge_name}</p>
         </div>
       </div>
       {d.pdf_document && (
@@ -417,6 +437,7 @@ export default function DefendantCaseDetailPage() {
           <Download className="h-4 w-4 mr-2" /> Download PDF
         </Button>
       )}
+    </div>
     </div>
   ))
   ) : (
@@ -432,7 +453,7 @@ export default function DefendantCaseDetailPage() {
  {/* Plaintiff Info */}
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-6 pb-2">
- <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Opposing Party</CardTitle>
+ <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">Opposing Party</CardTitle>
  </CardHeader>
  <CardContent className="p-6 space-y-6">
  <div className="space-y-3">
@@ -442,8 +463,8 @@ export default function DefendantCaseDetailPage() {
  {(caseData.plaintiff_name || "P").charAt(0)}
  </div>
  <div className="flex flex-col min-w-0">
- <p className="font-bold text-sm text-slate-400 truncate">{caseData.plaintiff_name || "Verified Plaintiff"}</p>
- <p className="text-xs text-slate-400 font-medium truncate">Represented by State</p>
+ <p className="font-bold text-sm text-[#1A202C] truncate">{caseData.plaintiff_name || "Verified Plaintiff"}</p>
+ <p className="text-xs text-[#4A5568] font-bold truncate opacity-100">Represented by State</p>
  </div>
  </div>
  </div>
@@ -453,7 +474,7 @@ export default function DefendantCaseDetailPage() {
  {/* Documents */}
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-6 pb-2">
- <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Claim Evidence</CardTitle>
+ <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">Claim Evidence</CardTitle>
  </CardHeader>  <CardContent className="p-6 space-y-3">
   {docsLoading ? (
   <div className="space-y-2 animate-pulse">
@@ -469,7 +490,7 @@ export default function DefendantCaseDetailPage() {
   </div>
   <div className="flex flex-col min-w-0">
   <span className="text-[10px] font-black uppercase tracking-widest text-primary/90">{doc.document_type}</span>
-  <span className="text-xs font-bold truncate max-w-[120px]">{doc.description || "Untitled File"}</span>
+  <span className="text-xs font-bold truncate max-w-[120px] text-[#1A202C]">{doc.description || "Untitled File"}</span>
   </div>
   </div>
   <div className="flex items-center gap-1">
@@ -506,7 +527,7 @@ export default function DefendantCaseDetailPage() {
     </div>
     <div className="flex items-center gap-1">
       <Clock className="h-2.5 w-2.5" />
-      <span>{doc.created_at ? format(new Date(doc.created_at), "MMM d") : "N/A"}</span>
+      <span>{safeFormat(doc.created_at, "MMM d")}</span>
     </div>
   </div>
   </div>
@@ -528,7 +549,7 @@ export default function DefendantCaseDetailPage() {
  <div className="p-5 rounded-2xl bg-[#0f172a] border border-rose-500/20 space-y-3">
  <div className="space-y-1">
  <p className="text-[10px] font-black text-slate-400 uppercase ">Summons Expiry</p>
- <p className="text-base font-black text-slate-400">{caseData.next_hearing_date ? format(new Date(caseData.next_hearing_date), "MMM d, yyyy") : "ASAP"}</p>
+ <p className="text-base font-black text-slate-400">{safeFormat(caseData.next_hearing_date, "MMM d, yyyy")}</p>
  </div>
  <Badge variant="outline" className="text-[9px] font-black uppercase border-rose-500/30 text-rose-500">Legal Deadline</Badge>
  </div>
@@ -540,4 +561,4 @@ export default function DefendantCaseDetailPage() {
  );
 }
 
-import Link from "next/link";
+

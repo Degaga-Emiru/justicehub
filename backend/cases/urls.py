@@ -34,6 +34,7 @@ urlpatterns = [
     path('statistics/dashboard/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('statistics/judge-workload/', views.JudgeWorkloadView.as_view(), name='judge-workload'),
     path('statistics/case-type-distribution/', views.CaseTypeDistributionView.as_view(), name='case-type-distribution'),
+    path('statistics/closed-analytics/', views.ClosedCaseAnalyticsView.as_view(), name='closed-analytics'),
     
     # 3. Put UUID paths NEXT
     # (Removed duplicated paths to avoid collisions)

@@ -169,23 +169,49 @@ class LoginView(APIView):
     )
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        
-        user = serializer.validated_data['user']
-        refresh = RefreshToken.for_user(user)
-        
-        create_audit_log(
-            request=request,
-            action_type=AuditLog.ActionType.LOGIN,
-            obj=user,
-            description=f"User {user.email} logged in successfully."
-        )
+        try:
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data['user']
+            refresh = RefreshToken.for_user(user)
+            
+            create_audit_log(
+                request=request,
+                action_type=AuditLog.ActionType.LOGIN,
+                obj=user,
+                description=f"User {user.email} logged in successfully."
+            )
 
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "user": UserProfileSerializer(user, context={'request': request}).data
-        }, status=status.HTTP_200_OK)
+            return Response({
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": UserProfileSerializer(user, context={'request': request}).data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            # Check for suspicious activity (brute force detection)
+            email = request.data.get('email')
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
+            
+            # Count recent failures for this IP/Email
+            one_hour_ago = timezone.now() - timezone.timedelta(hours=1)
+            failure_count = AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.LOGIN_FAILED,
+                timestamp__gte=one_hour_ago,
+                ip_address=ip
+            ).count()
+            
+            is_suspicious = failure_count >= 5
+            
+            create_audit_log(
+                request=request,
+                action_type=AuditLog.ActionType.LOGIN_FAILED,
+                description=f"Failed login attempt for {email}. Reason: {str(e)}",
+                action_status=AuditLog.ActionStatus.FAILURE,
+                is_suspicious=is_suspicious,
+                entity_name=email
+            )
+            raise e
 
 
 class CustomTokenRefreshView(TokenRefreshView):
@@ -315,6 +341,25 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             return UserProfileSerializer
         return super().get_serializer_class()
 
+    def perform_update(self, serializer):
+        from audit_logs.services import track_model_changes
+        old_instance = self.get_object()
+        user = serializer.save()
+        
+        # Track important fields
+        tracked_fields = ['first_name', 'last_name', 'phone_number', 'role', 'is_active', 'is_verified']
+        changes = track_model_changes(old_instance, user, tracked_fields)
+        
+        if changes:
+            create_audit_log(
+                request=self.request,
+                action_type=AuditLog.ActionType.USER_UPDATED,
+                obj=user,
+                description=f"Admin updated user profile for {user.email}",
+                changes=changes,
+                entity_name=user.email
+            )
+
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -434,12 +479,58 @@ class AdminUserViewSet(viewsets.ModelViewSet):
                 failed += 1
                 results.append({"email": row.get('email'), "status": "failed", "error": str(e)})
                 
+        # Log Bulk Action
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.USER_CREATED,
+            description=f"Admin performed bulk user creation: {successful} success, {failed} failed.",
+            is_suspicious=total > 10, # Flag large bulk operations as suspicious
+            entity_name=f"Bulk Creation ({total} rows)"
+        )
+                
         return Response({
             "total": total,
             "successful": successful,
             "failed": failed,
             "results": results
         })
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_csv(self, request):
+        """Export users based on filters to CSV."""
+        users = self.get_queryset()
+        
+        response = HttpResponse(content_type='text/csv')
+        filename = f"users_export_{timezone.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Email', 'First Name', 'Last Name', 'Phone Number', 
+            'Role', 'Is Active', 'Is Verified', 'Date Joined'
+        ])
+        
+        for user in users:
+            writer.writerow([
+                user.email,
+                user.first_name,
+                user.last_name,
+                user.phone_number,
+                user.role,
+                'Yes' if user.is_active else 'No',
+                'Yes' if user.is_verified else 'No',
+                user.date_joined.strftime('%Y-%m-%d %H:%M:%S')
+            ])
+            
+        # Log Export Action
+        create_audit_log(
+            request=request,
+            action_type=AuditLog.ActionType.EXPORT_DATA,
+            description=f"Admin exported {users.count()} users to CSV.",
+            entity_name="User Export"
+        )
+        
+        return response
 
     @action(detail=True, methods=['post'], url_path='toggle-status')
     def toggle_status(self, request, id=None):

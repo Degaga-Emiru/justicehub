@@ -21,6 +21,13 @@ class CaseCategory(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    parent = models.ForeignKey(
+        'self', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        related_name='subcategories'
+    )
 
     # Acknowledgement
     is_defendant_acknowledged = models.BooleanField(default=False)
@@ -177,6 +184,8 @@ class Case(SoftDeleteModel):
     # Acknowledgement
     is_defendant_acknowledged = models.BooleanField(default=False)
     acknowledged_at = models.DateTimeField(null=True, blank=True)
+    has_defendant_responded = models.BooleanField(default=False)
+    responded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -413,9 +422,20 @@ class JudgeProfile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='judge_profile')
     specializations = models.ManyToManyField(CaseCategory, related_name='judges')
+    class AvailabilityStatus(models.TextChoices):
+        AVAILABLE = 'AVAILABLE', 'Available'
+        BUSY = 'BUSY', 'Busy'
+        ON_LEAVE = 'ON_LEAVE', 'On Leave'
+
     max_active_cases = models.IntegerField(default=10, validators=[MinValueValidator(1), MaxValueValidator(10)])
     bar_certificate_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     years_of_experience = models.IntegerField(default=0)
+    status = models.CharField(
+        max_length=20,
+        choices=AvailabilityStatus.choices,
+        default=AvailabilityStatus.AVAILABLE,
+        db_index=True
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

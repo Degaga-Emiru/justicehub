@@ -50,7 +50,7 @@ export default function DefendantDashboard() {
   const activeCases = cases?.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(c.status)) || [];
   const pendingActions = cases?.filter(c => 
     (c.status === "DECIDED" && !c.is_defendant_acknowledged) || 
-    (c.status === "ASSIGNED" && !c.defendant_response)
+    (c.status === "ASSIGNED" && !c.has_defendant_responded)
   ) || [];
   const upcomingHearingsCount = myHearings.length;
   const resolvedCases = cases?.filter(c => c.status === "CLOSED") || [];
@@ -59,8 +59,8 @@ export default function DefendantDashboard() {
     <div className="space-y-10 animate-fade-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div className="space-y-1">
-          <h1 className="text-4xl font-black font-display tracking-tight text-slate-100">Defense Command</h1>
-          <p className="text-muted-foreground font-semibold text-lg leading-relaxed">
+          <h1 className="text-4xl font-bold font-display tracking-tight text-[#1A202C]">Defense Command</h1>
+          <p className="text-[#4A5568] font-bold text-lg leading-relaxed opacity-100">
             Welcome back, {user?.name || "Defendant"}. Monitor your active legal standing.
           </p>
         </div>
@@ -71,14 +71,14 @@ export default function DefendantDashboard() {
         <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Cases Against You</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase tracking-[0.1em] text-[#2D3748]">Cases Against You</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
               <Shield className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black font-display text-foreground">{cases?.length || 0}</div>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.05em] mt-1">Total Litigation</p>
+            <div className="text-4xl font-black font-display text-[#1A202C]">{cases?.length || 0}</div>
+            <p className="text-xs font-bold text-[#4A5568] uppercase tracking-[0.05em] mt-1 opacity-100">Total Litigation</p>
           </CardContent>
         </Card>
 
@@ -88,13 +88,13 @@ export default function DefendantDashboard() {
         )}>
           {pendingActions.length > 0 && <div className="absolute inset-0 bg-rose-500/5 animate-pulse-slow"></div>}
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Pending Actions</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase tracking-[0.1em] text-[#2D3748]">Pending Actions</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
               <AlertTriangle className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-black font-display text-foreground">{pendingActions.length}</div>
+            <div className="text-4xl font-black font-display text-[#1A202C]">{pendingActions.length}</div>
             {pendingActions.length > 0 ? (
               <Link href="/dashboard/defendant/cases" className="inline-flex items-center text-xs font-black text-rose-500 hover:text-rose-600 uppercase tracking-wider mt-2 group/act">
                 Respond Now <ArrowRight className="ml-1 h-3 w-3 group-hover/act:translate-x-1 transition-transform" />
@@ -140,8 +140,8 @@ export default function DefendantDashboard() {
           <CardHeader className="p-8 pb-4">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-black font-display tracking-tight text-slate-100">Active Disputes</CardTitle>
-                <CardDescription className="text-muted-foreground font-medium">Ongoing legal proceedings involving your account.</CardDescription>
+                <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">Active Disputes</CardTitle>
+                <CardDescription className="text-[#4A5568] font-bold opacity-100">Ongoing legal proceedings involving your account.</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="font-bold text-primary group" asChild>
                 <Link href="/dashboard/defendant/cases">
@@ -167,7 +167,7 @@ export default function DefendantDashboard() {
                   >
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-3">
-                        <p className="font-bold font-display text-lg tracking-tight text-muted-foreground group-hover:text-primary transition-colors">{caseItem.title}</p>
+                        <p className="font-bold font-display text-lg tracking-tight text-[#1A202C] group-hover:text-primary transition-colors">{caseItem.title}</p>
                         <Badge variant="outline" className={cn(
                           "px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider",
                           statusColors[caseItem.status] || "bg-gray-100 text-gray-800"
@@ -175,9 +175,9 @@ export default function DefendantDashboard() {
                           {STATUS_LABELS[caseItem.status] || caseItem.status}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground uppercase tracking-[0.1em] leading-none">
+                      <div className="flex items-center gap-4 text-xs font-black text-[#4A5568] uppercase tracking-[0.1em] leading-none opacity-100">
                         <span className="flex items-center gap-1.5"><FileText className="h-3 w-3 text-primary/90" /> {caseItem.file_number || "F-PENDING"}</span>
-                        <span className="flex items-center gap-1.5"><Scale className="h-3 w-3 text-primary/90" /> {caseItem.category?.name || caseItem.category || "General"}</span>
+                        <span className="flex items-center gap-1.5"><Scale className="h-3 w-3 text-primary/90" /> {caseItem.parent_category_name ? `${caseItem.parent_category_name} - ${caseItem.category_name}` : (caseItem.category_name || "General")}</span>
                       </div>
                     </div>
                     <Button variant="ghost" size="icon" className="rounded-xl box-content p-2 hover:bg-primary/10 hover:text-primary h-8 w-8 transition-all">
@@ -188,10 +188,10 @@ export default function DefendantDashboard() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center">
-                  <Shield className="h-8 w-8 text-muted-foreground" />
+                <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center text-primary">
+                  <Shield className="h-8 w-8" />
                 </div>
-                <p className="text-lg font-bold text-muted-foreground max-w-xs text-center px-4">No active legal disputes found for your account.</p>
+                <p className="text-lg font-bold text-[#1A202C] max-w-xs text-center px-4 opacity-100">No active legal disputes found for your account.</p>
               </div>
             )}
           </CardContent>
@@ -202,8 +202,8 @@ export default function DefendantDashboard() {
           <CardHeader className="p-8 pb-4">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-black font-display tracking-tight text-slate-100">Court Schedule</CardTitle>
-                <CardDescription className="text-muted-foreground font-medium">Your upcoming summons and hearings.</CardDescription>
+                <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">Court Schedule</CardTitle>
+                <CardDescription className="text-[#4A5568] font-bold opacity-100">Your upcoming summons and hearings.</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="font-bold text-primary group" asChild>
                 <Link href="/dashboard/defendant/schedule">
@@ -236,11 +236,11 @@ export default function DefendantDashboard() {
                         <Badge className="bg-amber-500/10 text-amber-600 border-none text-[9px] font-black uppercase tracking-widest h-5">
                           Required
                         </Badge>
-                        <h4 className="font-bold text-sm tracking-tight text-foreground truncate">{hearing.hearing_type}</h4>
+                        <h4 className="font-bold text-sm tracking-tight text-[#1A202C] truncate">{hearing.hearing_type}</h4>
                       </div>
-                      <p className="text-xs font-bold text-muted-foreground truncate">{hearing.case_details?.title || hearing.title || "Court Intake"}</p>
+                      <p className="text-xs font-bold text-[#4A5568] truncate">{hearing.case_details?.title || hearing.title || "Court Intake"}</p>
                       <div className="flex items-center justify-between mt-1">
-                        <div className="flex items-center gap-3 text-xs font-black text-muted-foreground uppercase tracking-tighter">
+                        <div className="flex items-center gap-3 text-xs font-black text-[#4A5568] uppercase tracking-tighter opacity-100">
                           <span className="flex items-center gap-1.5"><Clock className="h-3 w-3 text-primary" /> {format(new Date(hearing.scheduled_date), "h:mm a")}</span>
                         </div>
                         <span className="text-[10px] font-black text-primary group-hover:underline uppercase tracking-widest">
@@ -254,10 +254,10 @@ export default function DefendantDashboard() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center">
-                  <Calendar className="h-8 w-8 text-muted-foreground" />
+                <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center text-primary">
+                  <Calendar className="h-8 w-8" />
                 </div>
-                <p className="text-lg font-bold text-muted-foreground max-w-xs">No upcoming hearings scheduled.</p>
+                <p className="text-lg font-bold text-[#1A202C] max-w-xs opacity-100">No upcoming hearings scheduled.</p>
               </div>
             )}
           </CardContent>

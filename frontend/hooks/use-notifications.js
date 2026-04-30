@@ -33,6 +33,10 @@ export function useNotifications() {
     useEffect(() => {
         loadHistorical();
         
+        // Listen for external sync requests (e.g. from dashboard pages)
+        const handleSync = () => loadHistorical();
+        window.addEventListener('sync-notifications', handleSync);
+        
         let targetInterval = null;
         
         // Connect to WebSocket
@@ -73,7 +77,6 @@ export function useNotifications() {
                 ws.onclose = () => {
                     setIsConnected(false);
                     clearInterval(targetInterval);
-                    // Minimal exponential backoff could go here, for now it will just die or reconnect on page reload
                 };
                 
                 wsRef.current = ws;
@@ -85,6 +88,7 @@ export function useNotifications() {
         return () => {
             if (wsRef.current) wsRef.current.close();
             if (targetInterval) clearInterval(targetInterval);
+            window.removeEventListener('sync-notifications', handleSync);
         };
     }, [loadHistorical]);
 
@@ -144,5 +148,56 @@ export function useNotifications() {
         }
     };
 
-    return { notifications, unreadCount, markAsRead, markAllAsRead, isConnected };
+    const deleteNotification = async (notificationId) => {
+        try {
+            const token = localStorage.getItem("access_token");
+            const res = await fetch(`${getApiUrl()}/notifications/${notificationId}/`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                setNotifications(prev => prev.filter(n => n.id !== notificationId));
+                // Only decrement if it was unread
+                const wasUnread = notifications.find(n => n.id === notificationId)?.is_read === false;
+                if (wasUnread) {
+                    setUnreadCount(prev => Math.max(0, prev - 1));
+                }
+                return true;
+            }
+            return false;
+        } catch (err) {
+            console.error("Delete notification failed", err);
+            return false;
+        }
+    };
+
+    const bulkDelete = async (ids) => {
+        try {
+            const token = localStorage.getItem("access_token");
+            const res = await fetch(`${getApiUrl()}/notifications/bulk_delete/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ notification_ids: ids })
+            });
+            if (res.ok) {
+                setNotifications(prev => prev.filter(n => !ids.includes(n.id)));
+                const unreadDeleted = notifications.filter(n => ids.includes(n.id) && !n.is_read).length;
+                if (unreadDeleted > 0) {
+                    setUnreadCount(prev => Math.max(0, prev - unreadDeleted));
+                }
+                return true;
+            }
+            return false;
+        } catch (err) {
+            console.error("Bulk delete failed", err);
+            return false;
+        }
+    };
+
+    return { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, bulkDelete, isConnected };
 }

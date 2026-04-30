@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .header {
+            background: #d32f2f;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .details {
+            background: #fff5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border: 1px solid #ffcdd2;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #d32f2f;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Judge Assignment Failed</h1>
+        </div>
+        <div class="content">
+            <p>Action Required:</p>
+            <p>The system was unable to automatically assign a judge to the following case. This typically happens when all specialized judges have reached their maximum caseload or no judges are available for this category.</p>
+
+            <div class="details">
+                <p><strong>File Number:</strong> {{ case.file_number }}</p>
+                <p><strong>Case Title:</strong> {{ case.title }}</p>
+                <p><strong>Category:</strong> {{ case.category.name }}</p>
+                <p><strong>Status:</strong> ASSIGNMENT FAILED</p>
+            </div>
+
+            <p>Please log in to the JusticeHub Dashboard to manually assign a judge to this case.</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ frontend_url }}/dashboard/registrar" class="button">Go to Dashboard</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>This is an automated message from JusticeHub Judicial Service Platform.</p>
+        </div>
+    </div>
+</body>
+
+</html>

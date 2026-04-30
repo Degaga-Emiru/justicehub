@@ -10,6 +10,7 @@ class CaseStatus:
     DECIDED = 'DECIDED'
     RESOLVED = 'RESOLVED'
     CLOSED = 'CLOSED'
+    ASSIGNMENT_FAILED = 'ASSIGNMENT_FAILED'
     
     CHOICES = [
         (PENDING_REVIEW, 'Pending Review'),
@@ -21,6 +22,7 @@ class CaseStatus:
         (DECIDED, 'Decided'),
         (RESOLVED, 'Resolved'),
         (CLOSED, 'Closed'),
+        (ASSIGNMENT_FAILED, 'Assignment Failed'),
     ]
     
     @classmethod
