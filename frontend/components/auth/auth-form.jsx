@@ -16,6 +16,8 @@ import { useLanguage } from "@/components/language-provider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Controller } from "react-hook-form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 const loginSchema = z.object({
@@ -29,6 +31,7 @@ const signupSchema = z.object({
  email: z.string().email("invalidEmail"),
  phone_number: z.string().min(7, "phoneMinLength"),
  password: z.string().min(8, "passwordMinLength"),
+  terms: z.boolean().refine((val) => val === true, "agreeTerms"),
  confirm_password: z.string().min(8, "passwordMinLength"),
 }).refine((data) => data.password === data.confirm_password, {
  message: "passwordsMustMatch",
@@ -51,7 +54,7 @@ export function AuthForm({ type = "login", onTypeChange }) {
 
  const {
  register,
- handleSubmit,
+ handleSubmit, control,
  formState: { errors },
  } = useForm({
  resolver: zodResolver(schema),
@@ -197,8 +200,38 @@ export function AuthForm({ type = "login", onTypeChange }) {
  {errors.confirm_password && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.confirm_password.message)}</p>}
  </div>
  )}
- </CardContent>
- <CardFooter className="flex flex-col gap-6 px-8 pb-10 pt-6">
+  {type === "signup" && (
+  <div className="space-y-4 pt-2">
+  <div className="flex items-start space-x-3">
+  <Controller
+    control={control}
+    name="terms"
+    render={({ field }) => (
+      <Checkbox 
+        id="terms" 
+        checked={field.value}
+        onCheckedChange={field.onChange}
+        className="mt-1 border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+      />
+    )}
+  />
+  <div className="grid gap-1.5 leading-none">
+  <Label 
+  htmlFor="terms" 
+  className="text-xs font-medium text-muted-foreground cursor-pointer leading-relaxed"
+  >
+  {t("agreeTerms")}
+  </Label>
+  {errors.terms && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight">{t(errors.terms.message)}</p>}
+  </div>
+  </div>
+  <p className="text-[11px] text-muted-foreground/80 font-medium italic">
+  {t("privacyNotice")} <Link href="/privacy" className="text-primary font-bold hover:underline">{t("privacyPolicy")}</Link>
+  </p>
+  </div>
+  )}
+  </CardContent>
+<CardFooter className="flex flex-col gap-6 px-8 pb-10 pt-6">
  <Button className="w-full h-14 rounded-xl font-bold bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-primary/40 active:scale-[0.98] text-white" type="submit" disabled={isLoading}>
  {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
  {type === "login" ? t("signIn") : type === "signup" ? t("signUp") : t("sendResetLink")}

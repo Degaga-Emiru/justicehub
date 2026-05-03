@@ -33,8 +33,8 @@ export default function LandingPage() {
  <header className={`fixed top-0 z-50 w-full transition-all duration-500 ${scrolled ? "bg-background shadow-sm border-border shadow-sm" : "bg-transparent py-4"}`}>
  <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
  <div className="flex items-center gap-3 group cursor-pointer">
- <div className="bg-gradient-to-br from-primary to-blue-500 p-2.5 rounded-xl text-white shadow-lg group-hover:shadow-primary/30 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3">
- <Scale className="h-6 w-6" />
+ <div className="rounded-xl overflow-hidden group-hover:scale-110 transition-all duration-500 group-hover:-rotate-3 shadow-sm border border-border/20">
+ <img src="/logos.jpeg" alt="JusticeHub" className="h-10 w-10 object-cover" />
  </div>
  <span className="text-2xl font-black font-display tracking-tight text-foreground group-hover:text-primary transition-colors">JusticeHub Modern</span>
  </div>
@@ -127,15 +127,46 @@ export default function LandingPage() {
  </div>
  </section>
 
- {/* 2. Trust Section (Logos) */}
- <section className="py-16 border-y bg-muted/20 relative overflow-hidden">
- <div className="container px-4 md:px-6 text-center space-y-10 relative z-10 mx-auto">
- <h2 className="text-xs font-black tracking-[0.2em] text-muted-foreground/80 uppercase font-display">{t("trustedBy")}</h2>
- <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-40 grayscale hover:grayscale-0 transition-all duration-1000">
- <div className="flex items-center justify-center space-x-3 text-xl md:text-2xl font-black font-display hover:scale-105 transition-transform cursor-default text-foreground/80"><Scale className="h-6 w-6 md:h-8 md:w-8 text-primary" /> <span className="tracking-tight">SupremeCourt</span></div>
- <div className="flex items-center justify-center space-x-2 text-xl md:text-2xl font-black font-display italic hover:scale-105 transition-transform cursor-default text-foreground/80">DistrictLaw</div>
- <div className="flex items-center justify-center space-x-2 text-xl md:text-2xl font-mono font-bold hover:scale-105 transition-transform cursor-default text-foreground/80">LEX_CORP</div>
- <div className="flex items-center justify-center space-x-2 text-xl md:text-2xl font-black font-display tracking-tighter hover:scale-105 transition-transform cursor-default text-foreground/80">JUSTICE.GOV</div>
+  {/* 2. User Types Section */}
+ <section className="py-24 bg-muted/20 relative overflow-hidden border-y">
+ <div className="container px-4 md:px-6 mx-auto relative z-10 text-center space-y-16">
+ <div className="space-y-4 max-w-2xl mx-auto">
+ <h2 className="text-primary font-black tracking-[0.2em] uppercase text-xs font-display">
+ {t("userTypes")}
+ </h2>
+ <h3 className="text-4xl md:text-5xl font-black font-display tracking-tight">
+ Tailored Experience for Everyone
+ </h3>
+ <p className="text-muted-foreground font-medium">
+ Our platform provides specialized tools and dashboards for each role in the judicial process.
+ </p>
+ </div>
+
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+ <UserTypeCard 
+ title={t("citizen")} 
+ desc={t("citizenDesc")} 
+ role="Plaintiff"
+ image="/user-citizen.png"
+ />
+ <UserTypeCard 
+ title={t("judge")} 
+ desc={t("judgeDesc")} 
+ role="Judge"
+ image="/user-judge.png"
+ />
+ <UserTypeCard 
+ title={t("admin")} 
+ desc={t("adminDesc")} 
+ role="President"
+ image="/user-admin.png"
+ />
+ <UserTypeCard 
+ title={t("defendant")} 
+ desc={t("defendantDesc")} 
+ role="Defendant"
+ image="/user-defendant.png"
+ />
  </div>
  </div>
  </section>
@@ -423,8 +454,8 @@ export default function LandingPage() {
  {/* Column 1: Brand */}
  <div className="col-span-2 md:col-span-1 space-y-6">
  <div className="flex items-center gap-3 group cursor-pointer">
- <div className="bg-gradient-to-br from-primary to-blue-500 p-2 rounded-lg text-white shadow-lg group-hover:scale-110 transition-transform">
- <Scale className="h-5 w-5" />
+ <div className="rounded-lg overflow-hidden group-hover:scale-110 transition-transform shadow-sm border border-border/20">
+ <img src="/logos.jpeg" alt="JusticeHub" className="h-8 w-8 object-cover" />
  </div>
  <span className="text-xl font-black font-display tracking-tight">{t("justiceHub")}</span>
  </div>
@@ -453,15 +484,19 @@ export default function LandingPage() {
  </ul>
  </div>
 
- {/* Column 3: Resources */}
+ {/* Column 3: Quick Links */}
  <div className="space-y-6">
- <h4 className="text-sm font-black uppercase tracking-widest text-foreground">{t("resources")}</h4>
+ <h4 className="text-sm font-black uppercase tracking-widest text-foreground">{t("quickLinks")}</h4>
  <ul className="space-y-4">
- {["helpCenter", "documentation", "devApi", "community"].map((item) => (
- <li key={item}>
- <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
+ <li>
+ <Link href="/about-us" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t("aboutUs")}</Link>
  </li>
- ))}
+ <li>
+ <Link href="/terms" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t("termsOfService")}</Link>
+ </li>
+ <li>
+ <Link href="/privacy" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t("privacyPolicy")}</Link>
+ </li>
  </ul>
  </div>
 
@@ -469,9 +504,9 @@ export default function LandingPage() {
  <div className="space-y-6">
  <h4 className="text-sm font-black uppercase tracking-widest text-foreground">{t("company")}</h4>
  <ul className="space-y-4">
- {["aboutUs", "careers", "privacyPolicy", "termsOfService"].map((item) => (
+ {["aboutUs", "privacyPolicy", "termsOfService"].map((item) => (
  <li key={item}>
- <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
+ <Link href={item === "aboutUs" ? "/about-us" : item === "privacyPolicy" ? "/privacy" : "/terms"} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
  </li>
  ))}
  </ul>
@@ -483,7 +518,7 @@ export default function LandingPage() {
  &copy; {new Date().getFullYear()} JusticeHub. {t("footerRights")}
  </p>
  <div className="flex items-center gap-6 text-sm font-semibold text-muted-foreground/80">
- <span className="flex items-center gap-2">Built with <span className="text-primary animate-pulse">✦</span> in Ethiopia</span>
+ <span className="flex items-center gap-2">{t("developedBy")}</span>
  </div>
  </div>
  </div>
@@ -491,6 +526,34 @@ export default function LandingPage() {
  <Chatbot />
  </div>
  );
+}
+
+
+function UserTypeCard({ title, desc, role, image }) {
+  return (
+    <div className="group bg-card border border-border/60 rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
+      <div className="aspect-[4/5] bg-muted relative overflow-hidden">
+        {/* Image Placeholder */}
+        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20 font-black text-4xl uppercase tracking-tighter italic select-none">
+          {role}
+        </div>
+        <img 
+          src={image} 
+          alt={title} 
+          className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-1000 group-hover:opacity-100"
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        <div className="absolute bottom-6 left-6 right-6 text-left">
+          <Badge className="bg-primary/20 backdrop-blur-md text-primary-foreground border-primary/30 text-[10px] mb-2">{role}</Badge>
+          <h4 className="text-white text-xl font-black font-display tracking-tight">{title}</h4>
+        </div>
+      </div>
+      <div className="p-6 text-left">
+        <p className="text-muted-foreground text-sm font-medium leading-relaxed">{desc}</p>
+      </div>
+    </div>
+  );
 }
 
 function FeatureCard({ icon, title, description, featured, t }) {

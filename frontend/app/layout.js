@@ -16,6 +16,11 @@ const outfit = Outfit({
 export const metadata = {
  title: "JusticeHub - Court Management System",
  description: "A comprehensive court management platform for legal case tracking, scheduling, and administration.",
+ icons: {
+   icon: "/logos.jpeg",
+   shortcut: "/logos.jpeg",
+   apple: "/logos.jpeg",
+ },
 };
 
 export default function RootLayout({ children }) {
