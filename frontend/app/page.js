@@ -39,15 +39,15 @@ export default function LandingPage() {
  <span className="text-2xl font-black font-display tracking-tight text-foreground group-hover:text-primary transition-colors">JusticeHub Modern</span>
  </div>
  <nav className="hidden md:flex items-center gap-8">
- <Link className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#features">
+ <Link className="text-sm font-semibold text-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#features">
  {t("features")}
  </Link>
- <Link className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#how-it-works">
+ <Link className="text-sm font-semibold text-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#how-it-works">
  {t("howItWorksTitle")}
  </Link>
  </nav>
  <div className="flex items-center gap-4">
- <Button variant="ghost" size="sm" onClick={toggleLanguage} className="hidden sm:flex gap-2 text-muted-foreground hover:text-foreground rounded-full">
+ <Button variant="ghost" size="sm" onClick={toggleLanguage} className="hidden sm:flex gap-2 text-foreground hover:text-foreground rounded-full">
  <Globe className="h-4 w-4" />
  {language === "en" ? "Amharic" : "English"}
  </Button>
@@ -90,7 +90,7 @@ export default function LandingPage() {
  {t("heroTitle2")}
  </span>
  </h1>
- <p className="max-w-[600px] mx-auto lg:mx-0 text-xl text-muted-foreground leading-relaxed font-medium">
+ <p className="max-w-[600px] mx-auto lg:mx-0 text-xl text-foreground leading-relaxed font-medium">
  {t("heroDesc")}
  </p>
  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
@@ -105,7 +105,7 @@ export default function LandingPage() {
  </Button>
  </Link>
  </div>
- <div className="pt-8 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-sm text-muted-foreground font-semibold">
+ <div className="pt-8 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-foreground font-semibold">
  <div className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-emerald-500" /> {t("secureFeature")}</div>
  <div className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-emerald-500" /> {t("transparentFeature")}</div>
  <div className="flex items-center gap-2"><CheckCircle className="h-5 w-5 text-emerald-500" /> {t("immutableFeature")}</div>
@@ -137,7 +137,7 @@ export default function LandingPage() {
  <h3 className="text-4xl md:text-5xl font-black font-display tracking-tight">
  Tailored Experience for Everyone
  </h3>
- <p className="text-muted-foreground font-medium">
+ <p className="text-foreground font-medium">
  Our platform provides specialized tools and dashboards for each role in the judicial process.
  </p>
  </div>
@@ -185,7 +185,7 @@ export default function LandingPage() {
  {t("howItWorksSubtitle")}
  </h2>
  <h3 className="text-4xl md:text-5xl lg:text-6xl font-black font-display tracking-tight leading-tight">{t("howItWorksTitle")}</h3>
- <p className="text-xl text-muted-foreground leading-relaxed font-medium">{t("howItWorksDesc")}</p>
+ <p className="text-xl text-foreground leading-relaxed font-medium">{t("howItWorksDesc")}</p>
  </div>
 
  <div className="space-y-10">
@@ -194,7 +194,7 @@ export default function LandingPage() {
  <div className="flex-shrink-0 mt-1 h-16 w-16 rounded-[1.25rem] bg-background shadow-sm border-border shadow-inner text-primary flex items-center justify-center font-black font-display text-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6">1</div>
  <div className="space-y-2">
  <h4 className="text-2xl font-black font-display group-hover:text-primary transition-colors">{t("step1Title")}</h4>
- <p className="text-muted-foreground font-medium leading-relaxed text-lg">{t("step1Desc")}</p>
+ <p className="text-foreground font-medium leading-relaxed text-lg">{t("step1Desc")}</p>
  </div>
  </div>
  {/* Step 2 */}
@@ -202,7 +202,7 @@ export default function LandingPage() {
  <div className="flex-shrink-0 mt-1 h-16 w-16 rounded-[1.25rem] bg-background shadow-sm border-border shadow-inner text-primary flex items-center justify-center font-black font-display text-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6">2</div>
  <div className="space-y-2">
  <h4 className="text-2xl font-black font-display group-hover:text-primary transition-colors">{t("step2Title")}</h4>
- <p className="text-muted-foreground font-medium leading-relaxed text-lg">{t("step2Desc")}</p>
+ <p className="text-foreground font-medium leading-relaxed text-lg">{t("step2Desc")}</p>
  </div>
  </div>
  {/* Step 3 */}
@@ -210,7 +210,7 @@ export default function LandingPage() {
  <div className="flex-shrink-0 mt-1 h-16 w-16 rounded-[1.25rem] bg-background shadow-sm border-border shadow-inner text-primary flex items-center justify-center font-black font-display text-2xl group-hover:bg-primary group-hover:text-white transition-all duration-500 group-hover:scale-110 group-hover:-rotate-6">3</div>
  <div className="space-y-2">
  <h4 className="text-2xl font-black font-display group-hover:text-primary transition-colors">{t("step3Title")}</h4>
- <p className="text-muted-foreground font-medium leading-relaxed text-lg">{t("step3Desc")}</p>
+ <p className="text-foreground font-medium leading-relaxed text-lg">{t("step3Desc")}</p>
  </div>
  </div>
  </div>
@@ -252,7 +252,7 @@ export default function LandingPage() {
  {t("featuresTitleSuffix")}
  </span>
  </h3>
- <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed font-medium max-w-2xl mx-auto">
+ <p className="text-xl md:text-2xl text-foreground leading-relaxed font-medium max-w-2xl mx-auto">
  {t("featuresDesc")}
  </p>
  </div>
@@ -330,7 +330,7 @@ export default function LandingPage() {
  <h3 className="text-4xl md:text-5xl lg:text-6xl font-black font-display tracking-tight leading-tight">
  Our Mission for <span className="text-primary">Justice</span>
  </h3>
- <p className="text-xl text-muted-foreground leading-relaxed font-medium">
+ <p className="text-xl text-foreground leading-relaxed font-medium">
  JusticeHub is dedicated to modernizing the judicial infrastructure of Ethiopia, starting with local courts like the <span className="text-foreground font-bold">Hawassa Primary Court</span>. We believe that technology is the key to making justice faster, more transparent, and accessible to every citizen.
  </p>
  </div>
@@ -341,14 +341,14 @@ export default function LandingPage() {
  <Globe className="h-6 w-6" />
  </div>
  <h4 className="text-xl font-bold mb-2">Transparency</h4>
- <p className="text-muted-foreground text-sm font-medium">Full visibility into case status and judicial proceedings for all parties involved.</p>
+ <p className="text-foreground text-sm font-medium">Full visibility into case status and judicial proceedings for all parties involved.</p>
  </div>
  <div className="p-6 rounded-2xl bg-muted/30 border border-border/50">
  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">
  <ShieldCheck className="h-6 w-6" />
  </div>
  <h4 className="text-xl font-bold mb-2">Efficiency</h4>
- <p className="text-muted-foreground text-sm font-medium">Reducing the backlog of cases through automated scheduling and digital filing.</p>
+ <p className="text-foreground text-sm font-medium">Reducing the backlog of cases through automated scheduling and digital filing.</p>
  </div>
  </div>
  </div>
@@ -459,14 +459,14 @@ export default function LandingPage() {
  </div>
  <span className="text-xl font-black font-display tracking-tight">{t("justiceHub")}</span>
  </div>
- <p className="text-muted-foreground font-medium text-sm leading-relaxed">
+ <p className="text-foreground font-medium text-sm leading-relaxed">
  {t("footerDesc")}
  </p>
  <div className="flex gap-4">
- <div className="h-10 w-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
+ <div className="h-10 w-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center text-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
  <Building className="h-5 w-5 group-hover:rotate-12 transition-transform" />
  </div>
- <div className="h-10 w-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
+ <div className="h-10 w-10 rounded-xl bg-muted/50 border border-border flex items-center justify-center text-foreground hover:bg-primary hover:text-white transition-all duration-300 cursor-pointer shadow-sm group">
  <Globe className="h-5 w-5 group-hover:rotate-12 transition-transform" />
  </div>
  </div>
@@ -478,7 +478,7 @@ export default function LandingPage() {
  <ul className="space-y-4">
  {["eFiling", "caseSearch", "analytics", "integrations"].map((item) => (
  <li key={item}>
- <Link href="#" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
+ <Link href="#" className="text-sm font-medium text-foreground hover:text-primary transition-colors">{t(item)}</Link>
  </li>
  ))}
  </ul>
@@ -489,13 +489,13 @@ export default function LandingPage() {
  <h4 className="text-sm font-black uppercase tracking-widest text-foreground">{t("quickLinks")}</h4>
  <ul className="space-y-4">
  <li>
- <Link href="/about-us" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t("aboutUs")}</Link>
+ <Link href="/about-us" className="text-sm font-medium text-foreground hover:text-primary transition-colors">{t("aboutUs")}</Link>
  </li>
  <li>
- <Link href="/terms" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t("termsOfService")}</Link>
+ <Link href="/terms" className="text-sm font-medium text-foreground hover:text-primary transition-colors">{t("termsOfService")}</Link>
  </li>
  <li>
- <Link href="/privacy" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t("privacyPolicy")}</Link>
+ <Link href="/privacy" className="text-sm font-medium text-foreground hover:text-primary transition-colors">{t("privacyPolicy")}</Link>
  </li>
  </ul>
  </div>
@@ -506,7 +506,7 @@ export default function LandingPage() {
  <ul className="space-y-4">
  {["aboutUs", "privacyPolicy", "termsOfService"].map((item) => (
  <li key={item}>
- <Link href={item === "aboutUs" ? "/about-us" : item === "privacyPolicy" ? "/privacy" : "/terms"} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">{t(item)}</Link>
+ <Link href={item === "aboutUs" ? "/about-us" : item === "privacyPolicy" ? "/privacy" : "/terms"} className="text-sm font-medium text-foreground hover:text-primary transition-colors">{t(item)}</Link>
  </li>
  ))}
  </ul>
@@ -514,10 +514,10 @@ export default function LandingPage() {
  </div>
 
  <div className="pt-12 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-8">
- <p className="text-sm font-medium text-muted-foreground/60">
+ <p className="text-sm font-medium text-foreground">
  &copy; {new Date().getFullYear()} JusticeHub. {t("footerRights")}
  </p>
- <div className="flex items-center gap-6 text-sm font-semibold text-muted-foreground/80">
+ <div className="flex items-center gap-6 text-sm font-semibold text-foreground">
  <span className="flex items-center gap-2">{t("developedBy")}</span>
  </div>
  </div>
@@ -528,13 +528,12 @@ export default function LandingPage() {
  );
 }
 
-
 function UserTypeCard({ title, desc, role, image }) {
   return (
     <div className="group bg-card border border-border/60 rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
       <div className="aspect-[4/5] bg-muted relative overflow-hidden">
         {/* Image Placeholder */}
-        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/20 font-black text-4xl uppercase tracking-tighter italic select-none">
+        <div className="absolute inset-0 flex items-center justify-center text-foreground font-black text-4xl uppercase tracking-tighter italic select-none">
           {role}
         </div>
         <img 
@@ -550,7 +549,7 @@ function UserTypeCard({ title, desc, role, image }) {
         </div>
       </div>
       <div className="p-6 text-left">
-        <p className="text-muted-foreground text-sm font-medium leading-relaxed">{desc}</p>
+        <p className="text-foreground text-sm font-medium leading-relaxed">{desc}</p>
       </div>
     </div>
   );
@@ -564,7 +563,7 @@ function FeatureCard({ icon, title, description, featured, t }) {
  {icon}
  </div>
  <h3 className="text-2xl font-black font-display mb-3 text-foreground tracking-tight group-hover:text-primary transition-colors">{title}</h3>
- <p className="text-muted-foreground font-medium leading-relaxed flex-1 text-base">{description}</p>
+ <p className="text-foreground font-medium leading-relaxed flex-1 text-base">{description}</p>
 
  </div>
  );

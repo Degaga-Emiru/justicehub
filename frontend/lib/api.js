@@ -20,6 +20,18 @@ function formatError(errData) {
     return null;
 }
 
+/**
+ * Strips undefined, null, empty strings, and 'ALL' values from an object.
+ * Prevents URLSearchParams from converting them to literal "undefined" or "null" strings.
+ */
+function cleanParams(params = {}) {
+    return Object.fromEntries(
+        Object.entries(params).filter(([_, v]) => 
+            v !== undefined && v !== null && v !== "" && v !== "ALL" && v !== "undefined" && v !== "null"
+        )
+    );
+}
+
 
 const getAuthHeaders = () => {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
@@ -142,7 +154,7 @@ export async function setupAccountPassword(data) {
 
 export async function fetchCases(filters = {}) {
     try {
-        const queryParams = new URLSearchParams(filters).toString();
+        const queryParams = new URLSearchParams(cleanParams(filters)).toString();
         const res = await apiRequest(`${getApiUrl()}/cases/?${queryParams}`);
         if (!res.ok) throw new Error("Failed to fetch cases");
         const data = await res.json();
@@ -276,7 +288,7 @@ export async function fetchCaseById(id) {
 
 export async function fetchHearings(filters = {}) {
     try {
-        const queryParams = new URLSearchParams(filters).toString();
+        const queryParams = new URLSearchParams(cleanParams(filters)).toString();
         const url = `${getApiUrl()}/hearings/${queryParams ? '?' + queryParams : ''}`;
         const res = await apiRequest(url);
         
@@ -315,7 +327,7 @@ export async function fetchUsers(filters = {}) {
     if (typeof window === "undefined") return [];
     try {
         // Typically role-based access for this, but let's assume there is a users endpoint or fallback
-        const queryParams = new URLSearchParams(filters).toString();
+        const queryParams = new URLSearchParams(cleanParams(filters)).toString();
         const res = await fetch(`${getApiUrl()}/admin/users/?${queryParams}`, {
             headers: getAuthHeaders()
         });
@@ -348,7 +360,7 @@ export async function adminCreateUser(userData) {
 
 export async function fetchTransactions(filters = {}) {
     try {
-        const queryParams = new URLSearchParams(filters).toString();
+        const queryParams = new URLSearchParams(cleanParams(filters)).toString();
         const res = await fetch(`${getApiUrl()}/payments/?${queryParams}`, {
             headers: getAuthHeaders()
         });
@@ -520,8 +532,13 @@ export async function adminResetPassword(userId, sendEmail = true) {
 }
 
 export function getAdminUsersExportUrl(filters = {}) {
-    const queryParams = new URLSearchParams(filters).toString();
-    return `${getApiUrl()}/accounts/admin/users/export/?${queryParams}`;
+    const queryParams = new URLSearchParams(cleanParams(filters)).toString();
+    return `${getApiUrl()}/admin/users/export/?${queryParams}`;
+}
+
+export function getAdminCasesExportUrl(filters = {}) {
+    const queryParams = new URLSearchParams(cleanParams(filters)).toString();
+    return `${getApiUrl()}/cases/export/csv/?${queryParams}`;
 }
 
 export async function adminDeleteUser(userId) {
@@ -569,7 +586,7 @@ export async function fetchClosedAnalytics() {
 
 export async function fetchAuditLogs(filters = {}) {
     try {
-        const queryParams = new URLSearchParams(filters).toString();
+        const queryParams = new URLSearchParams(cleanParams(filters)).toString();
         const res = await fetch(`${getApiUrl()}/audit/logs/?${queryParams}`, {
             headers: getAuthHeaders()
         });
@@ -630,7 +647,7 @@ export async function fetchCaseTypeDistribution() {
 
 export async function fetchSystemReport(type = 'overview', filters = {}) {
     try {
-        const queryParams = new URLSearchParams({ type, ...filters }).toString();
+        const queryParams = new URLSearchParams(cleanParams({ type, ...filters })).toString();
         const res = await fetch(`${getApiUrl()}/reports/admin/system/?${queryParams}`, {
             headers: getAuthHeaders()
         });
@@ -661,12 +678,39 @@ export function getReportDownloadUrl(format = 'pdf', type = 'system', filters = 
     return `${getApiUrl()}/reports/admin/export/${format}/?${queryParams}`;
 }
 
+export async function fetchDetailedAnalytics(filters = {}) {
+    try {
+        const queryParams = new URLSearchParams(cleanParams({ type: 'master', ...filters })).toString();
+        const res = await fetch(`${getApiUrl()}/reports/admin/analytics/?${queryParams}`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to fetch detailed analytics");
+        return await res.json();
+    } catch (error) {
+        console.error("fetchDetailedAnalytics error:", error);
+        return null;
+    }
+}
+
+export async function fetchSystemHealth() {
+    try {
+        const res = await fetch(`${getApiUrl()}/admin/system/metrics/`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error("Failed to fetch system health");
+        return await res.json();
+    } catch (error) {
+        console.error("fetchSystemHealth error:", error);
+        return null;
+    }
+}
+
 
 
 export async function fetchNotifications(filters = {}) {
     if (typeof window === "undefined") return [];
     try {
-        const queryParams = new URLSearchParams(filters).toString();
+        const queryParams = new URLSearchParams(cleanParams(filters)).toString();
         const res = await fetch(`${getApiUrl()}/notifications/?${queryParams}`, {
             headers: getAuthHeaders()
         });

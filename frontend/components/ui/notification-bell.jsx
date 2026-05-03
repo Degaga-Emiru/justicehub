@@ -52,8 +52,29 @@ export function NotificationBell() {
     }
   };
 
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'URGENT': return 'text-red-500';
+      case 'HIGH': return 'text-orange-500';
+      case 'MEDIUM': return 'text-blue-500';
+      case 'LOW': return 'text-slate-400';
+      default: return 'text-blue-500';
+    }
+  };
+
+  const getPriorityBg = (priority) => {
+    switch (priority) {
+      case 'URGENT': return 'bg-red-500/10';
+      case 'HIGH': return 'bg-orange-500/10';
+      case 'MEDIUM': return 'bg-blue-500/10';
+      case 'LOW': return 'bg-slate-400/10';
+      default: return 'bg-blue-500/10';
+    }
+  };
+
   const getNotificationLink = () => {
     const role = user?.role?.toUpperCase();
+    if (role === 'ADMIN') return "/dashboard/admin/notifications";
     if (role === 'CLERK') return "/dashboard/clerk/notifications";
     if (role === 'REGISTRAR') return "/dashboard/registrar/notifications";
     if (role === 'DEFENDANT') return "/dashboard/defendant/notifications";
@@ -126,10 +147,10 @@ export function NotificationBell() {
                   onClick={() => !n.is_read && markAsRead(n.id)}
                 >
                   <div className="mt-0.5 relative shrink-0">
-                    <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center", getIconBgForType(n.type))}>
+                    <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center", getPriorityBg(n.priority))}>
                       {getIconForType(n.type)}
                     </div>
-                    {!n.is_read && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background shadow-lg shadow-primary/30" />}
+                    {!n.is_read && <span className={cn("absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background shadow-lg", n.priority === 'URGENT' ? 'bg-red-500 shadow-red-500/30' : 'bg-primary shadow-primary/30')} />}
                   </div>
                   <div className="flex-1 min-w-0 space-y-1 pr-6">
                     <p className={cn(

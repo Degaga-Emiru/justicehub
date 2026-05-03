@@ -24,6 +24,7 @@ class CaseFilter(django_filters.FilterSet):
     defendant_name = django_filters.CharFilter(method='defendant_name_filter')
     plaintiff_lawyer = django_filters.UUIDFilter(field_name='plaintiff_lawyer__id')
     defendant_lawyer = django_filters.UUIDFilter(field_name='defendant_lawyer__id')
+    judge_name = django_filters.CharFilter(method='judge_name_filter')
     
     # Judge assignment
     assigned_judge = django_filters.UUIDFilter(method='judge_filter')
@@ -76,6 +77,16 @@ class CaseFilter(django_filters.FilterSet):
         """Filter cases by assigned judge"""
         return queryset.filter(
             judge_assignments__judge_id=value,
+            judge_assignments__is_active=True
+        )
+
+    def judge_name_filter(self, queryset, name, value):
+        """Filter cases by assigned judge name"""
+        return queryset.filter(
+            judge_assignments__judge__first_name__icontains=value,
+            judge_assignments__is_active=True
+        ) | queryset.filter(
+            judge_assignments__judge__last_name__icontains=value,
             judge_assignments__is_active=True
         )
     

@@ -614,26 +614,6 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             "results": [{"user_id": str(uid), "status": "success"} for uid in user_ids]
         })
 
-    @action(detail=False, methods=['get'])
-    def export(self, request):
-        """Export user data in CSV format."""
-        qs = self.get_queryset()
-        
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="users_export.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow(['ID', 'Email', 'First Name', 'Last Name', 'Role', 'Status', 'Verified', 'Joined'])
-        
-        for user in qs:
-            writer.writerow([
-                user.id, user.email, user.first_name, user.last_name, 
-                user.role, 'Active' if user.is_active else 'Inactive', 
-                user.is_verified, user.date_joined
-            ])
-            
-        return response
-
     @action(detail=True, methods=['get'])
     def permissions(self, request, id=None):
         """Get user permissions."""

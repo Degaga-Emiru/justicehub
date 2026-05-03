@@ -2,7 +2,7 @@ from django.db.models import Count, Avg, F, ExpressionWrapper, fields, Max, Min,
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from datetime import timedelta
-from .db_models import Case, User, CaseCategory
+from .db_models import Case, User, CaseCategory, JudgeAssignment
 from .services import ReportService
 
 class AnalyticsService:
@@ -171,7 +171,6 @@ class AnalyticsService:
 
     @classmethod
     def get_intelligence_insights(cls, start_date=None, end_date=None):
-        from .db_models import JudgeAssignment
         active_cases, start, end = cls._get_filtered_cases(start_date, end_date)
         
         # Calculate system backlog (all non-closed active cases)
@@ -213,6 +212,52 @@ class AnalyticsService:
         }
 
     @classmethod
+    def get_payment_analytics(cls, start_date=None, end_date=None):
+        from payments.models import Payment
+        from django.db.models import Sum
+        from django.db.models.functions import TruncMonth
+        
+        start, end = ReportService.get_date_range(None, start_date, end_date)
+        # Only count successful or verified payments
+        payments = Payment.objects.filter(status__in=['SUCCESS', 'VERIFIED'])
+        
+        if start and end:
+            payments = payments.filter(paid_at__range=(start, end))
+        
+        total_revenue = payments.aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Monthly revenue trend
+        monthly_revenue = payments.annotate(
+            month=TruncMonth('paid_at')
+        ).values('month').annotate(total=Sum('amount')).order_by('month')
+        
+        revenue_trend = []
+        for item in monthly_revenue:
+            if item['month']:
+                revenue_trend.append({
+                    "month": item['month'].strftime('%b %Y'),
+                    "revenue": float(item['total'])
+                })
+        
+        # Revenue by category distribution
+        category_revenue = payments.values('case__category__name').annotate(
+            total=Sum('amount')
+        ).order_by('-total')
+        
+        category_data = []
+        for item in category_revenue:
+            category_data.append({
+                "name": item['case__category__name'] or "General",
+                "value": float(item['total'])
+            })
+            
+        return {
+            "total_revenue": float(total_revenue),
+            "revenue_trend": revenue_trend,
+            "category_revenue": category_data
+        }
+
+    @classmethod
     def get_master_analytics(cls, start_date=None, end_date=None):
         return {
             "case_type_analysis": cls.get_case_type_analysis(start_date, end_date),
@@ -223,6 +268,9 @@ class AnalyticsService:
             "decision_analysis": cls.get_decision_type_analysis(start_date, end_date),
             "intelligence_insights": cls.get_intelligence_insights(start_date, end_date),
             "volume_by_month": cls.get_volume_by_month(start_date, end_date),
+            "case_flow_trends": cls.get_case_flow_trends(start_date, end_date),
+            "payment_analytics": cls.get_payment_analytics(start_date, end_date),
+            "judge_metrics": cls.get_judge_performance_metrics(),
             "generated_at": timezone.now()
         }
 
@@ -243,3 +291,69 @@ class AnalyticsService:
                 month_str = item['month'].strftime('%b')
                 result[month_str] = item['count']
         return result
+
+    @classmethod
+    def get_case_flow_trends(cls, start_date=None, end_date=None):
+        """Calculates daily case creation vs closing trends."""
+        start, end = ReportService.get_date_range(None, start_date, end_date)
+        if not start:
+            start = timezone.now() - timedelta(days=30)
+        if not end:
+            end = timezone.now()
+            
+        cases = Case.objects.filter(created_at__range=(start, end))
+        
+        # Group by day
+        from django.db.models.functions import TruncDay
+        created_trends = cases.annotate(day=TruncDay('created_at')).values('day').annotate(count=Count('id')).order_by('day')
+        closed_trends = Case.objects.filter(status='CLOSED', closed_date__range=(start, end)).annotate(day=TruncDay('closed_date')).values('day').annotate(count=Count('id')).order_by('day')
+        
+        # Merge results
+        trends = {}
+        for item in created_trends:
+            d = item['day'].strftime('%Y-%m-%d')
+            trends[d] = {"created": item['count'], "closed": 0}
+            
+        for item in closed_trends:
+            d = item['day'].strftime('%Y-%m-%d')
+            if d in trends:
+                trends[d]["closed"] = item['count']
+            else:
+                trends[d] = {"created": 0, "closed": item['count']}
+                
+        # Sort by date
+        sorted_trends = [{"date": k, **v} for k, v in sorted(trends.items())]
+        return sorted_trends
+
+    @classmethod
+    def get_judge_performance_metrics(cls):
+        """Compares resolution times and caseloads per judge."""
+        judges = User.objects.filter(role='JUDGE', is_active=True)
+        results = []
+        
+        duration_expr = ExpressionWrapper(F('closed_date') - F('created_at'), output_field=fields.DurationField())
+        
+        for judge in judges:
+            # Active cases
+            active_count = JudgeAssignment.objects.filter(judge=judge, is_active=True).count()
+            
+            # Resolved cases metrics
+            case_ids = JudgeAssignment.objects.filter(judge=judge).values_list('case_id', flat=True)
+            resolved_cases = Case.objects.filter(
+                id__in=case_ids,
+                status='CLOSED', 
+                closed_date__isnull=False
+            ).annotate(duration=duration_expr)
+            
+            avg_res = resolved_cases.aggregate(avg_days=Avg('duration'))
+            avg_days = avg_res['avg_days'].days if avg_res['avg_days'] else 0
+            
+            results.append({
+                "id": str(judge.id),
+                "name": judge.get_full_name(),
+                "active_cases": active_count,
+                "avg_resolution_days": avg_days,
+                "total_resolved": resolved_cases.count()
+            })
+            
+        return sorted(results, key=lambda x: x['active_cases'], reverse=True)

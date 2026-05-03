@@ -13,26 +13,12 @@ class SystemMetricsView(views.APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        now = timezone.now()
-        last_24h = now - timedelta(hours=24)
+        from .monitoring_services import SystemHealthService
+        status_data = SystemHealthService.get_system_status()
         
-        return response.Response({
-            "cpu_usage": 45.2,
-            "memory_usage": 62.1,
-            "active_connections": 128,
-            "api_response_time": "240ms",
-            "error_rate": "0.5%",
-            "uptime": "15d 4h 22m",
-            "storage_usage": {
-                "database": "1.2GB",
-                "media": "4.5GB",
-                "backups": "12GB"
-            },
-            "request_stats": {
-                "last_24h": AuditLog.objects.filter(timestamp__gte=last_24h).count(),
-                "peak_requests_per_sec": 45
-            }
-        })
+        # Merge with existing expected fields for compatibility if needed
+        # or return the new structured data
+        return response.Response(status_data)
 
 class ErrorLogsView(views.APIView):
     permission_classes = [IsAdmin]

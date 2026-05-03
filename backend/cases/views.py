@@ -1385,6 +1385,30 @@ class ExportCasesCSVView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
     
     def get(self, request):
+        from django.db.models import Q
+        qs = Case.objects.select_related(
+            'category', 'created_by'
+        ).prefetch_related('judge_assignments')
+        
+        # Apply filters from query params
+        status_filter = request.query_params.get('status')
+        category_filter = request.query_params.get('category')
+        priority_filter = request.query_params.get('priority')
+        search_filter = request.query_params.get('search')
+        
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if category_filter:
+            qs = qs.filter(category_id=category_filter)
+        if priority_filter:
+            qs = qs.filter(priority=priority_filter)
+        if search_filter:
+            qs = qs.filter(
+                Q(title__icontains=search_filter) | 
+                Q(file_number__icontains=search_filter) |
+                Q(description__icontains=search_filter)
+            )
+
         # Create CSV response
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="cases_export.csv"'
@@ -1395,36 +1419,34 @@ class ExportCasesCSVView(generics.GenericAPIView):
             'Client', 'Filed Date', 'Closed Date', 'Judge'
         ])
         
-        cases = Case.objects.select_related(
-            'category', 'created_by'
-        ).prefetch_related('judge_assignments')
+        cases = qs # Use the filtered queryset
         
         for case in cases:
             current_judge = case.judge_assignments.filter(is_active=True).first()
             writer.writerow([
                 case.file_number or 'PENDING',
                 case.title,
-                case.category.name,
+                case.category.name if case.category else 'General',
                 case.get_status_display(),
                 case.get_priority_display(),
-                case.created_by.get_full_name(),
-                case.filing_date.strftime('%Y-%m-%d'),
+                case.created_by.get_full_name() if case.created_by else 'System',
+                case.filing_date.strftime('%Y-%m-%d') if case.filing_date else '',
                 case.closed_date.strftime('%Y-%m-%d') if case.closed_date else '',
-                current_judge.judge.get_full_name() if current_judge else ''
+                current_judge.judge.get_full_name() if current_judge and current_judge.judge else ''
             ])
         
         # Log Export
-        from audit_logs.utils import create_audit_log
+        from audit_logs.services import create_audit_log
         from audit_logs.models import AuditLog
-        create_audit_log(
-            request=request,
-            action_type=AuditLog.ActionType.REPORT_DOWNLOADED,
-            details={
-                "format": "CSV",
-                "filename": "cases_export.csv",
-                "count": cases.count()
-            }
-        )
+        try:
+            create_audit_log(
+                request=request,
+                action_type=AuditLog.ActionType.EXPORT_DATA,
+                description=f"Exported {cases.count()} cases to CSV.",
+                entity_name="cases_export.csv",
+            )
+        except Exception:
+            pass  # Don't let audit logging break the export
         
         return response
 

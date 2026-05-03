@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSystemReport, fetchAnalyticsReport, fetchDashboardStats, getReportDownloadUrl } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from "recharts";
-import { Loader2, Download, FileText, DownloadCloud, FileSpreadsheet, MapPin, AlertTriangle, ShieldCheck, BarChart3, Scale, TrendingUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, AreaChart, Area, Brush, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Scatter, ScatterChart, ZAxis, ComposedChart } from "recharts";
+import { Loader2, Download, FileText, DownloadCloud, FileSpreadsheet, MapPin, AlertTriangle, ShieldCheck, BarChart3, Scale, TrendingUp, Users, Activity, Clock, Layers } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const PIE_COLORS = [
@@ -19,15 +20,20 @@ const PIE_COLORS = [
 ];
 
 const CustomTooltipStyle = {
- backgroundColor: 'rgba(15, 23, 42, 0.95)',
- border: '1px solid rgba(255,255,255,0.1)',
- borderRadius: '12px',
- padding: '12px 16px',
- boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
- color: '#e2e8f0',
- fontSize: '13px',
- fontWeight: 600,
+  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  backdropFilter: 'blur(8px)',
+  border: '1px solid rgba(var(--primary), 0.2)',
+  borderRadius: '16px',
+  padding: '12px 16px',
+  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+  color: 'hsl(var(--foreground))',
+  fontSize: '13px',
+  fontWeight: 800,
 };
+
+const VIBRANT_COLORS = [
+  "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"
+];
 
 export default function ReportsPage() {
  const [exportStartDate, setExportStartDate] = useState("");
@@ -141,30 +147,48 @@ export default function ReportsPage() {
  return (
  <div className="flex flex-col h-[60vh] items-center justify-center gap-4">
  <Loader2 className="h-8 w-8 animate-spin text-primary" />
- <p className="text-sm font-black text-muted-foreground uppercase tracking-widest">Loading Intelligence...</p>
+ <p className="text-sm font-black text-foreground uppercase tracking-widest">Loading Intelligence...</p>
  </div>
  );
  }
 
  // Prepare data structures
  const demographicData = systemData?.demographics?.plaintiff_regions ? 
- Object.entries(systemData.demographics.plaintiff_regions).map(([key, val]) => ({ name: key, count: val })) : [];
+  Object.entries(systemData.demographics.plaintiff_regions).map(([key, val]) => ({ name: key, count: val })) : [];
 
  const caseTypeDist = analyticsData?.case_type_analysis?.distribution ? 
- analyticsData.case_type_analysis.distribution.map((item) => ({ name: item.case_type, count: item.total })) : [];
+  analyticsData.case_type_analysis.distribution.map((item) => ({ name: item.case_type, count: item.total })) : [];
 
  const monthlyTrends = [];
  if (analyticsData?.volume_by_month) {
- Object.entries(analyticsData.volume_by_month).forEach(([monthStr, count]) => {
- monthlyTrends.push({ name: monthStr, CaseVolume: count });
- });
+  Object.entries(analyticsData.volume_by_month).forEach(([monthStr, count]) => {
+  monthlyTrends.push({ name: monthStr, CaseVolume: count });
+  });
  }
 
  const resolutionData = [
- { name: "Avg Time", days: analyticsData?.resolution_time_metrics?.average || 0 },
- { name: "Fastest", days: analyticsData?.resolution_time_metrics?.fastest || 0 },
- { name: "Longest", days: analyticsData?.resolution_time_metrics?.slowest || 0 }
+  { subject: "Avg Time", value: analyticsData?.resolution_time_metrics?.average || 0, fullMark: Math.max(analyticsData?.resolution_time_metrics?.slowest || 100, 30) },
+  { subject: "Fastest", value: analyticsData?.resolution_time_metrics?.fastest || 0, fullMark: Math.max(analyticsData?.resolution_time_metrics?.slowest || 100, 30) },
+  { subject: "Longest", value: analyticsData?.resolution_time_metrics?.slowest || 0, fullMark: Math.max(analyticsData?.resolution_time_metrics?.slowest || 100, 30) }
  ];
+
+ const judgePerformanceData = analyticsData?.judge_metrics?.map(j => ({
+  name: j.name,
+  active: j.active_cases,
+  avg_res: j.avg_resolution_days,
+  total: j.total_resolved,
+  efficiency: j.total_resolved > 0 ? Number((j.total_resolved / (j.active_cases + j.total_resolved) * 100).toFixed(0)) : 0
+ })) || [];
+
+ const ageData = analyticsData?.demographics?.age_distribution ? 
+  Object.entries(analyticsData.demographics.age_distribution).map(([key, val]) => ({ name: key, value: val })) : [];
+
+ const decisionData = analyticsData?.decision_analysis?.distribution ? 
+  Object.entries(analyticsData.decision_analysis.distribution).map(([key, val]) => ({ name: key, value: val })) : [];
+
+ const revenueTrendData = analyticsData?.payment_analytics?.revenue_trend || [];
+ const categoryRevenueData = analyticsData?.payment_analytics?.category_revenue || [];
+ const totalRevenue = analyticsData?.payment_analytics?.total_revenue || 0;
 
  return (
  <div className="space-y-10 animate-fade-up">
@@ -172,7 +196,7 @@ export default function ReportsPage() {
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
  <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Enterprise Reporting</h1>
- <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
+ <p className="text-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
  <BarChart3 className="h-5 w-5 text-primary" />
  Comprehensive system analytics and dynamic reporting.
  </p>
@@ -191,49 +215,49 @@ export default function ReportsPage() {
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{stats?.total_cases ?? systemData?.total_system_cases ?? 0}</div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Cases in system</p>
+ <p className="text-xs font-bold text-foreground uppercase tracking-tight mt-1">Cases in system</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-purple-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-purple-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Active Workload</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Active Workload</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
  <TrendingUp className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{stats?.active_cases ?? 0}</div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Currently active</p>
+ <p className="text-xs font-bold text-foreground uppercase tracking-tight mt-1">Currently active</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-amber-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-amber-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Avg Resolution</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Avg Resolution</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
  <AlertTriangle className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
- <div className="text-4xl font-black font-display text-foreground">{analyticsData?.resolution_time_metrics?.average || 0}<span className="text-lg font-bold text-muted-foreground ml-1">d</span></div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Filing to verdict</p>
+ <div className="text-4xl font-black font-display text-foreground">{analyticsData?.resolution_time_metrics?.average || 0}<span className="text-lg font-bold text-foreground ml-1">d</span></div>
+ <p className="text-xs font-bold text-foreground uppercase tracking-tight mt-1">Filing to verdict</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Revenue</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Revenue</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
  <ShieldCheck className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
- <div className="text-4xl font-black font-display text-foreground">${systemData?.total_revenue?.toLocaleString() || "12,450"}</div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Fees processed</p>
+ <div className="text-4xl font-black font-display text-foreground">${totalRevenue?.toLocaleString() || systemData?.total_revenue?.toLocaleString() || "0"}</div>
+ <p className="text-xs font-bold text-foreground uppercase tracking-tight mt-1">Fees processed</p>
  </CardContent>
  </Card>
  </div>
@@ -260,7 +284,7 @@ export default function ReportsPage() {
  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-2">
  <MapPin className="h-5 w-5 text-primary" /> Regional Distribution
  </CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Cases split by origin region.</CardDescription>
+ <CardDescription className="text-foreground font-medium">Cases split by origin region.</CardDescription>
  </CardHeader>
  <CardContent className="p-8">
  <div className="h-[300px]">
@@ -280,8 +304,8 @@ export default function ReportsPage() {
  </PieChart>
  </ResponsiveContainer>
  ) : (
- <div className="flex flex-col h-full items-center justify-center text-muted-foreground border-dashed border-2 border-border rounded-2xl space-y-2">
- <MapPin className="h-8 w-8 text-muted-foreground/30" />
+ <div className="flex flex-col h-full items-center justify-center text-foreground border-dashed border-2 border-border rounded-2xl space-y-2">
+ <MapPin className="h-8 w-8 text-foreground/30" />
  <p className="font-bold text-sm">No geographic data available</p>
  </div>
  )}
@@ -295,17 +319,17 @@ export default function ReportsPage() {
  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-2">
  <AlertTriangle className="h-5 w-5 text-amber-500" /> Intelligence Insights
  </CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Automated warnings and workload balances.</CardDescription>
+ <CardDescription className="text-foreground font-medium">Automated warnings and workload balances.</CardDescription>
  </CardHeader>
  <CardContent className="p-8 space-y-4">
  {systemData?.intelligence_insights?.warnings?.length > 0 ? (
  systemData.intelligence_insights.warnings.map((w, idx) => (
- <div key={idx} className="p-4 bg-amber-500/10 rounded-xl text-amber-700 dark:text-amber-400 text-sm font-medium border border-amber-500/20">
+ <div key={idx} className="p-4 bg-amber-500/10 rounded-xl text-foreground font-black text-sm font-medium border border-amber-500/20">
  {w}
  </div>
  ))
  ) : (
- <div className="p-4 bg-emerald-500/10 rounded-xl text-emerald-700 dark:text-emerald-400 text-sm font-medium border border-emerald-500/20">
+ <div className="p-4 bg-emerald-500/10 rounded-xl text-foreground font-black text-sm font-medium border border-emerald-500/20">
  ✓ System metrics are stable. No active warnings.
  </div>
  )}
@@ -313,24 +337,24 @@ export default function ReportsPage() {
  {systemData?.intelligence_insights?.bottlenecks?.length > 0 && (
  <div className="mt-4">
  <h4 className="text-xs font-black uppercase tracking-widest text-rose-600 mb-2 ml-1">Bottlenecks Detected</h4>
- <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground font-medium">
+ <ul className="list-disc pl-5 text-sm space-y-1 text-foreground font-medium">
  {systemData.intelligence_insights.bottlenecks.map((b, i) => <li key={i}>{b}</li>)}
  </ul>
  </div>
  )}
  <div className="mt-6 border-t border-border pt-6 flex gap-4">
  <div className="flex-1 text-center">
- <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Overloaded Judges</p>
+ <p className="text-[10px] font-black text-foreground uppercase tracking-widest mb-2">Overloaded Judges</p>
  <p className="text-3xl font-black font-display text-rose-500">{systemData?.intelligence_insights?.overloaded_judges || 0}</p>
  </div>
  <div className="w-px bg-muted/30"></div>
  <div className="flex-1 text-center">
- <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">Pending Approval</p>
+ <p className="text-[10px] font-black text-foreground uppercase tracking-widest mb-2">Pending Approval</p>
  <p className="text-3xl font-black font-display text-amber-500">{systemData?.intelligence_insights?.pending_registrations || 0}</p>
  </div>
  <div className="w-px bg-muted/30"></div>
  <div className="flex-1 text-center">
- <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">System Backlog</p>
+ <p className="text-[10px] font-black text-foreground uppercase tracking-widest mb-2">System Backlog</p>
  <p className="text-3xl font-black font-display text-purple-500">{systemData?.intelligence_insights?.system_backlog || 0}</p>
  </div>
  </div>
@@ -339,87 +363,508 @@ export default function ReportsPage() {
  </div>
  </TabsContent>
 
- <TabsContent value="analytics" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
- <div className="grid gap-8 md:grid-cols-2">
- {/* Case Volume Trends */}
- <Card className="col-span-2 bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-xl font-black font-display tracking-tight">Case Velocity & Trajectory</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Filing volumes across the recorded continuum.</CardDescription>
- </CardHeader>
- <CardContent className="p-8">
- <div className="h-[300px]">
- <ResponsiveContainer width="100%" height="100%">
- <LineChart data={monthlyTrends}>
- <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
- <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
- <YAxis fontSize={12} tickLine={false} axisLine={false} />
- <RechartsTooltip contentStyle={CustomTooltipStyle} cursor={{ stroke: 'rgba(255,255,255,0.1)' }} />
- <Line type="monotone" dataKey="CaseVolume" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 5, fill: 'hsl(var(--primary))' }} activeDot={{ r: 8, stroke: 'hsl(var(--primary))', strokeWidth: 2 }} />
- </LineChart>
- </ResponsiveContainer>
- </div>
- </CardContent>
- </Card>
+ <TabsContent value="analytics" className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
+  <div className="grid gap-8 lg:grid-cols-3">
+  {/* Case Volume Trends */}
+  <Card className="lg:col-span-2 bg-card/60 backdrop-blur-xl border-border shadow-2xl overflow-hidden relative group">
+  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32" />
+  <CardHeader className="p-8 border-b border-border/50">
+  <div className="flex justify-between items-start">
+  <div className="space-y-1">
+  <CardTitle className="text-2xl font-black font-display tracking-tight flex items-center gap-2">
+  <Activity className="h-6 w-6 text-primary" /> Case Velocity & Trajectory
+  </CardTitle>
+  <CardDescription className="text-foreground font-bold opacity-100">Longitudinal filing volumes with temporal zoom control.</CardDescription>
+  </div>
+  <Badge className="bg-primary/10 text-primary border-primary/20 font-black px-3 py-1">REAL-TIME</Badge>
+  </div>
+  </CardHeader>
+  <CardContent className="p-8">
+  <div className="h-[400px] w-full">
+  <ResponsiveContainer width="100%" height="100%">
+  <AreaChart data={monthlyTrends}>
+  <defs>
+  <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.5}/>
+  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+  </linearGradient>
+  </defs>
+  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(99,102,241,0.12)" />
+  <XAxis 
+  dataKey="name" 
+  fontSize={11} 
+  fontWeight={800}
+  tickLine={false} 
+  axisLine={false} 
+  tick={{fill: 'currentColor'}}
+  />
+  <YAxis 
+  fontSize={11} 
+  fontWeight={800}
+  tickLine={false} 
+  axisLine={false} 
+  tick={{fill: 'currentColor'}}
+  />
+  <RechartsTooltip 
+  contentStyle={CustomTooltipStyle} 
+  cursor={{ stroke: '#6366f1', strokeWidth: 2, strokeDasharray: '5 5' }} 
+  />
+  <Area 
+  type="monotone" 
+  dataKey="CaseVolume" 
+  stroke="#6366f1" 
+  strokeWidth={4} 
+  fillOpacity={1} 
+  fill="url(#colorVolume)" 
+  animationDuration={2000}
+  />
+  <Brush 
+  dataKey="name" 
+  height={30} 
+  stroke="#6366f1" 
+  fill="rgba(99,102,241,0.08)"
+  travellerWidth={10}
+  />
+  </AreaChart>
+  </ResponsiveContainer>
+  </div>
+  <div className="mt-8 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+  <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
+  <TrendingUp className="h-4 w-4" /> Insight Takeaway
+  </h4>
+  <p className="text-sm font-bold text-foreground leading-relaxed">
+  The system is experiencing a <span className="text-primary">significant upward trajectory</span> in filing volume over the last 6 months. Use the slider above to isolate specific workload spikes for resource reallocation.
+  </p>
+  </div>
+  </CardContent>
+  </Card>
 
- {/* Distribution by Category */}
- <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-xl font-black font-display tracking-tight">Category Spread</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Frequency distribution of legal disputes.</CardDescription>
- </CardHeader>
- <CardContent className="p-8">
- <div className="h-[300px]">
- <ResponsiveContainer width="100%" height="100%">
- <BarChart data={caseTypeDist} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
- <CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} />
- <XAxis type="number" fontSize={12} />
- <YAxis dataKey="name" type="category" fontSize={12} width={100} />
- <RechartsTooltip contentStyle={CustomTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
- <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
- </BarChart>
- </ResponsiveContainer>
- </div>
- </CardContent>
- </Card>
+  {/* Justice Efficiency Radar */}
+  <Card className="bg-card/60 backdrop-blur-xl border-border shadow-2xl overflow-hidden border-t-4 border-t-emerald-500/50">
+  <CardHeader className="p-8 border-b border-border/50">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-2">
+  <Clock className="h-5 w-5 text-emerald-500" /> Efficiency Radar
+  </CardTitle>
+  <CardDescription className="text-foreground font-bold opacity-100">Comparing resolution thresholds (Days).</CardDescription>
+  </CardHeader>
+  <CardContent className="p-8">
+  <div className="h-[300px] w-full flex items-center justify-center">
+  <ResponsiveContainer width="100%" height="100%">
+  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={resolutionData}>
+  <PolarGrid stroke="rgba(245,158,11,0.2)" />
+  <PolarAngleAxis dataKey="subject" tick={{fill: 'currentColor', fontSize: 10, fontWeight: 900}} />
+  <PolarRadiusAxis angle={30} domain={[0, 'auto']} tick={{fill: 'currentColor', fontSize: 8}} />
+  <Radar
+  name="Resolution Time"
+  dataKey="value"
+  stroke="#f59e0b"
+  fill="#f59e0b"
+  fillOpacity={0.4}
+  animationDuration={2500}
+  />
+  <RechartsTooltip contentStyle={CustomTooltipStyle} />
+  </RadarChart>
+  </ResponsiveContainer>
+  </div>
+  <div className="mt-8 space-y-4">
+  <div className="flex justify-between items-center p-3 rounded-xl bg-muted/20">
+  <span className="text-xs font-black uppercase tracking-widest">Average</span>
+  <span className="text-lg font-black text-emerald-500">{analyticsData?.resolution_time_metrics?.average || 0}d</span>
+  </div>
+  <p className="text-xs font-bold text-foreground leading-relaxed italic">
+  * Radar symmetry indicates consistent delivery. The "Longest" peak suggests a bottleneck in specific complex litigation types.
+  </p>
+  </div>
+  </CardContent>
+  </Card>
 
- {/* Resolution Time */}
- <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-xl font-black font-display tracking-tight">Resolution Thresholds</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Time from filing to final verdict (days).</CardDescription>
- </CardHeader>
- <CardContent className="p-8">
- <div className="h-[300px]">
- <ResponsiveContainer width="100%" height="100%">
- <BarChart data={resolutionData}>
- <CartesianGrid strokeDasharray="3 3" opacity={0.1} vertical={false}/>
- <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
- <YAxis fontSize={12} tickLine={false} axisLine={false} />
- <RechartsTooltip contentStyle={CustomTooltipStyle} cursor={{ fill: 'transparent' }} />
- <Bar dataKey="days" radius={[8, 8, 0, 0]}>
- {resolutionData.map((entry, index) => (
- <Cell key={`cell-${index}`} fill={index === 1 ? 'hsl(142, 76%, 36%)' : index === 2 ? 'hsl(340, 65%, 50%)' : 'hsl(var(--primary))'} />
- ))}
- </Bar>
- </BarChart>
- </ResponsiveContainer>
- </div>
- </CardContent>
- </Card>
- </div>
+  {/* Judge Performance Matrix */}
+  <Card className="lg:col-span-3 bg-card/60 backdrop-blur-xl border-border shadow-2xl overflow-hidden relative">
+  <CardHeader className="p-8 border-b border-border/50 flex flex-row items-center justify-between">
+  <div className="space-y-1">
+  <CardTitle className="text-2xl font-black font-display tracking-tight flex items-center gap-2">
+  <Users className="h-6 w-6 text-purple-500" /> Judicial Performance Matrix
+  </CardTitle>
+  <CardDescription className="text-foreground font-bold opacity-100">Comparing active caseload vs. resolution efficiency across the bench.</CardDescription>
+  </div>
+  </CardHeader>
+  <CardContent className="p-8">
+  <div className="h-[400px] w-full">
+  <ResponsiveContainer width="100%" height="100%">
+  <ComposedChart data={judgePerformanceData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(20,184,166,0.15)" />
+  <XAxis 
+  dataKey="name" 
+  fontSize={11} 
+  fontWeight={800} 
+  tickLine={false} 
+  axisLine={false} 
+  tick={{fill: 'currentColor'}}
+  />
+  <YAxis 
+  yAxisId="left"
+  fontSize={11} 
+  fontWeight={800} 
+  tickLine={false} 
+  axisLine={false} 
+  tick={{fill: 'currentColor'}}
+  label={{ value: 'Active Cases', angle: -90, position: 'insideLeft', style: {fill: 'currentColor', fontWeight: 900, fontSize: 10} }}
+  />
+  <YAxis 
+  yAxisId="right" 
+  orientation="right" 
+  fontSize={11} 
+  fontWeight={800} 
+  tickLine={false} 
+  axisLine={false} 
+  tick={{fill: 'currentColor'}}
+  label={{ value: 'Efficiency %', angle: 90, position: 'insideRight', style: {fill: 'currentColor', fontWeight: 900, fontSize: 10} }}
+  />
+  <RechartsTooltip contentStyle={CustomTooltipStyle} />
+  <Legend />
+  <Bar yAxisId="left" dataKey="active" name="Active Caseload" fill="#14b8a6" radius={[8, 8, 0, 0]} barSize={40} />
+  <Line yAxisId="right" type="monotone" dataKey="efficiency" name="Clearance Rate %" stroke="#f43f5e" strokeWidth={4} dot={{r: 6, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2}} />
+  </ComposedChart>
+  </ResponsiveContainer>
+  </div>
+  <div className="mt-8 grid md:grid-cols-2 gap-8 items-center border-t border-border/50 pt-8">
+  <div className="space-y-4">
+  <h4 className="text-sm font-black uppercase tracking-widest text-purple-500">Key Performance Indicators</h4>
+  <p className="text-sm font-bold text-foreground leading-relaxed">
+  This matrix visualizes the workload balance. Judges with <span className="text-primary">high bars</span> and <span className="text-purple-500">high lines</span> are your most efficient power-users, while high bars with low lines may require additional support staff.
+  </p>
+  </div>
+  <div className="flex gap-4">
+  <div className="flex-1 p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center">
+  <p className="text-[10px] font-black uppercase tracking-widest text-purple-600 mb-1">Bench Efficiency</p>
+  <p className="text-3xl font-black font-display text-foreground">
+  {(judgePerformanceData.reduce((acc, curr) => acc + curr.efficiency, 0) / (judgePerformanceData.length || 1)).toFixed(0)}%
+  </p>
+  </div>
+  <div className="flex-1 p-4 rounded-2xl bg-primary/10 border border-primary/20 text-center">
+  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Total Bench Capacity</p>
+  <p className="text-3xl font-black font-display text-foreground">
+  {judgePerformanceData.reduce((acc, curr) => acc + curr.active, 0)}
+  </p>
+  </div>
+  </div>
+  </div>
+  </CardContent>
+  </Card>
+
+  {/* Category Distribution (Moved up and expanded) */}
+  <Card className="lg:col-span-3 bg-card/60 backdrop-blur-xl border-border shadow-2xl overflow-hidden group">
+  <CardHeader className="p-8 border-b border-border/50">
+  <CardTitle className="text-xl font-black font-display tracking-tight flex items-center gap-2">
+  <Scale className="h-5 w-5 text-primary" /> Category Distribution
+  </CardTitle>
+  <CardDescription className="text-foreground font-bold opacity-100">Frequency distribution of legal disputes across sectors.</CardDescription>
+  </CardHeader>
+  <CardContent className="p-8">
+  <div className="h-[400px] w-full">
+  <ResponsiveContainer width="100%" height="100%">
+  <BarChart data={caseTypeDist} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
+  <CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} stroke="rgba(99,102,241,0.15)" />
+  <XAxis type="number" fontSize={11} fontWeight={800} tick={{fill: 'currentColor'}} />
+  <YAxis dataKey="name" type="category" fontSize={11} fontWeight={800} width={150} tick={{fill: 'currentColor'}} />
+  <RechartsTooltip contentStyle={CustomTooltipStyle} cursor={{ fill: 'rgba(99,102,241,0.06)' }} />
+  <Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={35}>
+  {caseTypeDist.map((entry, index) => (
+  <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[index % VIBRANT_COLORS.length]} />
+  ))}
+  </Bar>
+  </BarChart>
+  </ResponsiveContainer>
+  </div>
+  <p className="mt-8 text-sm font-bold text-foreground leading-relaxed border-l-4 border-primary pl-4 bg-primary/5 p-4 rounded-r-xl">
+  <span className="text-primary font-black uppercase tracking-wider">Strategic Insight:</span> The data indicates that <span className="font-black">{(caseTypeDist[0]?.name || "N/A")}</span> is the dominant category, representing the largest portion of the current judicial workload.
+  </p>
+  </CardContent>
+  </Card>
+
+  {/* Structural Composition (Moved down and expanded) */}
+  <Card className="lg:col-span-3 bg-card/60 backdrop-blur-xl border-border shadow-2xl overflow-hidden border-t-4 border-t-amber-500/50">
+  <CardHeader className="p-8 border-b border-border/50">
+  <CardTitle className="text-2xl font-black font-display tracking-tight flex items-center gap-2">
+  <Layers className="h-6 w-6 text-amber-500" /> Structural Composition Matrix
+  </CardTitle>
+  <CardDescription className="text-foreground font-bold opacity-100">Exhaustive demographic breakdown and decision logic distribution.</CardDescription>
+  </CardHeader>
+  <CardContent className="p-8">
+  <div className="grid lg:grid-cols-2 gap-16">
+  <div className="space-y-6">
+  <h4 className="text-sm font-black uppercase tracking-[0.3em] text-center text-amber-600 bg-amber-500/5 py-2 rounded-lg">Age Demographics</h4>
+  <div className="h-[450px] w-full">
+  {ageData.some(d => d.value > 0) ? (
+  <ResponsiveContainer width="100%" height="100%">
+  <PieChart>
+  <Pie 
+  data={ageData} 
+  cx="50%" 
+  cy="50%" 
+  innerRadius={80} 
+  outerRadius={120} 
+  paddingAngle={10} 
+  dataKey="value"
+  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+  labelLine={true}
+  stroke="none"
+  >
+  {ageData.map((entry, index) => <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[index % VIBRANT_COLORS.length]} />)}
+  </Pie>
+  <RechartsTooltip contentStyle={CustomTooltipStyle} />
+  <Legend verticalAlign="bottom" height={40} iconType="diamond" wrapperStyle={{paddingTop: '30px', fontWeight: 900, fontSize: '12px'}} />
+  </PieChart>
+  </ResponsiveContainer>
+  ) : (
+  <div className="flex flex-col h-full items-center justify-center text-foreground border-dashed border-2 border-border/50 rounded-3xl space-y-4 bg-amber-500/5">
+  <Users className="h-12 w-12 text-amber-500/30" />
+  <p className="font-black text-sm uppercase tracking-widest">No Age Data Available</p>
+  </div>
+  )}
+  </div>
+  </div>
+  <div className="space-y-6">
+  <h4 className="text-sm font-black uppercase tracking-[0.3em] text-center text-primary bg-primary/5 py-2 rounded-lg">Resolution Logic</h4>
+  <div className="h-[450px] w-full">
+  {decisionData.some(d => d.value > 0) ? (
+  <ResponsiveContainer width="100%" height="100%">
+  <PieChart>
+  <Pie 
+  data={decisionData} 
+  cx="50%" 
+  cy="50%" 
+  innerRadius={80} 
+  outerRadius={120} 
+  paddingAngle={10} 
+  dataKey="value"
+  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+  labelLine={true}
+  stroke="none"
+  >
+  {decisionData.map((entry, index) => <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[(index + 3) % VIBRANT_COLORS.length]} />)}
+  </Pie>
+  <RechartsTooltip contentStyle={CustomTooltipStyle} />
+  <Legend verticalAlign="bottom" height={40} iconType="diamond" wrapperStyle={{paddingTop: '30px', fontWeight: 900, fontSize: '12px'}} />
+  </PieChart>
+  </ResponsiveContainer>
+  ) : (
+  <div className="flex flex-col h-full items-center justify-center text-foreground border-dashed border-2 border-border/50 rounded-3xl space-y-4 bg-primary/5">
+  <Layers className="h-12 w-12 text-primary/30" />
+  <p className="font-black text-sm uppercase tracking-widest">No Decision Data Available</p>
+  </div>
+  )}
+  </div>
+  </div>
+  </div>
+  <div className="mt-16 p-8 bg-gradient-to-br from-amber-500/5 via-transparent to-primary/5 rounded-3xl border border-border/50 relative overflow-hidden">
+  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-primary to-amber-500 opacity-30" />
+  <p className="text-sm font-bold text-foreground leading-loose text-center uppercase tracking-[0.1em]">
+  * This structural analysis is synchronized with real-time system metrics. Use these insights to identify under-served demographics and optimize resolution pipelines for maximum court efficiency.
+  </p>
+  </div>
+  </CardContent>
+  </Card>
+  {/* Financial Intelligence Section */}
+  <Card className="lg:col-span-3 bg-card/60 backdrop-blur-xl border-border shadow-2xl overflow-hidden border-t-4 border-t-emerald-500/50">
+  <CardHeader className="p-8 border-b border-border/50">
+  <div className="flex flex-wrap justify-between items-center gap-4">
+  <div className="space-y-1">
+  <CardTitle className="text-2xl font-black font-display tracking-tight flex items-center gap-2">
+  <ShieldCheck className="h-6 w-6 text-emerald-500" /> Financial Intelligence
+  </CardTitle>
+  <CardDescription className="text-foreground font-bold opacity-100">
+  Revenue trajectory and judicial fee collection — sourced live from verified payment records.
+  </CardDescription>
+  </div>
+  <div className="flex items-center gap-6">
+  <div className="text-center px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-1">Total Verified Revenue</p>
+  <p className="text-3xl font-black font-display text-emerald-500">
+  {totalRevenue > 0 ? `$${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '$0.00'}
+  </p>
+  </div>
+  <div className="text-center px-6 py-3 rounded-2xl bg-primary/10 border border-primary/20">
+  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Sectors Tracked</p>
+  <p className="text-3xl font-black font-display text-foreground">{categoryRevenueData.length}</p>
+  </div>
+  <div className="text-center px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 mb-1">Data Points</p>
+  <p className="text-3xl font-black font-display text-foreground">{revenueTrendData.length}</p>
+  </div>
+  </div>
+  </div>
+  </CardHeader>
+  <CardContent className="p-8">
+  {(revenueTrendData.length === 0 && categoryRevenueData.length === 0) ? (
+  <div className="flex flex-col items-center justify-center py-24 gap-6 border-dashed border-2 border-emerald-500/20 rounded-3xl bg-emerald-500/5">
+  <div className="h-20 w-20 rounded-3xl bg-emerald-500/10 flex items-center justify-center">
+  <ShieldCheck className="h-10 w-10 text-emerald-500/40" />
+  </div>
+  <div className="text-center space-y-2">
+  <p className="font-black text-lg uppercase tracking-widest text-foreground">No Financial Data Available</p>
+  <p className="text-sm font-medium text-muted-foreground max-w-md">
+  Revenue charts will populate once payments reach <span className="font-bold text-emerald-500">SUCCESS</span> or <span className="font-bold text-emerald-500">VERIFIED</span> status in the system.
+  </p>
+  </div>
+  </div>
+  ) : (
+  <div className="grid lg:grid-cols-2 gap-12">
+  {/* Monthly Revenue Trend Bar Chart */}
+  <div className="space-y-4">
+  <div className="flex items-center justify-between">
+  <h4 className="text-sm font-black uppercase tracking-[0.25em] text-emerald-600">Monthly Revenue Trend</h4>
+  <span className="text-xs font-bold text-muted-foreground bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/10">
+  {revenueTrendData.length} months
+  </span>
+  </div>
+  <div className="h-[320px] w-full">
+  {revenueTrendData.length > 0 ? (
+  <ResponsiveContainer width="100%" height="100%">
+  <BarChart
+  data={revenueTrendData}
+  margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+  barCategoryGap="30%"
+  >
+  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(16,185,129,0.1)" />
+  <XAxis
+  dataKey="month"
+  fontSize={11}
+  fontWeight={700}
+  tickLine={false}
+  axisLine={false}
+  tick={{ fill: 'currentColor' }}
+  />
+  <YAxis
+  fontSize={11}
+  fontWeight={700}
+  tickLine={false}
+  axisLine={false}
+  tick={{ fill: 'currentColor' }}
+  tickFormatter={(v) => `$${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`}
+  width={55}
+  />
+  <RechartsTooltip
+  contentStyle={CustomTooltipStyle}
+  formatter={(value) => [`$${Number(value).toLocaleString('en-US', {minimumFractionDigits: 2})}`, 'Revenue']}
+  />
+  <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={60} />
+  </BarChart>
+  </ResponsiveContainer>
+  ) : (
+  <div className="flex flex-col h-full items-center justify-center border-dashed border-2 border-emerald-500/20 rounded-2xl bg-emerald-500/5 gap-3">
+  <TrendingUp className="h-10 w-10 text-emerald-500/30" />
+  <p className="font-black text-sm uppercase tracking-widest text-muted-foreground">No Monthly Data Yet</p>
+  </div>
+  )}
+  </div>
+  </div>
+
+  {/* Fee Distribution Donut Chart */}
+  <div className="space-y-4">
+  <div className="flex items-center justify-between">
+  <h4 className="text-sm font-black uppercase tracking-[0.25em] text-primary">Fee Distribution by Sector</h4>
+  <span className="text-xs font-bold text-muted-foreground bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
+  {categoryRevenueData.length} categories
+  </span>
+  </div>
+  <div className="h-[320px] w-full">
+  {categoryRevenueData.length > 0 ? (
+  <ResponsiveContainer width="100%" height="100%">
+  <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+  <Pie
+  data={categoryRevenueData}
+  cx="50%"
+  cy="45%"
+  innerRadius={65}
+  outerRadius={105}
+  paddingAngle={4}
+  dataKey="value"
+  stroke="none"
+  >
+  {categoryRevenueData.map((entry, index) => (
+  <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[index % VIBRANT_COLORS.length]} />
+  ))}
+  </Pie>
+  <RechartsTooltip
+  contentStyle={CustomTooltipStyle}
+  formatter={(value) => [`$${Number(value).toLocaleString('en-US', {minimumFractionDigits: 2})}`, 'Revenue']}
+  />
+  <Legend
+  verticalAlign="bottom"
+  height={40}
+  iconType="circle"
+  iconSize={10}
+  wrapperStyle={{ paddingTop: '16px', fontSize: '11px', fontWeight: 800 }}
+  formatter={(value) => <span style={{color: 'currentColor', fontWeight: 900}}>{value}</span>}
+  />
+  </PieChart>
+  </ResponsiveContainer>
+  ) : (
+  <div className="flex flex-col h-full items-center justify-center border-dashed border-2 border-primary/20 rounded-2xl bg-primary/5 gap-3">
+  <Layers className="h-10 w-10 text-primary/30" />
+  <p className="font-black text-sm uppercase tracking-widest text-muted-foreground">No Category Data Yet</p>
+  </div>
+  )}
+  </div>
+  </div>
+  </div>
+  )}
+
+  {/* Category breakdown table */}
+  {categoryRevenueData.length > 0 && (
+  <div className="mt-10 border-t border-border/50 pt-8">
+  <h4 className="text-xs font-black uppercase tracking-widest text-foreground mb-4 flex items-center gap-2">
+  <Layers className="h-4 w-4 text-primary" /> Revenue Breakdown by Legal Category
+  </h4>
+  <div className="grid gap-3">
+  {categoryRevenueData.map((item, i) => {
+  const pct = totalRevenue > 0 ? ((item.value / totalRevenue) * 100).toFixed(1) : 0;
+  return (
+  <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-muted/20 border border-border/30">
+  <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: VIBRANT_COLORS[i % VIBRANT_COLORS.length] }} />
+  <span className="text-sm font-black flex-1 text-foreground">{item.name}</span>
+  <div className="flex-1 h-2 bg-border/40 rounded-full overflow-hidden">
+  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: VIBRANT_COLORS[i % VIBRANT_COLORS.length] }} />
+  </div>
+  <span className="text-xs font-black text-muted-foreground w-12 text-right">{pct}%</span>
+  <span className="text-sm font-black text-foreground w-28 text-right">
+  ${Number(item.value).toLocaleString('en-US', {minimumFractionDigits: 2})}
+  </span>
+  </div>
+  );
+  })}
+  </div>
+  </div>
+  )}
+
+  <div className="mt-6 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+  <h4 className="text-xs font-black uppercase tracking-widest text-emerald-600 mb-2 flex items-center gap-2">
+  <TrendingUp className="h-4 w-4" /> Financial Takeaway
+  </h4>
+  <p className="text-sm font-bold text-foreground leading-relaxed">
+  {totalRevenue > 0 ? (
+  <>The system has processed <span className="text-emerald-600 font-black">${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</span> in verified judicial fees. Revenue is most concentrated in the <span className="font-black text-primary">{categoryRevenueData[0]?.name || "N/A"}</span> sector, representing <span className="font-black text-emerald-600">{totalRevenue > 0 ? ((categoryRevenueData[0]?.value / totalRevenue) * 100).toFixed(1) : 0}%</span> of all collections.</>
+  ) : (
+  <>No verified revenue has been recorded yet. Charts will populate automatically once payments are marked as <span className="font-black text-emerald-500">SUCCESS</span> or <span className="font-black text-emerald-500">VERIFIED</span>.</>
+  )}
+  </p>
+  </div>
+  </CardContent>
+  </Card>
+  </div>
  </TabsContent>
 
  <TabsContent value="exports" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-8 border-b border-border">
  <CardTitle className="text-2xl font-black font-display tracking-tight">Report Generation Engine</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Generate official data exports parameterized by temporal limits.</CardDescription>
+ <CardDescription className="text-foreground font-medium">Generate official data exports parameterized by temporal limits.</CardDescription>
  </CardHeader>
  <CardContent className="p-8 space-y-8">
  <div className="grid md:grid-cols-3 gap-6 items-end pb-8 border-b border-border">
  <div className="space-y-2">
- <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Predefined Range</Label>
+ <Label className="text-xs font-black uppercase tracking-widest text-foreground ml-1">Predefined Range</Label>
  <Select value={predefinedRange} onValueChange={handlePredefinedRange}>
  <SelectTrigger className="h-12 bg-background border-border rounded-xl">
  <SelectValue placeholder="Custom Range" />
@@ -439,7 +884,7 @@ export default function ReportsPage() {
  </Select>
  </div>
  <div className="space-y-2">
- <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Start Date Boundary</Label>
+ <Label className="text-xs font-black uppercase tracking-widest text-foreground ml-1">Start Date Boundary</Label>
  <Input 
  type="date" 
  value={exportStartDate} 
@@ -448,14 +893,14 @@ export default function ReportsPage() {
  />
  </div>
  <div className="space-y-2 relative">
- <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">End Date Boundary</Label>
+ <Label className="text-xs font-black uppercase tracking-widest text-foreground ml-1">End Date Boundary</Label>
  <Input 
  type="date" 
  value={exportEndDate} 
  onChange={(e) => { setExportEndDate(e.target.value); setPredefinedRange("custom"); }} 
  className="h-12 bg-background border-border rounded-xl focus:ring-primary/20 font-medium"
  />
- <p className="absolute -bottom-5 left-1 text-[9px] font-bold text-muted-foreground uppercase tracking-tight">Leave bounds empty for historical data.</p>
+ <p className="absolute -bottom-5 left-1 text-[9px] font-bold text-foreground uppercase tracking-tight">Leave bounds empty for historical data.</p>
  </div>
  </div>
 
@@ -466,7 +911,7 @@ export default function ReportsPage() {
  <FileText className="h-8 w-8" />
  </div>
  <h3 className="font-black font-display text-lg mb-2 tracking-tight">Executive Summary</h3>
- <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed">Formatted PDF optimized for printing and presentations.</p>
+ <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Formatted PDF optimized for printing and presentations.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
  <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleDownload('pdf', 'system')} disabled={isDownloading}>
@@ -484,7 +929,7 @@ export default function ReportsPage() {
  <FileSpreadsheet className="h-8 w-8" />
  </div>
  <h3 className="font-black font-display text-lg mb-2 tracking-tight">Analytical Workbook</h3>
- <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed">Multi-sheet dataset for financial deep-dive analysis.</p>
+ <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Multi-sheet dataset for financial deep-dive analysis.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
  <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleDownload('excel', 'system')} disabled={isDownloading}>
@@ -502,7 +947,7 @@ export default function ReportsPage() {
  <DownloadCloud className="h-8 w-8" />
  </div>
  <h3 className="font-black font-display text-lg mb-2 tracking-tight">Raw Data Matrix</h3>
- <p className="text-sm text-muted-foreground font-medium mb-8 leading-relaxed">Flattened matrix for database ingestion and ML pipelines.</p>
+ <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Flattened matrix for database ingestion and ML pipelines.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
  <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleDownload('csv', 'system')} disabled={isDownloading}>

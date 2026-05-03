@@ -60,18 +60,15 @@ class HearingViewSet(viewsets.ModelViewSet):
 
         if user.role == 'ADMIN':
             logger.debug("Role is ADMIN, returning full queryset")
-            return self.queryset
+            qs = self.queryset
         elif user.role in ['JUDGE', 'CLERK', 'REGISTRAR']:
             logger.debug(f"Role is {user.role}, filtering by judge/assignment")
             qs = self.queryset.filter(
                 Q(judge=user) |
                 Q(case__judge_assignments__judge=user, case__judge_assignments__is_active=True)
             ).distinct()
-            logger.debug(f"Staff queryset count: {qs.count()}")
-            return qs
         else:
             logger.debug(f"Role is {user.role}, filtering by participant/case roles")
-            # For clients/lawyers, show hearings for their cases
             qs = self.queryset.filter(
                 Q(case__created_by=user) |
                 Q(case__plaintiff=user) |
@@ -80,8 +77,20 @@ class HearingViewSet(viewsets.ModelViewSet):
                 Q(case__defendant_lawyer=user) |
                 Q(participant_list__user=user)
             ).distinct()
-            logger.debug(f"Citizen/Lawyer queryset count: {qs.count()}")
-            return qs
+
+        # Apply additional filters
+        date_param = self.request.query_params.get('date')
+        if date_param:
+            qs = qs.filter(scheduled_date__date=date_param)
+            
+        month = self.request.query_params.get('month')
+        year = self.request.query_params.get('year')
+        if month and year:
+            qs = qs.filter(scheduled_date__month=month, scheduled_date__year=year)
+        elif year:
+            qs = qs.filter(scheduled_date__year=year)
+
+        return qs
     
     def get_permissions(self):
         if self.action in ['create']:
