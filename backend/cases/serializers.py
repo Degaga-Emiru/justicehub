@@ -4,7 +4,7 @@ from django.db import transaction
 from .models import (
     CaseCategory, Case, CaseDocument, CaseDocumentVersion,
     JudgeAssignment, CaseNotes, JudgeProfile,
-    CaseStatus, CaseActionRequest
+    CaseActionRequest
 )
 from accounts.models import User
 from accounts.serializers import UserProfileSerializer
@@ -18,10 +18,7 @@ class CaseCategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
-class CaseStatusSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CaseStatus
-        fields = ['id', 'name']
+
 
 
 class CaseDocumentVersionSerializer(serializers.ModelSerializer):

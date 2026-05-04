@@ -110,8 +110,8 @@ class Hearing(SoftDeleteModel):
 
     def clean(self):
         super().clean()
-        from cases.models import CaseStatus as CaseStatusConst
-        if self.case.status in [CaseStatusConst.StatusChoices.CLOSED, CaseStatusConst.StatusChoices.DECIDED]:
+        from cases.models import Case
+        if self.case.status in [Case.StatusChoices.CLOSED, Case.StatusChoices.DECIDED]:
             from django.core.exceptions import ValidationError
             raise ValidationError(f"Cannot schedule hearings for a {self.case.get_status_display()} case.")
 

@@ -21,17 +21,6 @@ class CaseCategory(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    parent = models.ForeignKey(
-        'self', 
-        on_delete=models.CASCADE, 
-        null=True, 
-        blank=True, 
-        related_name='subcategories'
-    )
-
-    # Acknowledgement
-    is_defendant_acknowledged = models.BooleanField(default=False)
-    acknowledged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name_plural = "Case Categories"
@@ -45,8 +34,12 @@ class CaseCategory(models.Model):
         return f"{self.code} - {self.name}"
 
 
-class CaseStatus(models.Model):
-    """Case Status Model"""
+
+
+
+class Case(SoftDeleteModel):
+    """Main Case Model"""
+    
     class StatusChoices(models.TextChoices):
         PENDING_REVIEW = 'PENDING_REVIEW', 'Pending Review'
         APPROVED = 'APPROVED', 'Approved'
@@ -57,28 +50,14 @@ class CaseStatus(models.Model):
         DECIDED = 'DECIDED', 'Decided'
         CLOSED = 'CLOSED', 'Closed'
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=20, choices=StatusChoices.choices, unique=True)
-
-    class Meta:
-        verbose_name_plural = "Case Statuses"
-        ordering = ['name']
-
-    def __str__(self):
-        return self.get_name_display()
-
-
-class Case(SoftDeleteModel):
-    """Main Case Model"""
-    
     # Status Flow Definition
     STATUS_FLOW = {
-        CaseStatus.StatusChoices.PENDING_REVIEW: [CaseStatus.StatusChoices.APPROVED, CaseStatus.StatusChoices.REJECTED],
-        CaseStatus.StatusChoices.APPROVED: [CaseStatus.StatusChoices.PAID],
-        CaseStatus.StatusChoices.PAID: [CaseStatus.StatusChoices.ASSIGNED],
-        CaseStatus.StatusChoices.ASSIGNED: [CaseStatus.StatusChoices.IN_PROGRESS, CaseStatus.StatusChoices.DECIDED, CaseStatus.StatusChoices.CLOSED],
-        CaseStatus.StatusChoices.IN_PROGRESS: [CaseStatus.StatusChoices.DECIDED, CaseStatus.StatusChoices.CLOSED],
-        CaseStatus.StatusChoices.DECIDED: [CaseStatus.StatusChoices.CLOSED],
+        StatusChoices.PENDING_REVIEW: [StatusChoices.APPROVED, StatusChoices.REJECTED],
+        StatusChoices.APPROVED: [StatusChoices.PAID],
+        StatusChoices.PAID: [StatusChoices.ASSIGNED],
+        StatusChoices.ASSIGNED: [StatusChoices.IN_PROGRESS, StatusChoices.DECIDED, StatusChoices.CLOSED],
+        StatusChoices.IN_PROGRESS: [StatusChoices.DECIDED, StatusChoices.CLOSED],
+        StatusChoices.DECIDED: [StatusChoices.CLOSED],
     }
 
     class Priority(models.TextChoices):
@@ -103,8 +82,8 @@ class Case(SoftDeleteModel):
     category = models.ForeignKey(CaseCategory, on_delete=models.PROTECT, related_name='cases')
     status = models.CharField(
         max_length=20,
-        choices=CaseStatus.StatusChoices.choices,
-        default=CaseStatus.StatusChoices.PENDING_REVIEW,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING_REVIEW,
         db_index=True
     )
     priority = models.CharField(
@@ -219,7 +198,7 @@ class Case(SoftDeleteModel):
         # 12.1: A closed case cannot be edited.
         if not self._state.adding:
             old_instance = Case.all_objects.get(pk=self.pk)
-            if old_instance.status == CaseStatus.StatusChoices.CLOSED:
+            if old_instance.status == Case.StatusChoices.CLOSED:
                 raise ValidationError("A closed case cannot be modified.")
 
     def save(self, *args, **kwargs):
@@ -237,11 +216,11 @@ class Case(SoftDeleteModel):
                     )
 
         # Auto-generate file number if status changes to APPROVED
-        if self.status == CaseStatus.StatusChoices.APPROVED and not self.file_number:
+        if self.status == Case.StatusChoices.APPROVED and not self.file_number:
             self.file_number = self.generate_file_number()
             
         # Requirement 3: Set closed_date when case is resolved/closed
-        if self.status == CaseStatus.StatusChoices.CLOSED and not self.closed_date:
+        if self.status == Case.StatusChoices.CLOSED and not self.closed_date:
             self.closed_date = timezone.now()
             
         super().save(*args, **kwargs)
@@ -278,15 +257,15 @@ class Case(SoftDeleteModel):
 
     @property
     def is_pending(self):
-        return self.status in [CaseStatus.StatusChoices.PENDING_REVIEW, CaseStatus.StatusChoices.ASSIGNED]
+        return self.status in [Case.StatusChoices.PENDING_REVIEW, Case.StatusChoices.ASSIGNED]
 
     @property
     def is_active(self):
-        return self.status in [CaseStatus.StatusChoices.ASSIGNED, CaseStatus.StatusChoices.IN_PROGRESS]
+        return self.status in [Case.StatusChoices.ASSIGNED, Case.StatusChoices.IN_PROGRESS]
 
     @property
     def is_closed(self):
-        return self.status in [CaseStatus.StatusChoices.CLOSED, CaseStatus.StatusChoices.DECIDED]
+        return self.status in [Case.StatusChoices.CLOSED, Case.StatusChoices.DECIDED]
 
 
 class CaseDocument(SoftDeleteModel):
@@ -329,10 +308,6 @@ class CaseDocument(SoftDeleteModel):
     # Tracking
     uploaded_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    # Acknowledgement
-    is_defendant_acknowledged = models.BooleanField(default=False)
-    acknowledged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-uploaded_at']
@@ -440,10 +415,6 @@ class JudgeProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Acknowledgement
-    is_defendant_acknowledged = models.BooleanField(default=False)
-    acknowledged_at = models.DateTimeField(null=True, blank=True)
-
     class Meta:
         verbose_name = "Judge Profile"
         verbose_name_plural = "Judge Profiles"
@@ -521,10 +492,6 @@ class CaseNotes(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    # Acknowledgement
-    is_defendant_acknowledged = models.BooleanField(default=False)
-    acknowledged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']

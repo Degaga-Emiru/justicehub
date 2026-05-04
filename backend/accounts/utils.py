@@ -172,8 +172,7 @@ def verify_otp(user, code, purpose='VERIFICATION', mark_used=True):
         
     # 3. Mark as used if requested
     if mark_used:
-        otp.is_used = True
-        otp.save()
+        otp.delete()
     
     return True, "OTP verified successfully"
 

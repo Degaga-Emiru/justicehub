@@ -5,7 +5,7 @@ from rest_framework import status
 from django.core.files.uploadedfile import SimpleUploadedFile
 from unittest.mock import patch
 from decisions.models import Decision
-from cases.models import Case, CaseCategory, CaseStatus, JudgeAssignment, CaseDocument
+from cases.models import Case, CaseCategory, JudgeAssignment, CaseDocument
 import os
 
 User = get_user_model()
@@ -35,7 +35,7 @@ class EnhancedDecisionWorkflowTests(APITestCase):
             description='Description',
             category=self.category,
             created_by=self.judge,
-            status=CaseStatus.StatusChoices.ASSIGNED,
+            status=Case.StatusChoices.ASSIGNED,
             file_number='FILE-001'
         )
         
@@ -88,7 +88,7 @@ class EnhancedDecisionWorkflowTests(APITestCase):
             self.case.refresh_from_db()
             
             self.assertEqual(decision.status, Decision.DecisionStatus.FINALIZED)
-            self.assertEqual(self.case.status, CaseStatus.StatusChoices.CLOSED)
+            self.assertEqual(self.case.status, Case.StatusChoices.CLOSED)
             self.assertFalse(decision.pdf_document) # Should NOT have generated a new PDF
             mock_deliver.assert_called_once()
 
@@ -130,7 +130,7 @@ class EnhancedDecisionWorkflowTests(APITestCase):
             self.case.refresh_from_db()
             
             self.assertEqual(decision.status, Decision.DecisionStatus.FINALIZED)
-            self.assertEqual(self.case.status, CaseStatus.StatusChoices.CLOSED)
+            self.assertEqual(self.case.status, Case.StatusChoices.CLOSED)
             self.assertTrue(decision.pdf_document)
             self.assertIsNotNone(decision.document) # Should be linked to the generated PDF
             mock_deliver.assert_called_once()

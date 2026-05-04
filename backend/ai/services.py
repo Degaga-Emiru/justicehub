@@ -154,7 +154,7 @@ def process_public_chat_message(message_text):
 
 # --- Report Generation Logic (Justice Hub Models) ---
 
-from cases.models import Case, CaseStatus, CaseCategory
+from cases.models import Case, CaseCategory
 from hearings.models import Hearing
 
 def get_case_load_summary(filters=None):

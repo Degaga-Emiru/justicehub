@@ -9,6 +9,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
+from django.contrib.auth.models import update_last_login
 
 import csv
 import io
@@ -180,6 +181,7 @@ class LoginView(APIView):
                 obj=user,
                 description=f"User {user.email} logged in successfully."
             )
+            update_last_login(None, user)
 
             return Response({
                 "access": str(refresh.access_token),
@@ -363,7 +365,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            self.perform_destroy(instance)
+            instance.hard_delete()
             return Response({"detail": "User deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
         except ProtectedError:
             return Response(

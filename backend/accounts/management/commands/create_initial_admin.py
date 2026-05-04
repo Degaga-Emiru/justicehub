@@ -42,7 +42,6 @@ class Command(BaseCommand):
             )
 
             # Create default data
-            self.create_default_statuses()
             self.create_default_categories()
 
         except Exception as e:
@@ -50,25 +49,7 @@ class Command(BaseCommand):
                 self.style.ERROR(f'Error creating admin user: {str(e)}')
             )
 
-    def create_default_statuses(self):
-        from cases.models import CaseStatus
 
-        statuses = [
-            ('PENDING_REVIEW', 'Pending Review'),
-            ('ACCEPTED', 'Accepted'),
-            ('REJECTED', 'Rejected'),
-            ('ASSIGNED', 'Assigned'),
-            ('IN_PROGRESS', 'In Progress'),
-            ('CLOSED', 'Closed'),
-        ]
-
-        for status_code, status_name in statuses:
-            CaseStatus.objects.get_or_create(
-                name=status_code,
-                defaults={'name': status_name}
-            )
-
-        self.stdout.write(self.style.SUCCESS('Created default case statuses'))
 
     def create_default_categories(self):
         from cases.models import CaseCategory

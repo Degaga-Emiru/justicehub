@@ -52,9 +52,6 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
     
-    # Admin tracking
-    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
-    login_count = models.PositiveIntegerField(default=0)
     status_reason = models.TextField(null=True, blank=True)
     
     # For users created by admin (Lawyer, Judge, Clerk, Defendant)
