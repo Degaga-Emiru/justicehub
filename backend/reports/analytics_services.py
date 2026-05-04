@@ -112,34 +112,45 @@ class AnalyticsService:
 
     @classmethod
     def get_demographics(cls, start_date=None, end_date=None):
-        start, end = ReportService.get_date_range(None, start_date, end_date)
-        users = User.objects.all()
-        if start and end:
-            users = users.filter(date_joined__range=(start, end))
-        total_users = users.count()
+        active_cases, start, end = cls._get_filtered_cases(start_date, end_date)
+        total_cases = active_cases.count()
+        
+        # We use plaintiff demographics. If plaintiff is null, fallback to created_by
+        from django.db.models.functions import Coalesce
+        
+        active_cases = active_cases.annotate(
+            demo_edu=Coalesce('plaintiff__education_level', 'created_by__education_level'),
+            demo_sex=Coalesce('plaintiff__sex', 'created_by__sex'),
+            demo_age=Coalesce('plaintiff__age', 'created_by__age'),
+            demo_occ=Coalesce('plaintiff__occupation', 'created_by__occupation'),
+            demo_subcity=Coalesce('plaintiff__address_subcity', 'created_by__address_subcity')
+        )
         
         # Education
-        edu = users.values('education_level').annotate(count=Count('id'))
-        # Gender
-        gender = users.values('gender').annotate(count=Count('id'))
+        edu = active_cases.values('demo_edu').annotate(count=Count('id'))
+        # Sex
+        sex = active_cases.values('demo_sex').annotate(count=Count('id'))
         # Age
         age_groups = {
-            "18-25": users.filter(age__gte=18, age__lte=25).count(),
-            "26-40": users.filter(age__gte=26, age__lte=40).count(),
-            "41-60": users.filter(age__gte=41, age__lte=60).count(),
-            "60+": users.filter(age__gt=60).count(),
+            "18-25": active_cases.filter(demo_age__gte=18, demo_age__lte=25).count(),
+            "26-40": active_cases.filter(demo_age__gte=26, demo_age__lte=40).count(),
+            "41-60": active_cases.filter(demo_age__gte=41, demo_age__lte=60).count(),
+            "60+": active_cases.filter(demo_age__gt=60).count(),
         }
         # Occupation
-        occ = users.values('occupation').annotate(count=Count('id'))
+        occ = active_cases.values('demo_occ').annotate(count=Count('id'))
+        # Address Subcity
+        subcity = active_cases.values('demo_subcity').annotate(count=Count('id'))
         
         return {
-            "education_distribution": {item['education_level'] or "Not Specified": item['count'] for item in edu},
-            "gender_distribution": {
-                f"{item['gender'] or 'Other'} %": f"{(item['count']/total_users*100):.1f}%" if total_users > 0 else "0%"
-                for item in gender
+            "education_distribution": {item['demo_edu'] or "Not Specified": item['count'] for item in edu},
+            "sex_distribution": {
+                f"{item['demo_sex'] or 'Not Specified'}": f"{(item['count']/total_cases*100):.1f}%" if total_cases > 0 else "0%"
+                for item in sex
             },
             "age_distribution": age_groups,
-            "occupation_distribution": {item['occupation'] or "Not Specified": item['count'] for item in occ}
+            "occupation_distribution": {item['demo_occ'] or "Not Specified": item['count'] for item in occ},
+            "subcity_distribution": {item['demo_subcity'] or "Not Specified": item['count'] for item in subcity}
         }
 
     @classmethod
@@ -202,6 +213,11 @@ class AnalyticsService:
         least_category = active_cases.values('category__name').annotate(count=Count('id')).order_by('count').first()
         if least_category:
             bottlenecks.append(f"Least reported case type: {least_category['category__name']}")
+            
+        # Demographic bottlenecks
+        top_subcity = User.objects.values('address_subcity').annotate(count=Count('id')).exclude(address_subcity__isnull=True).exclude(address_subcity="").order_by('-count').first()
+        if top_subcity:
+            bottlenecks.append(f"Regional Hotspot: Most users are registered in {top_subcity['address_subcity']} sub-city.")
         
         return {
             "warnings": warnings,

@@ -24,6 +24,7 @@ class Case(models.Model):
     created_at = models.DateTimeField()
     closed_date = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='+')
+    plaintiff = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='+', null=True, blank=True)
 
     class Meta:
         managed = False

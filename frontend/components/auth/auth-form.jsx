@@ -30,6 +30,9 @@ const signupSchema = z.object({
  last_name: z.string().min(2, "nameMinLength"),
  email: z.string().email("invalidEmail"),
  phone_number: z.string().min(7, "phoneMinLength"),
+ sex: z.enum(["MALE", "FEMALE", "OTHER"], { required_error: "Required" }),
+ address_subcity: z.string().min(2, "Required"),
+ address_kebele: z.string().min(2, "Required"),
  password: z.string().min(8, "passwordMinLength"),
   terms: z.boolean().refine((val) => val === true, "agreeTerms"),
  confirm_password: z.string().min(8, "passwordMinLength"),
@@ -65,6 +68,9 @@ export function AuthForm({ type = "login", onTypeChange }) {
  first_name: "",
  last_name: "",
  phone_number: "",
+ sex: "",
+ address_subcity: "",
+ address_kebele: "",
  },
  });
 
@@ -98,7 +104,12 @@ export function AuthForm({ type = "login", onTypeChange }) {
  data.email,
  data.phone_number,
  data.password,
- data.confirm_password
+ data.confirm_password,
+ data.sex,
+ "Sidama", // address_region
+ "Hawassa City", // address_city
+ data.address_subcity,
+ data.address_kebele
  );
  if (result.success) {
  router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
@@ -170,13 +181,41 @@ export function AuthForm({ type = "login", onTypeChange }) {
  {errors.email && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.email.message)}</p>}
  </div>
 
- {type === "signup" && (
- <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-75">
- <Label htmlFor="phone_number" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("phoneNumber") || "Phone Number"}</Label>
- <Input id="phone_number" type="tel" placeholder="+251 9xx xxx xxx" {...register("phone_number")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
- {errors.phone_number && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.phone_number.message)}</p>}
- </div>
- )}
+  {type === "signup" && (
+  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-75">
+  <div className="space-y-2">
+  <Label htmlFor="phone_number" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("phoneNumber") || "Phone Number"}</Label>
+  <Input id="phone_number" type="tel" placeholder="+251 9xx xxx xxx" {...register("phone_number")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
+  {errors.phone_number && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.phone_number.message)}</p>}
+  </div>
+
+  <div className="space-y-2">
+  <Label htmlFor="sex" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Sex</Label>
+  <select id="sex" {...register("sex")} className="flex h-12 w-full items-center justify-between rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+    <option value="">Select Sex</option>
+    <option value="MALE">Male</option>
+    <option value="FEMALE">Female</option>
+    <option value="OTHER">Other</option>
+  </select>
+  {errors.sex && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.sex.message)}</p>}
+  </div>
+  </div>
+  )}
+
+  {type === "signup" && (
+  <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-100">
+  <div className="space-y-2">
+  <Label htmlFor="address_subcity" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Sub-City</Label>
+  <Input id="address_subcity" placeholder="e.g. Tabor" {...register("address_subcity")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
+  {errors.address_subcity && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.address_subcity.message)}</p>}
+  </div>
+  <div className="space-y-2">
+  <Label htmlFor="address_kebele" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Kebele / Woreda</Label>
+  <Input id="address_kebele" placeholder="e.g. 01" {...register("address_kebele")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
+  {errors.address_kebele && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.address_kebele.message)}</p>}
+  </div>
+  </div>
+  )}
 
  {type !== "forgot-password" && (
  <div className="space-y-2">

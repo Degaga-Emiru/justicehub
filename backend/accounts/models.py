@@ -38,12 +38,20 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
         db_index=True
     )
 
+    class Sex(models.TextChoices):
+        MALE = 'MALE', 'Male'
+        FEMALE = 'FEMALE', 'Female'
+        OTHER = 'OTHER', 'Other'
+
     # Demographic Information
     education_level = models.CharField(max_length=50, null=True, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
-    gender = models.CharField(max_length=20, null=True, blank=True)
+    sex = models.CharField(max_length=10, choices=Sex.choices, null=True, blank=True)
     occupation = models.CharField(max_length=100, null=True, blank=True)
-    address = models.TextField(null=True, blank=True)
+    address_region = models.CharField(max_length=50, default="Sidama")
+    address_city = models.CharField(max_length=50, default="Hawassa City")
+    address_subcity = models.CharField(max_length=50, null=True, blank=True)
+    address_kebele = models.CharField(max_length=50, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     
     # Status flags

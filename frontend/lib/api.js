@@ -648,9 +648,7 @@ export async function fetchCaseTypeDistribution() {
 export async function fetchSystemReport(type = 'overview', filters = {}) {
     try {
         const queryParams = new URLSearchParams(cleanParams({ type, ...filters })).toString();
-        const res = await fetch(`${getApiUrl()}/reports/admin/system/?${queryParams}`, {
-            headers: getAuthHeaders()
-        });
+        const res = await apiRequest(`${getApiUrl()}/reports/admin/system/?${queryParams}`);
         if (!res.ok) throw new Error("Failed to fetch system report");
         return await res.json();
     } catch (error) {
@@ -662,9 +660,7 @@ export async function fetchSystemReport(type = 'overview', filters = {}) {
 export async function fetchAnalyticsReport(type = 'master') {
     try {
         const queryParams = new URLSearchParams({ type }).toString();
-        const res = await fetch(`${getApiUrl()}/reports/admin/analytics/?${queryParams}`, {
-            headers: getAuthHeaders()
-        });
+        const res = await apiRequest(`${getApiUrl()}/reports/admin/analytics/?${queryParams}`);
         if (!res.ok) throw new Error("Failed to fetch analytics report");
         return await res.json();
     } catch (error) {

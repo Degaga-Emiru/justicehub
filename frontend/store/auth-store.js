@@ -63,12 +63,12 @@ export const useAuthStore = create((set) => ({
         }
     },
 
-    signup: async (first_name, last_name, email, phone_number, password, confirm_password) => {
+    signup: async (first_name, last_name, email, phone_number, password, confirm_password, sex, address_region, address_city, address_subcity, address_kebele) => {
         try {
             const res = await fetch(`${getApiUrl()}/auth/citizen-register/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ first_name, last_name, email, phone_number, password, confirm_password }),
+                body: JSON.stringify({ first_name, last_name, email, phone_number, password, confirm_password, sex, address_region, address_city, address_subcity, address_kebele }),
             });
 
             if (!res.ok) {

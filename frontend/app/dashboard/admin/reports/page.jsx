@@ -35,6 +35,80 @@ const VIBRANT_COLORS = [
   "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"
 ];
 
+const renderCustomizedPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+  if (percent < 0.05) return null; // Hide labels for < 5%
+  
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius * 1.25;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill="currentColor" 
+      textAnchor={x > cx ? 'start' : 'end'} 
+      dominantBaseline="central"
+      className="text-[10px] font-black uppercase tracking-tighter opacity-80"
+    >
+      {`${name} (${(percent * 100).toFixed(0)}%)`}
+    </text>
+  );
+};
+
+const InsightSection = ({ title, question, insight, meaning, action, colorClass = "primary" }) => {
+  const colorMap = {
+    primary: "text-primary bg-primary/5 border-primary/10",
+    amber: "text-amber-600 bg-amber-500/5 border-amber-500/10",
+    emerald: "text-emerald-600 bg-emerald-500/5 border-emerald-500/10",
+    purple: "text-purple-600 bg-purple-500/5 border-purple-500/10",
+    rose: "text-rose-600 bg-rose-500/5 border-rose-500/10",
+  };
+  
+  const accentColor = colorMap[colorClass] || colorMap.primary;
+
+  return (
+    <div className={`mt-10 p-8 rounded-[2.5rem] ${accentColor} border relative overflow-hidden group`}>
+      <div className={`absolute top-0 right-0 w-48 h-48 bg-current opacity-[0.03] rounded-full blur-3xl -mr-24 -mt-24 group-hover:opacity-[0.06] transition-opacity`} />
+      <div className="relative space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="h-6 w-1 rounded-full bg-current opacity-50" />
+          <h4 className="text-[11px] font-black uppercase tracking-[0.3em]">{title}</h4>
+        </div>
+        
+        <div className="space-y-6">
+          <div>
+            <p className="text-[10px] font-black uppercase opacity-40 mb-2 tracking-[0.2em]">Analytical Inquiry</p>
+            <p className="text-lg font-bold text-foreground leading-tight tracking-tight">{question}</p>
+          </div>
+          
+          <div className="p-6 bg-background/40 backdrop-blur-md rounded-3xl border border-current/5 shadow-inner">
+            <p className="text-[10px] font-black uppercase text-primary mb-2 tracking-[0.2em]">Strategic Insight</p>
+            <p className="text-xl font-black text-foreground leading-tight italic tracking-tight">“{insight}”</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="p-5 rounded-3xl bg-background/20 border border-current/5">
+              <p className="text-[10px] font-black uppercase opacity-60 mb-2 tracking-[0.2em] flex items-center gap-2">
+                <Activity className="h-3.5 w-3.5" /> Meaning
+              </p>
+              <p className="text-xs font-bold text-foreground/80 leading-relaxed">{meaning}</p>
+            </div>
+            <div className="p-5 rounded-3xl bg-background/20 border border-current/5">
+              <p className="text-[10px] font-black uppercase opacity-60 mb-2 tracking-[0.2em] flex items-center gap-2">
+                <ShieldCheck className="h-3.5 w-3.5" /> Action
+              </p>
+              <p className="text-xs font-bold text-foreground/80 leading-relaxed">{action}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 export default function ReportsPage() {
  const [exportStartDate, setExportStartDate] = useState("");
  const [exportEndDate, setExportEndDate] = useState("");
@@ -153,8 +227,8 @@ export default function ReportsPage() {
  }
 
  // Prepare data structures
- const demographicData = systemData?.demographics?.plaintiff_regions ? 
-  Object.entries(systemData.demographics.plaintiff_regions).map(([key, val]) => ({ name: key, count: val })) : [];
+ const demographicData = systemData?.demographics?.subcity_distribution ? 
+  Object.entries(systemData.demographics.subcity_distribution).map(([key, val]) => ({ name: key, count: val })) : [];
 
  const caseTypeDist = analyticsData?.case_type_analysis?.distribution ? 
   analyticsData.case_type_analysis.distribution.map((item) => ({ name: item.case_type, count: item.total })) : [];
@@ -182,6 +256,15 @@ export default function ReportsPage() {
 
  const ageData = analyticsData?.demographics?.age_distribution ? 
   Object.entries(analyticsData.demographics.age_distribution).map(([key, val]) => ({ name: key, value: val })) : [];
+
+ const sexData = analyticsData?.demographics?.sex_distribution ? 
+  Object.entries(analyticsData.demographics.sex_distribution).map(([key, val]) => ({ name: key, value: parseFloat(val) })) : [];
+
+ const educationData = analyticsData?.demographics?.education_distribution ? 
+  Object.entries(analyticsData.demographics.education_distribution).map(([key, val]) => ({ name: key, value: val })) : [];
+
+ const occupationData = analyticsData?.demographics?.occupation_distribution ? 
+  Object.entries(analyticsData.demographics.occupation_distribution).map(([key, val]) => ({ name: key, count: val })) : [];
 
  const decisionData = analyticsData?.decision_analysis?.distribution ? 
   Object.entries(analyticsData.decision_analysis.distribution).map(([key, val]) => ({ name: key, value: val })) : [];
@@ -291,16 +374,20 @@ export default function ReportsPage() {
  {demographicData.length > 0 ? (
  <ResponsiveContainer width="100%" height="100%">
  <PieChart>
- <Pie
- data={demographicData}
- cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="count" label
- >
- {demographicData.map((entry, index) => (
- <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
- ))}
- </Pie>
- <RechartsTooltip contentStyle={CustomTooltipStyle} />
- <Legend />
+  <Pie
+  data={demographicData}
+  cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={4} dataKey="count" 
+  label={renderCustomizedPieLabel}
+  labelLine={{ stroke: 'currentColor', strokeWidth: 1, opacity: 0.2 }}
+  stroke="none"
+  >
+  {demographicData.map((entry, index) => (
+  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+  ))}
+  </Pie>
+  <RechartsTooltip contentStyle={CustomTooltipStyle} />
+  <Legend verticalAlign="bottom" height={40} iconType="circle" wrapperStyle={{fontWeight: 900, fontSize: '11px', paddingTop: '20px'}} />
+
  </PieChart>
  </ResponsiveContainer>
  ) : (
@@ -311,6 +398,18 @@ export default function ReportsPage() {
  )}
  </div>
  </CardContent>
+ {demographicData.length > 0 && (
+    <div className="px-8 pb-8">
+      <InsightSection 
+        title="Regional Distribution Insight"
+        question="Case distribution by region?"
+        insight={`${demographicData.sort((a,b) => b.count - a.count)[0]?.name || 'N/A'} has the highest concentration of legal activity, accounting for ${((demographicData.sort((a,b) => b.count - a.count)[0]?.count / demographicData.reduce((acc, c) => acc + c.count, 0)) * 100).toFixed(0)}% of regional volume.`}
+        meaning="Specific sub-cities are emerging as significant legal hotspots, potentially straining local registry resources."
+        action="Allocate additional legal aid resources and registrar support to high-volume hotspots to maintain processing speed."
+        colorClass="primary"
+      />
+    </div>
+  )}
  </Card>
 
  {/* Intelligence Insights */}
@@ -428,14 +527,15 @@ export default function ReportsPage() {
   </AreaChart>
   </ResponsiveContainer>
   </div>
-  <div className="mt-8 p-4 rounded-2xl bg-primary/5 border border-primary/10">
-  <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
-  <TrendingUp className="h-4 w-4" /> Insight Takeaway
-  </h4>
-  <p className="text-sm font-bold text-foreground leading-relaxed">
-  The system is experiencing a <span className="text-primary">significant upward trajectory</span> in filing volume over the last 6 months. Use the slider above to isolate specific workload spikes for resource reallocation.
-  </p>
-  </div>
+  <InsightSection 
+    title="Growth Trend Insight"
+    question="System usage and filing trajectory?"
+    insight={`Case filings have shown a stable presence with ${monthlyTrends[monthlyTrends.length-1]?.CaseVolume || 0} filings this month, reflecting consistent system utilization.`}
+    meaning="Ongoing system usage indicates steady public trust and increasing reliance on digital judicial processes."
+    action="Scale server infrastructure and support staff to accommodate the forecasted volume growth in the coming quarter."
+    colorClass="primary"
+  />
+
   </CardContent>
   </Card>
 
@@ -466,15 +566,15 @@ export default function ReportsPage() {
   </RadarChart>
   </ResponsiveContainer>
   </div>
-  <div className="mt-8 space-y-4">
-  <div className="flex justify-between items-center p-3 rounded-xl bg-muted/20">
-  <span className="text-xs font-black uppercase tracking-widest">Average</span>
-  <span className="text-lg font-black text-emerald-500">{analyticsData?.resolution_time_metrics?.average || 0}d</span>
-  </div>
-  <p className="text-xs font-bold text-foreground leading-relaxed italic">
-  * Radar symmetry indicates consistent delivery. The "Longest" peak suggests a bottleneck in specific complex litigation types.
-  </p>
-  </div>
+  <InsightSection 
+    title="Justice Efficiency Insight"
+    question="How consistent is the resolution speed?"
+    insight={`The system average resolution time is ${analyticsData?.resolution_time_metrics?.average || 0} days, with the most complex cases peaking at ${analyticsData?.resolution_time_metrics?.slowest || 0} days.`}
+    meaning="A balanced radar indicates uniform service delivery across case types, while sharp peaks signify specialized procedural bottlenecks."
+    action="Implement fast-track protocols for case types identified as outliers in the efficiency radar to normalize overall bench speed."
+    colorClass="amber"
+  />
+
   </CardContent>
   </Card>
 
@@ -521,34 +621,21 @@ export default function ReportsPage() {
   label={{ value: 'Efficiency %', angle: 90, position: 'insideRight', style: {fill: 'currentColor', fontWeight: 900, fontSize: 10} }}
   />
   <RechartsTooltip contentStyle={CustomTooltipStyle} />
-  <Legend />
+  <Legend verticalAlign="bottom" height={40} iconType="circle" wrapperStyle={{fontWeight: 900, fontSize: '11px', paddingTop: '20px'}} />
   <Bar yAxisId="left" dataKey="active" name="Active Caseload" fill="#14b8a6" radius={[8, 8, 0, 0]} barSize={40} />
   <Line yAxisId="right" type="monotone" dataKey="efficiency" name="Clearance Rate %" stroke="#f43f5e" strokeWidth={4} dot={{r: 6, fill: '#f43f5e', stroke: '#fff', strokeWidth: 2}} />
   </ComposedChart>
   </ResponsiveContainer>
   </div>
-  <div className="mt-8 grid md:grid-cols-2 gap-8 items-center border-t border-border/50 pt-8">
-  <div className="space-y-4">
-  <h4 className="text-sm font-black uppercase tracking-widest text-purple-500">Key Performance Indicators</h4>
-  <p className="text-sm font-bold text-foreground leading-relaxed">
-  This matrix visualizes the workload balance. Judges with <span className="text-primary">high bars</span> and <span className="text-purple-500">high lines</span> are your most efficient power-users, while high bars with low lines may require additional support staff.
-  </p>
-  </div>
-  <div className="flex gap-4">
-  <div className="flex-1 p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center">
-  <p className="text-[10px] font-black uppercase tracking-widest text-purple-600 mb-1">Bench Efficiency</p>
-  <p className="text-3xl font-black font-display text-foreground">
-  {(judgePerformanceData.reduce((acc, curr) => acc + curr.efficiency, 0) / (judgePerformanceData.length || 1)).toFixed(0)}%
-  </p>
-  </div>
-  <div className="flex-1 p-4 rounded-2xl bg-primary/10 border border-primary/20 text-center">
-  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Total Bench Capacity</p>
-  <p className="text-3xl font-black font-display text-foreground">
-  {judgePerformanceData.reduce((acc, curr) => acc + curr.active, 0)}
-  </p>
-  </div>
-  </div>
-  </div>
+  <InsightSection 
+    title="Judicial Performance Insight"
+    question="Bench workload vs efficiency balance?"
+    insight={`The aggregate bench efficiency is ${(judgePerformanceData.reduce((acc, curr) => acc + curr.efficiency, 0) / (judgePerformanceData.length || 1)).toFixed(0)}%, managing a total of ${judgePerformanceData.reduce((acc, curr) => acc + curr.active, 0)} active cases.`}
+    meaning="High active caseload combined with low clearance rates indicates a need for judicial resource expansion or automated mediation tools."
+    action="Review caseload distribution for judges in the low-efficiency quadrant and consider temporary file reassignments."
+    colorClass="purple"
+  />
+
   </CardContent>
   </Card>
 
@@ -582,7 +669,6 @@ export default function ReportsPage() {
   </CardContent>
   </Card>
 
-  {/* Structural Composition (Moved down and expanded) */}
   <Card className="lg:col-span-3 bg-card/60 backdrop-blur-xl border-border shadow-2xl overflow-hidden border-t-4 border-t-amber-500/50">
   <CardHeader className="p-8 border-b border-border/50">
   <CardTitle className="text-2xl font-black font-display tracking-tight flex items-center gap-2">
@@ -592,28 +678,28 @@ export default function ReportsPage() {
   </CardHeader>
   <CardContent className="p-8">
   <div className="grid lg:grid-cols-2 gap-16">
+  {/* Age Demographics */}
   <div className="space-y-6">
   <h4 className="text-sm font-black uppercase tracking-[0.3em] text-center text-amber-600 bg-amber-500/5 py-2 rounded-lg">Age Demographics</h4>
-  <div className="h-[450px] w-full">
+  <div className="h-[350px] w-full">
   {ageData.some(d => d.value > 0) ? (
   <ResponsiveContainer width="100%" height="100%">
   <PieChart>
   <Pie 
-  data={ageData} 
-  cx="50%" 
-  cy="50%" 
-  innerRadius={80} 
-  outerRadius={120} 
-  paddingAngle={10} 
-  dataKey="value"
-  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-  labelLine={true}
-  stroke="none"
+    data={ageData} 
+    cx="50%" cy="50%" 
+    innerRadius={70} 
+    outerRadius={100} 
+    paddingAngle={5} 
+    dataKey="value" 
+    label={renderCustomizedPieLabel}
+    labelLine={{ stroke: 'currentColor', strokeWidth: 1, opacity: 0.2 }}
+    stroke="none"
   >
   {ageData.map((entry, index) => <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[index % VIBRANT_COLORS.length]} />)}
   </Pie>
   <RechartsTooltip contentStyle={CustomTooltipStyle} />
-  <Legend verticalAlign="bottom" height={40} iconType="diamond" wrapperStyle={{paddingTop: '30px', fontWeight: 900, fontSize: '12px'}} />
+  <Legend verticalAlign="bottom" height={40} iconType="diamond" wrapperStyle={{fontWeight: 900, fontSize: '11px', paddingTop: '20px'}} />
   </PieChart>
   </ResponsiveContainer>
   ) : (
@@ -623,39 +709,149 @@ export default function ReportsPage() {
   </div>
   )}
   </div>
+  
+  {ageData.some(d => d.value > 0) && (
+    <InsightSection 
+      title="Age Group Insight"
+      question="Which age group has the most cases?"
+      insight={`${ageData.sort((a,b) => b.value - a.value)[0]?.name || 'N/A'} is the most legally active demographic, accounting for a significant portion of active litigation.`}
+      meaning="This specific age range typically represents the core workforce, facing higher exposure to business and civil disputes."
+      action="Develop targeted legal awareness campaigns and simplified self-service tools tailored for this active age group."
+      colorClass="amber"
+    />
+  )}
+
   </div>
+
+  {/* Sex Demographics */}
   <div className="space-y-6">
-  <h4 className="text-sm font-black uppercase tracking-[0.3em] text-center text-primary bg-primary/5 py-2 rounded-lg">Resolution Logic</h4>
-  <div className="h-[450px] w-full">
-  {decisionData.some(d => d.value > 0) ? (
+  <h4 className="text-sm font-black uppercase tracking-[0.3em] text-center text-primary bg-primary/5 py-2 rounded-lg">Sex Demographics</h4>
+  <div className="h-[350px] w-full">
+  {sexData.some(d => d.value > 0) ? (
   <ResponsiveContainer width="100%" height="100%">
   <PieChart>
   <Pie 
-  data={decisionData} 
-  cx="50%" 
-  cy="50%" 
-  innerRadius={80} 
-  outerRadius={120} 
-  paddingAngle={10} 
-  dataKey="value"
-  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-  labelLine={true}
-  stroke="none"
+    data={sexData} 
+    cx="50%" cy="50%" 
+    innerRadius={70} 
+    outerRadius={100} 
+    paddingAngle={5} 
+    dataKey="value" 
+    label={renderCustomizedPieLabel}
+    labelLine={{ stroke: 'currentColor', strokeWidth: 1, opacity: 0.2 }}
+    stroke="none"
   >
-  {decisionData.map((entry, index) => <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[(index + 3) % VIBRANT_COLORS.length]} />)}
+  {sexData.map((entry, index) => <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[(index + 2) % VIBRANT_COLORS.length]} />)}
   </Pie>
   <RechartsTooltip contentStyle={CustomTooltipStyle} />
-  <Legend verticalAlign="bottom" height={40} iconType="diamond" wrapperStyle={{paddingTop: '30px', fontWeight: 900, fontSize: '12px'}} />
+  <Legend verticalAlign="bottom" height={40} iconType="diamond" wrapperStyle={{fontWeight: 900, fontSize: '11px', paddingTop: '20px'}} />
   </PieChart>
   </ResponsiveContainer>
   ) : (
   <div className="flex flex-col h-full items-center justify-center text-foreground border-dashed border-2 border-border/50 rounded-3xl space-y-4 bg-primary/5">
-  <Layers className="h-12 w-12 text-primary/30" />
-  <p className="font-black text-sm uppercase tracking-widest">No Decision Data Available</p>
+  <Users className="h-12 w-12 text-primary/30" />
+  <p className="font-black text-sm uppercase tracking-widest">No Sex Data Available</p>
   </div>
   )}
   </div>
+  
+  {sexData.some(d => d.value > 0) && (
+    <InsightSection 
+      title="Gender (Sex) Insight"
+      question="Legal representation by gender?"
+      insight={`${sexData.sort((a,b) => b.value - a.value)[0]?.name || 'N/A'} users currently lead case filings, highlighting gender-specific patterns in legal system usage.`}
+      meaning="The data suggests a possible imbalance in legal system access or different types of legal exposure across genders."
+      action="Implement gender-sensitive outreach programs to ensure equitable access to justice for all citizens."
+      colorClass="primary"
+    />
+  )}
+
   </div>
+
+  {/* Education Demographics */}
+  <div className="space-y-6">
+  <h4 className="text-sm font-black uppercase tracking-[0.3em] text-center text-emerald-600 bg-emerald-500/5 py-2 rounded-lg">Education Demographics</h4>
+  <div className="h-[350px] w-full">
+  {educationData.some(d => d.value > 0) ? (
+  <ResponsiveContainer width="100%" height="100%">
+  <PieChart>
+  <Pie 
+    data={educationData} 
+    cx="50%" cy="50%" 
+    innerRadius={70} 
+    outerRadius={100} 
+    paddingAngle={5} 
+    dataKey="value" 
+    label={renderCustomizedPieLabel}
+    labelLine={{ stroke: 'currentColor', strokeWidth: 1, opacity: 0.2 }}
+    stroke="none"
+  >
+  {educationData.map((entry, index) => <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[(index + 4) % VIBRANT_COLORS.length]} />)}
+  </Pie>
+  <RechartsTooltip contentStyle={CustomTooltipStyle} />
+  <Legend verticalAlign="bottom" height={40} iconType="diamond" wrapperStyle={{fontWeight: 900, fontSize: '11px', paddingTop: '20px'}} />
+  </PieChart>
+  </ResponsiveContainer>
+  ) : (
+  <div className="flex flex-col h-full items-center justify-center text-foreground border-dashed border-2 border-border/50 rounded-3xl space-y-4 bg-emerald-500/5">
+  <Users className="h-12 w-12 text-emerald-500/30" />
+  <p className="font-black text-sm uppercase tracking-widest">No Education Data Available</p>
+  </div>
+  )}
+  </div>
+  
+  {educationData.some(d => d.value > 0) && (
+    <InsightSection 
+      title="Education Level Insight"
+      question="Education level vs legal engagement?"
+      insight={`${educationData.sort((a,b) => b.value - a.value)[0]?.name || 'N/A'} holders represent the largest block, often involved in specialized litigation.`}
+      meaning="Different education levels exhibit distinct legal needs, with higher education levels correlating with complex contractual disputes."
+      action="Customize legal educational materials and portal guides to match the literacy and complexity needs of different education tiers."
+      colorClass="emerald"
+    />
+  )}
+
+  </div>
+
+  {/* Occupation Demographics */}
+  <div className="space-y-6">
+  <h4 className="text-sm font-black uppercase tracking-[0.3em] text-center text-purple-600 bg-purple-500/5 py-2 rounded-lg">Occupation Distribution</h4>
+  <div className="h-[350px] w-full">
+  {occupationData.some(d => d.count > 0) ? (
+  <ResponsiveContainer width="100%" height="100%">
+  <BarChart data={occupationData} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
+  <CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={false} stroke="rgba(168,85,247,0.15)" />
+  <XAxis type="number" fontSize={11} fontWeight={800} tick={{fill: 'currentColor'}} />
+  <YAxis dataKey="name" type="category" fontSize={11} fontWeight={800} width={100} tick={{fill: 'currentColor'}} />
+  <RechartsTooltip contentStyle={CustomTooltipStyle} cursor={{ fill: 'rgba(168,85,247,0.06)' }} />
+  <Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={25}>
+  {occupationData.map((entry, index) => (
+  <Cell key={`cell-${index}`} fill={VIBRANT_COLORS[(index + 1) % VIBRANT_COLORS.length]} />
+  ))}
+  </Bar>
+  </BarChart>
+  </ResponsiveContainer>
+  ) : (
+  <div className="flex flex-col h-full items-center justify-center text-foreground border-dashed border-2 border-border/50 rounded-3xl space-y-4 bg-purple-500/5">
+  <Users className="h-12 w-12 text-purple-500/30" />
+  <p className="font-black text-sm uppercase tracking-widest">No Occupation Data Available</p>
+  </div>
+  )}
+  </div>
+  
+  {occupationData.some(d => d.count > 0) && (
+    <InsightSection 
+      title="Occupation Insight"
+      question="Which occupation has more legal disputes?"
+      insight={`${occupationData.sort((a,b) => b.count - a.count)[0]?.name || 'N/A'} group contributes the highest volume of cases, predominantly in civil and commercial sectors.`}
+      meaning="The dominance of this occupation group suggests high legal exposure in business-related or labor-intensive roles."
+      action="Deploy specialized contract templates and dispute prevention tools specifically for this high-exposure occupation group."
+      colorClass="purple"
+    />
+  )}
+
+  </div>
+
   </div>
   <div className="mt-16 p-8 bg-gradient-to-br from-amber-500/5 via-transparent to-primary/5 rounded-3xl border border-border/50 relative overflow-hidden">
   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-primary to-amber-500 opacity-30" />
@@ -776,10 +972,12 @@ export default function ReportsPage() {
   data={categoryRevenueData}
   cx="50%"
   cy="45%"
-  innerRadius={65}
-  outerRadius={105}
+  innerRadius={75}
+  outerRadius={115}
   paddingAngle={4}
   dataKey="value"
+  label={renderCustomizedPieLabel}
+  labelLine={{ stroke: 'currentColor', strokeWidth: 1, opacity: 0.2 }}
   stroke="none"
   >
   {categoryRevenueData.map((entry, index) => (
@@ -795,9 +993,10 @@ export default function ReportsPage() {
   height={40}
   iconType="circle"
   iconSize={10}
-  wrapperStyle={{ paddingTop: '16px', fontSize: '11px', fontWeight: 800 }}
-  formatter={(value) => <span style={{color: 'currentColor', fontWeight: 900}}>{value}</span>}
+  wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 800 }}
+  formatter={(value) => <span className="font-black">{value}</span>}
   />
+
   </PieChart>
   </ResponsiveContainer>
   ) : (
@@ -838,18 +1037,17 @@ export default function ReportsPage() {
   </div>
   )}
 
-  <div className="mt-6 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
-  <h4 className="text-xs font-black uppercase tracking-widest text-emerald-600 mb-2 flex items-center gap-2">
-  <TrendingUp className="h-4 w-4" /> Financial Takeaway
-  </h4>
-  <p className="text-sm font-bold text-foreground leading-relaxed">
-  {totalRevenue > 0 ? (
-  <>The system has processed <span className="text-emerald-600 font-black">${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</span> in verified judicial fees. Revenue is most concentrated in the <span className="font-black text-primary">{categoryRevenueData[0]?.name || "N/A"}</span> sector, representing <span className="font-black text-emerald-600">{totalRevenue > 0 ? ((categoryRevenueData[0]?.value / totalRevenue) * 100).toFixed(1) : 0}%</span> of all collections.</>
-  ) : (
-  <>No verified revenue has been recorded yet. Charts will populate automatically once payments are marked as <span className="font-black text-emerald-500">SUCCESS</span> or <span className="font-black text-emerald-500">VERIFIED</span>.</>
+  {totalRevenue > 0 && (
+    <InsightSection 
+      title="Financial Intelligence Insight"
+      question="What is the primary revenue driver?"
+      insight={`The system has collected $${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})} in judicial fees, with ${categoryRevenueData[0]?.name || "N/A"} contributing ${((categoryRevenueData[0]?.value / totalRevenue) * 100).toFixed(0)}% of total revenue.`}
+      meaning="Revenue concentration in specific case types suggests high commercial or civil litigation volume which drives fiscal sustainability."
+      action="Review fee structures for high-volume sectors to ensure they remain competitive yet reflective of administrative overhead."
+      colorClass="rose"
+    />
   )}
-  </p>
-  </div>
+
   </CardContent>
   </Card>
   </div>

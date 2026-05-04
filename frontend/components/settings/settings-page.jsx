@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { Save, Lock, Loader2, User, Camera } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { changePassword, updateUserProfile, updateNotificationPreferences, uploadProfilePicture } from "@/lib/api";
+import { AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function SettingsPage() {
  const { user, setProfile } = useAuthStore();
@@ -25,6 +27,15 @@ export function SettingsPage() {
  first_name: "",
  last_name: "",
  phone_number: "",
+ age: "",
+ sex: "",
+ occupation: "",
+ custom_occupation: "",
+ education_level: "",
+ address_region: "Sidama",
+ address_city: "Hawassa City",
+ address_subcity: "",
+ address_kebele: "",
  });
 
  // Password State
@@ -43,6 +54,8 @@ export function SettingsPage() {
  // Profile Picture State
  const fileInputRef = useRef(null);
  const [picturePreview, setPicturePreview] = useState(null);
+ const [isEditingProfile, setIsEditingProfile] = useState(false);
+
 
  useEffect(() => {
  if (user) {
@@ -55,6 +68,15 @@ export function SettingsPage() {
  first_name: user?.first_name || firstName,
  last_name: user?.last_name || lastName,
  phone_number: user?.phone_number || "",
+ age: user?.age || "",
+ sex: user?.sex || "",
+ occupation: user?.occupation || "",
+ custom_occupation: user?.occupation && !["Student", "Employed", "Business Owner", "Unemployed"].includes(user.occupation) ? user.occupation : "",
+ education_level: user?.education_level || "",
+ address_region: user?.address_region || "Sidama",
+ address_city: user?.address_city || "Hawassa City",
+ address_subcity: user?.address_subcity || "",
+ address_kebele: user?.address_kebele || "",
  });
 
  if (user.profile_picture) {
@@ -73,6 +95,7 @@ export function SettingsPage() {
  toast.success("Profile updated successfully");
  // Update auth store with new profile data
  setProfile(data);
+ setIsEditingProfile(false);
  },
  onError: (err) => toast.error(err.message || "Failed to update profile"),
  });
@@ -123,7 +146,12 @@ export function SettingsPage() {
 
  const handleProfileSubmit = (e) => {
  e.preventDefault();
- profileMutation.mutate(profileData);
+ const payload = { ...profileData };
+ if (payload.occupation === "Other") {
+   payload.occupation = payload.custom_occupation;
+ }
+ delete payload.custom_occupation;
+ profileMutation.mutate(payload);
  };
 
  const handlePasswordSubmit = (e) => {
@@ -148,12 +176,24 @@ export function SettingsPage() {
 
  if (!user) return null;
 
+ const isProfileIncomplete = !profileData.age || !profileData.sex || !profileData.occupation || !profileData.education_level || !profileData.address_subcity || !profileData.address_kebele;
+
  return (
  <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-primary">{t("settingsTitle")}</h1>
  <p className="text-muted-foreground">{t("settingsSubtitle")}</p>
  </div>
+
+ {isProfileIncomplete && (
+ <Alert variant="warning" className="border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-500">
+   <AlertTriangle className="h-5 w-5" />
+   <AlertTitle>Profile Incomplete</AlertTitle>
+   <AlertDescription>
+     ⚠️ Please update your profile. This information is important for analytics and improving the system.
+   </AlertDescription>
+ </Alert>
+ )}
 
  <div className="grid gap-6">
  {/* Profile Picture Section */}
@@ -209,11 +249,24 @@ export function SettingsPage() {
 
  {/* Profile Section */}
  <Card>
- <CardHeader>
+ <CardHeader className="flex flex-row items-center justify-between">
+ <div className="space-y-1">
  <CardTitle className="flex items-center gap-2">
  <User className="h-5 w-5 text-primary" /> 
  {t("sectionProfile")}
  </CardTitle>
+ </div>
+ {!isEditingProfile && (
+   <Button 
+     type="button" 
+     variant="outline" 
+     size="sm" 
+     onClick={() => setIsEditingProfile(true)}
+     className="font-bold gap-2"
+   >
+     <User className="h-4 w-4" /> Update Info
+   </Button>
+ )}
  </CardHeader>
  <CardContent>
  <form onSubmit={handleProfileSubmit} className="space-y-4">
@@ -240,6 +293,7 @@ export function SettingsPage() {
  type="tel"
  value={profileData.phone_number} 
  onChange={(e) => setProfileData({...profileData, phone_number: e.target.value})} 
+ disabled={!isEditingProfile}
  placeholder="+251..."
  />
  </div>
@@ -252,15 +306,135 @@ export function SettingsPage() {
  <Input defaultValue={user.role} className="capitalize bg-muted/50" disabled />
  </div>
  </div>
- <div className="flex justify-end pt-2">
- <Button type="submit" disabled={profileMutation.isPending}>
- {profileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
- {profileMutation.isPending ? "Saving..." : "Update Profile"}
- </Button>
+
+ <div className="pt-4 border-t border-border mt-6">
+   <h3 className="text-lg font-semibold mb-4 text-primary">Demographics & Address</h3>
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+     <div className="space-y-2">
+       <Label>Age</Label>
+       <Input 
+         type="number"
+         min="18"
+         max="120"
+         value={profileData.age} 
+         onChange={(e) => setProfileData({...profileData, age: e.target.value})} 
+         disabled={!isEditingProfile}
+         placeholder="e.g. 30"
+       />
+     </div>
+     <div className="space-y-2">
+       <Label>Sex</Label>
+       <Select 
+         value={profileData.sex} 
+         onValueChange={(val) => setProfileData({...profileData, sex: val})}
+         disabled={!isEditingProfile}
+       >
+         <SelectTrigger className={!isEditingProfile ? "bg-muted/50" : ""}>
+           <SelectValue placeholder="Select Sex" />
+         </SelectTrigger>
+         <SelectContent>
+           <SelectItem value="MALE">Male</SelectItem>
+           <SelectItem value="FEMALE">Female</SelectItem>
+           <SelectItem value="OTHER">Other</SelectItem>
+         </SelectContent>
+       </Select>
+     </div>
+     <div className="space-y-2">
+       <Label>Education Level</Label>
+       <Select 
+         value={profileData.education_level} 
+         onValueChange={(val) => setProfileData({...profileData, education_level: val})}
+         disabled={!isEditingProfile}
+       >
+         <SelectTrigger className={!isEditingProfile ? "bg-muted/50" : ""}>
+           <SelectValue placeholder="Select Education Level" />
+         </SelectTrigger>
+         <SelectContent>
+           <SelectItem value="Primary">Primary</SelectItem>
+           <SelectItem value="Secondary">Secondary</SelectItem>
+           <SelectItem value="Diploma">Diploma</SelectItem>
+           <SelectItem value="Degree">Degree</SelectItem>
+           <SelectItem value="Masters">Masters</SelectItem>
+           <SelectItem value="PhD">PhD</SelectItem>
+         </SelectContent>
+       </Select>
+     </div>
+     <div className="space-y-2">
+       <Label>Occupation</Label>
+       <Select 
+         value={["Student", "Employed", "Business Owner", "Unemployed"].includes(profileData.occupation) ? profileData.occupation : (profileData.occupation ? "Other" : "")} 
+         onValueChange={(val) => setProfileData({...profileData, occupation: val})}
+         disabled={!isEditingProfile}
+       >
+         <SelectTrigger className={!isEditingProfile ? "bg-muted/50" : ""}>
+           <SelectValue placeholder="Select Occupation" />
+         </SelectTrigger>
+         <SelectContent>
+           <SelectItem value="Student">Student</SelectItem>
+           <SelectItem value="Employed">Employed</SelectItem>
+           <SelectItem value="Business Owner">Business Owner</SelectItem>
+           <SelectItem value="Unemployed">Unemployed</SelectItem>
+           <SelectItem value="Other">Other</SelectItem>
+         </SelectContent>
+       </Select>
+     </div>
+     {(profileData.occupation === "Other" || (!["Student", "Employed", "Business Owner", "Unemployed", ""].includes(profileData.occupation))) && (
+       <div className="space-y-2 md:col-span-2">
+         <Label>Specify Occupation</Label>
+         <Input 
+           value={profileData.custom_occupation} 
+           onChange={(e) => setProfileData({...profileData, custom_occupation: e.target.value})} 
+           disabled={!isEditingProfile}
+           placeholder="Please specify..."
+         />
+       </div>
+     )}
+
+     <div className="space-y-2">
+       <Label>Region</Label>
+       <Input value={profileData.address_region} disabled className="bg-muted/50 cursor-not-allowed" />
+     </div>
+     <div className="space-y-2">
+       <Label>City</Label>
+       <Input value={profileData.address_city} disabled className="bg-muted/50 cursor-not-allowed" />
+     </div>
+     <div className="space-y-2">
+       <Label>Sub-City</Label>
+       <Input 
+         value={profileData.address_subcity} 
+         onChange={(e) => setProfileData({...profileData, address_subcity: e.target.value})} 
+         disabled={!isEditingProfile}
+         placeholder="e.g. Tabor"
+       />
+     </div>
+     <div className="space-y-2">
+       <Label>Kebele / Woreda</Label>
+       <Input 
+         value={profileData.address_kebele} 
+         onChange={(e) => setProfileData({...profileData, address_kebele: e.target.value})} 
+         disabled={!isEditingProfile}
+         placeholder="e.g. 01"
+       />
+     </div>
+   </div>
+ </div>
+ <div className="flex justify-end pt-2 gap-2">
+ {isEditingProfile && (
+   <>
+    <Button type="button" variant="ghost" onClick={() => setIsEditingProfile(false)}>
+      Cancel
+    </Button>
+    <Button type="submit" disabled={profileMutation.isPending}>
+    {profileMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+    {profileMutation.isPending ? "Saving..." : "Update Profile"}
+    </Button>
+   </>
+ )}
  </div>
  </form>
  </CardContent>
  </Card>
+
 
  {/* Password Section */}
  <Card>

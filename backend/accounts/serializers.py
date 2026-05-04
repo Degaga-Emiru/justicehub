@@ -11,7 +11,11 @@ class CitizenRegistrationSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'phone_number', 'password', 'confirm_password']
+        fields = [
+            'first_name', 'last_name', 'email', 'phone_number', 
+            'password', 'confirm_password', 'sex',
+            'address_region', 'address_city', 'address_subcity', 'address_kebele'
+        ]
     
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -339,14 +343,16 @@ class ChangePasswordSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     judge_specializations = serializers.SerializerMethodField()
+    address = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'id', 'first_name', 'last_name', 'full_name', 'email', 
             'phone_number', 'role', 'is_verified', 'is_active', 
-            'date_joined', 'last_login', 'address', 'profile_picture',
-            'judge_specializations'
+            'date_joined', 'last_login', 'profile_picture', 'address',
+            'judge_specializations', 'education_level', 'age', 'sex', 'occupation',
+            'address_region', 'address_city', 'address_subcity', 'address_kebele'
         ]
         read_only_fields = ['id', 'email', 'role', 'is_verified', 'date_joined', 'last_login']
     
@@ -360,14 +366,21 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 return list(profile.specializations.values_list('name', flat=True))
         return []
 
+    def get_address(self, obj):
+        parts = filter(None, [obj.address_subcity, obj.address_kebele, obj.address_city, obj.address_region])
+        return ", ".join(parts) if any(parts) else None
+
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     """
-    Serializer for updating user profile (phone_number and address only)
+    Serializer for updating user profile
     """
     class Meta:
         model = User
-        fields = ['phone_number', 'address']
+        fields = [
+            'phone_number', 'education_level', 'age', 'sex', 'occupation',
+            'address_region', 'address_city', 'address_subcity', 'address_kebele'
+        ]
         
     def validate_phone_number(self, value):
         # Check if phone number already exists
