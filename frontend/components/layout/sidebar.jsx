@@ -161,8 +161,8 @@ export function SidebarContent({ user, logout, collapsed, roleLabel, menuItems, 
         "flex items-center gap-4 px-6 h-24 shrink-0 transition-all duration-300",
         collapsed ? "justify-center px-2" : ""
       )}>
-        <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-lg shadow-primary/20 shrink-0 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-          <Scale className="h-6 w-6 text-white" />
+        <div className="rounded-2xl overflow-hidden shadow-lg shadow-primary/20 shrink-0 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+          <img src="/logos.jpeg" alt="JusticeHub" className="h-12 w-12 object-cover" />
         </div>
         {!collapsed && (
           <div className="animate-in fade-in slide-in-from-left-2 duration-500">

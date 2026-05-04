@@ -130,9 +130,9 @@ export function AuthForm({ type = "login", onTypeChange }) {
  
  <Card className="relative bg-card shadow-sm border-border border-border dark:border-border rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-primary/5">
  <CardHeader className="space-y-3 items-center text-center pb-8 pt-10">
- <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center mb-2 shadow-lg shadow-primary/20 transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
- <Scale className="h-8 w-8 text-white" />
- </div>
+  <div className="w-16 h-16 rounded-2xl overflow-hidden mb-2 shadow-lg shadow-primary/20 transform -rotate-3 group-hover:rotate-0 transition-transform duration-500">
+  <img src="/logos.jpeg" alt="JusticeHub" className="h-full w-full object-cover" />
+  </div>
  <div className="space-y-1">
  <CardTitle className="text-3xl font-black font-display tracking-tight text-foreground">
  {type === "login" ? t("welcomeBack") : type === "signup" ? t("createAccount") : t("resetPassword")}

@@ -62,8 +62,8 @@ export function DashboardLayout({ children }) {
  <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
  <div className="absolute inset-0 bg-primary/5 -z-10 blur-[100px]"></div>
  <div className="flex flex-col items-center gap-6 animate-pulse">
- <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-blue-600 shadow-xl shadow-primary/20 flex items-center justify-center">
- <Scale className="h-8 w-8 text-white" />
+ <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-primary/20 flex items-center justify-center">
+ <img src="/logos.jpeg" alt="JusticeHub" className="h-full w-full object-cover" />
  </div>
  <p className="text-sm font-black text-primary uppercase tracking-[0.2em] font-display">{t("loading")}</p>
  </div>
@@ -144,7 +144,7 @@ export function DashboardLayout({ children }) {
 
  <footer className="py-8 px-10 border-t border-border/40 text-center">
  <p className="text-[10px] font-black text-[#4A5568] uppercase tracking-[0.2em] font-display opacity-100">
- © {new Date().getFullYear()} JusticeHub Global Platform • Secure Infrastructure
+ © 2026 JusticeHub. All rights reserved.
  </p>
  </footer>
  </div>

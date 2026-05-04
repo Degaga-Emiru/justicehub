@@ -14,8 +14,8 @@ export default function PrivacyPolicyPage() {
       <header className="fixed top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/40">
         <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => router.push("/")}>
-            <div className="bg-gradient-to-br from-primary to-blue-500 p-2.5 rounded-xl text-white shadow-lg group-hover:scale-110 transition-all">
-              <Scale className="h-6 w-6" />
+            <div className="rounded-xl overflow-hidden shadow-lg group-hover:scale-110 transition-all">
+              <img src="/logos.jpeg" alt="JusticeHub" className="h-10 w-10 object-cover" />
             </div>
             <span className="text-2xl font-black font-display tracking-tight">JusticeHub</span>
           </div>
@@ -80,7 +80,7 @@ export default function PrivacyPolicyPage() {
       </main>
 
       <footer className="py-12 border-t border-border/40 text-center text-muted-foreground font-medium text-sm">
-        <p>&copy; {new Date().getFullYear()} JusticeHub. Developed by CS Students in HU.</p>
+        <p>&copy; 2026 JusticeHub. All rights reserved.</p>
       </footer>
     </div>
   );

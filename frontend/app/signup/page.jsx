@@ -47,9 +47,9 @@ export default function SignupPage() {
  
  <div className="relative z-10 max-w-lg animate-fade-up">
  <div className="flex items-center gap-3 mb-12 group cursor-pointer">
- <div className="bg-gradient-to-br from-primary to-blue-600 p-2.5 rounded-xl text-white shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-500">
- <Scale className="h-6 w-6" />
- </div>
+  <div className="rounded-xl overflow-hidden shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-500">
+  <img src="/logos.jpeg" alt="JusticeHub" className="h-10 w-10 object-cover" />
+  </div>
  <span className="text-2xl font-black font-display tracking-tight text-foreground">{t("justiceHub")}</span>
  </div>
 
@@ -79,7 +79,7 @@ export default function SignupPage() {
  </div>
 
  <div className="absolute bottom-12 left-16 text-xs font-bold text-muted-foreground/60 uppercase tracking-[0.2em] font-display">
- © {new Date().getFullYear()} JusticeHub Global Platform
+ © 2026 JusticeHub. All rights reserved.
  </div>
  </div>
 

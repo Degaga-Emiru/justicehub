@@ -36,7 +36,7 @@ export default function LandingPage() {
  <div className="rounded-xl overflow-hidden group-hover:scale-110 transition-all duration-500 group-hover:-rotate-3 shadow-sm border border-border/20">
  <img src="/logos.jpeg" alt="JusticeHub" className="h-10 w-10 object-cover" />
  </div>
- <span className="text-2xl font-black font-display tracking-tight text-foreground group-hover:text-primary transition-colors">JusticeHub Modern</span>
+ <span className="text-2xl font-black font-display tracking-tight text-foreground group-hover:text-primary transition-colors">JusticeHub</span>
  </div>
  <nav className="hidden md:flex items-center gap-8">
  <Link className="text-sm font-semibold text-foreground hover:text-foreground transition-all hover:-translate-y-0.5" href="#features">
@@ -513,13 +513,10 @@ export default function LandingPage() {
  </div>
  </div>
 
- <div className="pt-12 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-8">
+ <div className="pt-12 border-t border-border/40 flex flex-col md:flex-row justify-center items-center gap-8">
  <p className="text-sm font-medium text-foreground">
- &copy; {new Date().getFullYear()} JusticeHub. {t("footerRights")}
+  &copy; 2026 JusticeHub. All rights reserved.
  </p>
- <div className="flex items-center gap-6 text-sm font-semibold text-foreground">
- <span className="flex items-center gap-2">{t("developedBy")}</span>
- </div>
  </div>
  </div>
  </footer>
