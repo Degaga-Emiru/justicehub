@@ -138,9 +138,12 @@ class ExportGenerator:
         resolved = stats.get('resolved', 0)
         pending = stats.get('pending_cases', total - resolved)
         avg_res = summary.get('average_resolution_time', 'N/A')
-        
-        exec_text = f"This report provides a comprehensive overview of court activities within the selected reporting period. A total of {total} cases were processed, of which {resolved} were successfully resolved and {pending} remain pending. The average resolution time was {avg_res}. Financial collections showed steady growth, and performance remained within expected efficiency standards."
+        rate = summary.get('resolution_rate', '0%')
+        exec_text = (f"During this period, {total} cases were processed. "
+                     f"The courts resolved {resolved} cases, achieving a {rate} resolution rate. "
+                     f"{pending} cases remain pending. The average resolution time was {avg_res}.")
         elements.append(Paragraph(exec_text, body_style))
+        elements.append(Spacer(1, 0.2 * inch))
 
         # 3. CASE STATISTICS
         elements.append(Paragraph("⚖ CASE STATISTICS", section_style))
@@ -174,16 +177,38 @@ class ExportGenerator:
             # Education
             elements.append(Paragraph("<b>Education Level Distribution</b>", styles['Normal']))
             edu_data = [["Education", "Count"]]
-            for k, v in demo.get('education_distribution', {}).items():
+            edu_dist = demo.get('education_distribution', {})
+            for k, v in edu_dist.items():
                 edu_data.append([k, str(v)])
             t_edu = Table(edu_data, colWidths=[3 * inch, 2.5 * inch])
             t_edu.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
             elements.append(t_edu)
-            elements.append(Spacer(1, 0.1 * inch))
+            if edu_dist:
+                top_edu = max(edu_dist, key=edu_dist.get)
+                elements.append(Paragraph(f"• Most participants held {top_edu} qualifications.", body_style))
+            elements.append(Spacer(1, 0.2 * inch))
 
-            # Gender
-            gender_txt = " | ".join([f"<b>{k}:</b> {v}" for k, v in demo.get('gender_distribution', {}).items()])
-            elements.append(Paragraph(gender_txt, styles['Normal']))
+            # Age
+            age_dist = demo.get('age_distribution', {})
+            if age_dist:
+                top_age = max(age_dist, key=age_dist.get)
+                elements.append(Paragraph(f"• The largest participant age demographic was {top_age} years old.", body_style))
+            
+            # Regional Distribution
+            subcity_dist = demo.get('subcity_distribution', {})
+            if subcity_dist:
+                elements.append(Spacer(1, 0.2 * inch))
+                elements.append(Paragraph("📍 REGIONAL DISTRIBUTION", section_style))
+                top_subcity = max(subcity_dist, key=subcity_dist.get)
+                
+                reg_data = [["Sub-City", "Count"]]
+                for k, v in list(subcity_dist.items())[:5]:
+                    reg_data.append([k, str(v)])
+                t_reg = Table(reg_data, colWidths=[3 * inch, 2.5 * inch])
+                t_reg.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
+                elements.append(t_reg)
+                elements.append(Paragraph(f"• {top_subcity} recorded the highest number of filed cases.", body_style))
+                elements.append(Spacer(1, 0.2 * inch))
 
         # 5. HEARING & BACKLOG ANALYTICS (Requirement 9)
         hearings = summary.get('hearings', {})
@@ -202,7 +227,15 @@ class ExportGenerator:
             t_h = Table(h_data, colWidths=[3 * inch, 2.5 * inch])
             t_h.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
             elements.append(t_h)
-            elements.append(Paragraph(f"<b>Note:</b> Backlog metrics incorporate postponed hearings and missed attendances which impact system throughput.", styles['Normal']))
+            
+            c = hearings.get('conducted', 0)
+            p = hearings.get('postponed', 0)
+            t = hearings.get('total_hearings', 0)
+            h_rate = f"{(c/t*100):.1f}%" if t > 0 else "0%"
+            elements.append(Paragraph(f"• {c} hearings were completed ({h_rate} completion rate).", body_style))
+            if p > 0:
+                elements.append(Paragraph(f"• {p} hearings were postponed, adding to the backlog.", body_style))
+            elements.append(Spacer(1, 0.2 * inch))
 
         # 6. FINANCIAL OVERVIEW
         elements.append(Paragraph("💰 FINANCIAL OVERVIEW", section_style))
@@ -217,7 +250,13 @@ class ExportGenerator:
         t_fin = Table(fin_data, colWidths=[3 * inch, 2.5 * inch])
         t_fin.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
         elements.append(t_fin)
-        elements.append(Paragraph(f"Revenue is aggregated based on successfully verified Chapa payments.", styles['Italic']))
+        
+        cases_by_type = data.get('cases_by_type', [])
+        if cases_by_type:
+            top_case = max(cases_by_type, key=lambda x: x.get('count', 0))
+            elements.append(Paragraph(f"• {top_case.get('case_type', 'General')} cases contributed the highest volume during the period.", body_style))
+        elements.append(Paragraph(f"• A total of {total_rev:,} ETB was successfully collected.", body_style))
+        elements.append(Spacer(1, 0.2 * inch))
 
         # 7. DECISION TYPES (Requirement 5)
         decision_analysis = data.get('decision_analysis')
@@ -239,12 +278,18 @@ class ExportGenerator:
         # 8. JUDGE PERFORMANCE
         elements.append(Paragraph("👨⚖ JUDGE PERFORMANCE", section_style))
         if 'cases_by_judge' in data and data['cases_by_judge']:
-            for j in data['cases_by_judge'][:3]: # Top 3
-                j_text = f"Judge {j['judge_name']} handled a total of {j['assigned']} cases. Out of these, {j['resolved']} were resolved while {j['pending']} remain pending. Performance remains optimal."
-                elements.append(Paragraph(j_text, body_style))
-                elements.append(Spacer(1, 0.1 * inch))
+            j_data = [["Judge Name", "Active", "Resolved", "Avg Days"]]
+            for j in data['cases_by_judge'][:5]: # Top 5
+                j_data.append([j['name'], str(j['active_cases']), str(j['total_resolved']), str(j['avg_resolution_days'])])
+            t_j = Table(j_data, colWidths=[2.5 * inch, 1 * inch, 1 * inch, 1 * inch])
+            t_j.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), 1, colors.grey), ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold')]))
+            elements.append(t_j)
+            
+            top_j = data['cases_by_judge'][0]
+            elements.append(Paragraph(f"• Judge {top_j['name']} carries the highest active caseload ({top_j['active_cases']} cases).", body_style))
         else:
-            elements.append(Paragraph(f"The assigned judicial officers maintained standard efficiency during this period, ensuring timely hearings and decision processing.", body_style))
+            elements.append(Paragraph(f"• Judicial officers maintained standard efficiency.", body_style))
+        elements.append(Spacer(1, 0.2 * inch))
 
         # 9. INTELLIGENCE INSIGHTS
         elements.append(Paragraph("🧠 INTELLIGENCE INSIGHTS", section_style))

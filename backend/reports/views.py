@@ -116,6 +116,7 @@ class ExportReportView(ReportBaseView):
             data = ReportService.get_system_overview(days=days, start_date=start_date, end_date=end_date)
             data['demographics'] = AnalyticsService.get_demographics()
             data['intelligence_insights'] = AnalyticsService.get_intelligence_insights()
+            data['cases_by_judge'] = AnalyticsService.get_judge_performance_metrics()
             title = "General System Judicial Report"
             report_name = "system"
 

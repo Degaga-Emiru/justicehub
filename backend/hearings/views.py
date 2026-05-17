@@ -509,23 +509,36 @@ class HearingViewSet(viewsets.ModelViewSet):
     
     def _schedule_reminders(self, hearing):
         """Schedule reminders for hearing"""
-        # 24-hour reminder
-        HearingReminder.objects.create(
-            hearing=hearing,
-            user=hearing.judge,
-            reminder_type='EMAIL',
-            scheduled_for=hearing.scheduled_date - timedelta(hours=24)
-        )
+        now = timezone.now()
         
-        # 1-hour reminder for all participants
+        # All participants including the judge
         participants = [p.user for p in hearing.participant_list.all()]
+        if hearing.judge not in participants:
+            participants.append(hearing.judge)
+        
+        # Define intervals: (days, hours, minutes)
+        intervals = [
+            (30, 0, 0),   # 1 month (approx)
+            (7, 0, 0),    # 1 week
+            (5, 0, 0),    # 5 days
+            (2, 0, 0),    # 2 days
+            (1, 0, 0),    # 1 day (24 hours)
+            (0, 1, 0),    # 1 hour
+            (0, 0, 30),   # 30 minutes
+        ]
+        
         for user in participants:
-            HearingReminder.objects.create(
-                hearing=hearing,
-                user=user,
-                reminder_type='EMAIL',
-                scheduled_for=hearing.scheduled_date - timedelta(hours=1)
-            )
+            for days, hours, minutes in intervals:
+                scheduled_time = hearing.scheduled_date - timedelta(days=days, hours=hours, minutes=minutes)
+                
+                # Only schedule if the reminder time is in the future
+                if scheduled_time > now:
+                    HearingReminder.objects.create(
+                        hearing=hearing,
+                        user=user,
+                        reminder_type='EMAIL',
+                        scheduled_for=scheduled_time
+                    )
 
 
 

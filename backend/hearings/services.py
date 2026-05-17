@@ -37,22 +37,34 @@ def send_hearing_reminder_email(reminder):
     """
     Send reminder email for hearing
     """
+    hours_until = (reminder.hearing.scheduled_date - timezone.now()).total_seconds() / 3600
+    
+    if hours_until <= 0.6: # 30 mins
+        interval_text = "in 30 minutes"
+    elif hours_until <= 1.5: # 1 hour
+        interval_text = "in 1 hour"
+    elif hours_until <= 25: # 24 hours
+        interval_text = "tomorrow"
+    elif hours_until <= 49: # 2 days
+        interval_text = "in 2 days"
+    elif hours_until <= 121: # 5 days
+        interval_text = "in 5 days"
+    elif hours_until <= 169: # 7 days
+        interval_text = "in 1 week"
+    else:
+        interval_text = "in 1 month"
+        
     context = {
         'user': reminder.user,
         'hearing': reminder.hearing,
         'case': reminder.hearing.case,
         'frontend_url': settings.FRONTEND_URL,
-        'reminder_type': reminder.reminder_type
+        'reminder_type': reminder.reminder_type,
+        'interval_text': interval_text
     }
     
-    hours_until = (reminder.hearing.scheduled_date - timezone.now()).total_seconds() / 3600
-    
-    if hours_until <= 1:
-        template = 'emails/hearing_reminder_1h.html'
-        subject = f"Reminder: Hearing in 1 hour - {reminder.hearing.case.file_number}"
-    else:
-        template = 'emails/hearing_reminder_24h.html'
-        subject = f"Reminder: Hearing tomorrow - {reminder.hearing.case.file_number}"
+    subject = f"Reminder: Hearing {interval_text} - {reminder.hearing.case.file_number}"
+    template = 'emails/hearing_reminder_dynamic.html'
     
     return send_email_template(
         subject=subject,

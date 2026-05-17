@@ -190,13 +190,17 @@ export function AuthForm({ type = "login", onTypeChange }) {
   </div>
 
   <div className="space-y-2">
-  <Label htmlFor="sex" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Sex</Label>
-  <select id="sex" {...register("sex")} className="flex h-12 w-full items-center justify-between rounded-xl border border-border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-    <option value="">Select Sex</option>
-    <option value="MALE">Male</option>
-    <option value="FEMALE">Female</option>
-    <option value="OTHER">Other</option>
-  </select>
+  <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Sex</Label>
+  <div className="flex items-center gap-4 h-12 px-1">
+    <label className="flex items-center gap-2 cursor-pointer group">
+      <input type="radio" value="MALE" {...register("sex")} className="accent-primary w-4 h-4 cursor-pointer" />
+      <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Male</span>
+    </label>
+    <label className="flex items-center gap-2 cursor-pointer group">
+      <input type="radio" value="FEMALE" {...register("sex")} className="accent-primary w-4 h-4 cursor-pointer" />
+      <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Female</span>
+    </label>
+  </div>
   {errors.sex && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.sex.message)}</p>}
   </div>
   </div>

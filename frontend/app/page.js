@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
- Scale, ShieldCheck, Gavel, FileText, ArrowRight, Menu,
+ Scale, ShieldCheck, Gavel, FileText, ArrowRight, Menu, X,
  CheckCircle, Globe, Building, Users, Clock, BookOpen, ChevronRight, LayoutDashboard, TrendingUp
 } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
@@ -14,6 +14,7 @@ import { Chatbot } from "@/components/client/chatbot";
 export default function LandingPage() {
  const { t, language, setLanguage } = useLanguage();
  const [scrolled, setScrolled] = useState(false);
+ const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
  useEffect(() => {
  const handleScroll = () => {
@@ -53,18 +54,43 @@ export default function LandingPage() {
  </Button>
  <div className="hidden sm:block h-6 w-px bg-border"></div>
  <Link href="/login" className="hidden sm:block">
- <Button variant="ghost" className="font-semibold rounded-full hover:bg-muted/50">{t("login")}</Button>
+ <Button variant="outline" className="font-semibold rounded-full border-2 border-primary text-primary hover:bg-gradient-to-r hover:from-primary hover:to-blue-600 hover:text-white hover:border-transparent transition-all duration-300">{t("login")}</Button>
  </Link>
- <Link href="/signup">
+ <Link href="/signup" className="hidden sm:block">
  <Button className="font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 focus:ring-4 focus:ring-primary/20 transition-all rounded-full px-6 bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white">
  {t("getStarted")}
  </Button>
  </Link>
- <Button variant="ghost" size="icon" className="md:hidden">
- <Menu className="h-5 w-5" />
+ <Button variant="ghost" size="icon" className="md:hidden text-foreground hover:bg-muted/50 rounded-xl" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+ {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
  </Button>
  </div>
  </div>
+ 
+ {/* Mobile Menu Dropdown */}
+ {mobileMenuOpen && (
+   <div className="md:hidden absolute top-20 left-0 w-full bg-background border-b border-border shadow-xl py-6 px-6 flex flex-col gap-3 z-40 animate-in slide-in-from-top-2">
+     <Link className="flex items-center w-full px-4 py-3 rounded-xl text-base font-bold text-foreground hover:bg-primary/10 hover:text-primary transition-all" href="#features" onClick={() => setMobileMenuOpen(false)}>
+       {t("features")}
+     </Link>
+     <Link className="flex items-center w-full px-4 py-3 rounded-xl text-base font-bold text-foreground hover:bg-primary/10 hover:text-primary transition-all" href="#how-it-works" onClick={() => setMobileMenuOpen(false)}>
+       {t("howItWorksTitle")}
+     </Link>
+     <div className="h-px w-full bg-border my-2"></div>
+     <div className="flex flex-col gap-3 w-full">
+         <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="w-full block">
+           <Button variant="outline" className="w-full font-bold h-12 rounded-xl border-2 border-primary text-primary hover:bg-gradient-to-r hover:from-primary hover:to-blue-600 hover:text-white hover:border-transparent transition-all duration-300">{t("login")}</Button>
+         </Link>
+         <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="w-full block">
+           <Button className="w-full font-bold h-12 rounded-xl bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20">{t("getStarted")}</Button>
+         </Link>
+     </div>
+     <Button variant="ghost" size="lg" onClick={() => { toggleLanguage(); setMobileMenuOpen(false); }} className="w-full gap-3 text-foreground justify-center mt-2 rounded-xl font-bold bg-muted/30">
+       <Globe className="h-5 w-5" />
+       {language === "en" ? "Switch to Amharic" : "Switch to English"}
+     </Button>
+   </div>
+ )}
  </header>
 
  <main className="flex-1">
@@ -95,12 +121,12 @@ export default function LandingPage() {
  </p>
  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
  <Link href="/signup">
- <Button size="lg" className="w-full sm:w-auto text-base h-14 px-8 rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 focus:ring-4 focus:ring-primary/20 transition-all transform hover:-translate-y-1 bg-gradient-to-r from-primary to-blue-600 font-semibold text-white">
+ <Button size="lg" className="w-full sm:w-auto text-base h-14 px-8 rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 focus:ring-4 focus:ring-primary/20 transition-all transform hover:-translate-y-1 bg-gradient-to-r from-primary to-blue-600 font-bold text-white">
  {t("heroCTA")} <ArrowRight className="ml-2 h-5 w-5" />
  </Button>
  </Link>
  <Link href="/login">
- <Button variant="outline" size="lg" className="w-full sm:w-auto text-base h-14 px-8 rounded-full border-2 hover:bg-muted/50 bg-background shadow-sm border-border hover:text-foreground transition-all duration-300 font-semibold">
+ <Button variant="outline" size="lg" className="w-full sm:w-auto text-base h-14 px-8 rounded-full border-2 border-primary text-primary hover:bg-gradient-to-r hover:from-primary hover:to-blue-600 hover:text-white hover:border-transparent transition-all duration-300 font-bold">
  {t("heroDemo")}
  </Button>
  </Link>
