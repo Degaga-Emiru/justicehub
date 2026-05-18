@@ -27,9 +27,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 
 export default function JudgeDashboard() {
  const router = useRouter();
+ const { t } = useLanguage();
  const { user } = useAuthStore();
  const [date, setDate] = useState(null);
  const [selectedHearing, setSelectedHearing] = useState(null);
@@ -311,7 +313,7 @@ export default function JudgeDashboard() {
  {/* Header */}
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
- <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Judicial Command</h1>
+ <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{t('judicialCommand')}</h1>
  <p className="text-muted-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
  <CalendarDays className="h-5 w-5 text-primary" />
  {format(new Date(), "EEEE, MMMM do, yyyy")}
@@ -321,13 +323,13 @@ export default function JudgeDashboard() {
  <Link href="/dashboard/judge/search">
  <Button variant="outline" className="h-12 px-6 rounded-xl font-bold border-border bg-background shadow-sm border-border hover:bg-muted/30 transition-all text-sm group">
  <Search className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
- Search cases
+ {t('searchCasesBtn')}
  </Button>
  </Link>
  <Link href="/dashboard/judge/decisions">
  <Button className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 text-white">
  <Gavel className="mr-2 h-4 w-4" />
- Decisions
+ {t('decisionsBtn')}
  </Button>
  </Link>
  </div>
@@ -338,28 +340,28 @@ export default function JudgeDashboard() {
  <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Total Assigned</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">{t('totalAssigned')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
  <Briefcase className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{totalCases}</div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Lifecycle active</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t('lifecycleActive')}</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-purple-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-purple-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Pending Cases</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">{t('pendingCasesLabel')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
  <Scale className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{pendingCases}</div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Awaiting Review</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t('awaitingReviewLabel')}</p>
  </CardContent>
  </Card>
 
@@ -372,28 +374,28 @@ export default function JudgeDashboard() {
  >
  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Coming Hearings</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">{t('comingHearings')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
  <CalendarDays className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{upcomingHearings}</div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1 group-hover:text-emerald-500 transition-colors">Click to view scheduled sessions</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1 group-hover:text-emerald-500 transition-colors">{t('clickToViewScheduled')}</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-slate-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-slate-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Closed</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">{t('closedLabel')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-slate-500/10 text-muted-foreground flex items-center justify-center">
  <CheckCircle className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-foreground">{closedCases}</div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Resolved Archive</p>
+ <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t('resolvedArchive')}</p>
  </CardContent>
  </Card>
  </div>
@@ -403,15 +405,15 @@ export default function JudgeDashboard() {
  <TabsList className="h-14 p-1.5 bg-muted/30 border border-border rounded-2xl bg-background shadow-sm border-border backdrop-blur-xl w-full lg:max-w-2xl mx-auto flex">
  <TabsTrigger value="cases" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  <Briefcase className="h-4 w-4" />
- My Cases ({cases?.length || 0})
+ {t('myCasesTab')} ({cases?.length || 0})
  </TabsTrigger>
  <TabsTrigger value="hearings" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  <CalendarDays className="h-4 w-4" />
- Hearings ({hearings?.length || 0})
+ {t('hearingsTab')} ({hearings?.length || 0})
  </TabsTrigger>
  <TabsTrigger value="notifications" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2 relative">
  <Bell className="h-4 w-4" />
- Updates
+ {t('updatesTab')}
  {unreadNotifications.length > 0 && (
  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black leading-none text-white ring-2 ring-background ring-offset-background">
  {unreadNotifications.length}
@@ -426,15 +428,15 @@ export default function JudgeDashboard() {
  <CardHeader className="p-8 border-b border-border">
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
  <div className="space-y-1">
- <CardTitle className="text-2xl font-black font-display tracking-tight">Assigned Portfolio</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Manage and review cases within your jurisdiction.</CardDescription>
+ <CardTitle className="text-2xl font-black font-display tracking-tight">{t('assignedPortfolio')}</CardTitle>
+ <CardDescription className="text-muted-foreground font-medium">{t('manageCasesJurisdiction')}</CardDescription>
  </div>
  <div className="flex bg-muted/30 p-1 rounded-xl border border-border">
  {[
- { key: "all", label: "All" },
- { key: "pending", label: "New" },
- { key: "active", label: "Active" },
- { key: "closed", label: "Closed" },
+ { key: "all", label: t('filterAll') },
+ { key: "pending", label: t('filterNew') },
+ { key: "active", label: t('filterActive') },
+ { key: "closed", label: t('filterClosed') },
  ].map(f => (
  <Button
  key={f.key}
@@ -488,7 +490,7 @@ export default function JudgeDashboard() {
  </div>
  </div>
  <Button variant="ghost" className="rounded-xl box-content px-4 py-2 hover:bg-primary/10 hover:text-primary transition-all font-bold text-xs uppercase tracking-widest scale-95 group-hover:scale-100 opacity-0 group-hover:opacity-100">
- Open Record <ArrowRight className="ml-2 h-4 w-4" />
+ {t('openRecord')} <ArrowRight className="ml-2 h-4 w-4" />
  </Button>
  </div>
  </div>
@@ -500,8 +502,8 @@ export default function JudgeDashboard() {
  <Briefcase className="h-12 w-12 text-muted-foreground/30" />
  </div>
  <div className="space-y-2 max-w-xs">
- <p className="text-xl font-black font-display text-foreground">No records found</p>
- <p className="text-sm font-medium text-muted-foreground">Try adjusting your filters or search criteria.</p>
+ <p className="text-xl font-black font-display text-foreground">{t('noRecordsFound')}</p>
+ <p className="text-sm font-medium text-muted-foreground">{t('adjustFilters')}</p>
  </div>
  </div>
  )}
@@ -516,8 +518,8 @@ export default function JudgeDashboard() {
  <div className="lg:col-span-3">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden h-full">
  <CardHeader className="p-8 pb-4">
- <CardTitle className="text-2xl font-black font-display tracking-tight">Docket Calendar</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Visual overview of your court session schedule.</CardDescription>
+ <CardTitle className="text-2xl font-black font-display tracking-tight">{t('docketCalendar')}</CardTitle>
+ <CardDescription className="text-muted-foreground font-medium">{t('visualScheduleOverview')}</CardDescription>
  </CardHeader>
  <CardContent className="p-8 pt-2 flex flex-col items-center">
  <div className="w-full bg-muted/20 rounded-[2.5rem] p-6 border border-border shadow-inner">
@@ -549,8 +551,8 @@ export default function JudgeDashboard() {
  <CalendarDays className="h-5 w-5" />
  </div>
  <div>
- <p className="text-xs font-black uppercase tracking-widest text-primary">Active Dates Highlighted</p>
- <p className="text-[11px] font-bold text-muted-foreground mt-1 uppercase tracking-tight">Sessions currently defined in backend</p>
+ <p className="text-xs font-black uppercase tracking-widest text-primary">{t('activeDatesHighlighted')}</p>
+ <p className="text-[11px] font-bold text-muted-foreground mt-1 uppercase tracking-tight">{t('sessionsInBackend')}</p>
  </div>
  </div>
  </CardContent>
@@ -570,7 +572,7 @@ export default function JudgeDashboard() {
  </Badge>
  </CardTitle>
  <CardDescription className="text-muted-foreground font-medium">
- {date ? "Proceedings for selected date." : "Complete overview of your judicial schedule."}
+ {date ? "{t('proceedingsForDate')}" : "{t('completeScheduleOverview')}"}
  </CardDescription>
  </div>
  <div className="flex items-center gap-2">
@@ -581,14 +583,14 @@ export default function JudgeDashboard() {
  className="h-9 px-3 rounded-xl font-bold text-xs uppercase tracking-tighter text-rose-500 hover:bg-rose-500/10"
  onClick={() => setDate(null)}
  >
- <XCircle className="mr-1.5 h-3.5 w-3.5" /> Clear Date
+ <XCircle className="mr-1.5 h-3.5 w-3.5" /> {t('clearDate')}
  </Button>
  )}
  <Button 
  className="h-11 px-6 rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20" 
  onClick={() => setIsScheduling(true)}
  >
- <PlusCircle className="mr-2 h-4 w-4" /> Schedule Session
+ <PlusCircle className="mr-2 h-4 w-4" /> {t('scheduleSession')}
  </Button>
  </div>
  </div>
@@ -598,7 +600,7 @@ export default function JudgeDashboard() {
  <div className="relative flex-1 group">
  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
  <Input 
- placeholder="Search by docket or title..." 
+ placeholder="{t('searchByDocket')}" 
  className="pl-11 h-12 bg-muted/20 border-border rounded-2xl focus:ring-primary/20 transition-all font-medium"
  value={hearingSearch}
  onChange={(e) => setHearingSearch(e.target.value)}
@@ -609,12 +611,12 @@ export default function JudgeDashboard() {
  <SelectValue placeholder="All Status" />
  </SelectTrigger>
  <SelectContent className="bg-card shadow-sm border-border border-border">
- <SelectItem value="all" className="font-bold text-xs uppercase tracking-widest">All Events</SelectItem>
- <SelectItem value="SCHEDULED" className="font-bold text-xs uppercase tracking-widest">Scheduled</SelectItem>
- <SelectItem value="IN_PROGRESS" className="font-bold text-xs uppercase tracking-widest">In Progress</SelectItem>
- <SelectItem value="CONDUCTED" className="font-bold text-xs uppercase tracking-widest">Conducted</SelectItem>
- <SelectItem value="RESCHEDULED" className="font-bold text-xs uppercase tracking-widest">Rescheduled</SelectItem>
- <SelectItem value="CANCELLED" className="font-bold text-xs uppercase tracking-widest text-rose-500">Cancelled</SelectItem>
+ <SelectItem value="all" className="font-bold text-xs uppercase tracking-widest">{t('allEventsFilter')}</SelectItem>
+ <SelectItem value="SCHEDULED" className="font-bold text-xs uppercase tracking-widest">{t('scheduledFilter')}</SelectItem>
+ <SelectItem value="IN_PROGRESS" className="font-bold text-xs uppercase tracking-widest">{t('inProgressFilter')}</SelectItem>
+ <SelectItem value="CONDUCTED" className="font-bold text-xs uppercase tracking-widest">{t('conductedFilter')}</SelectItem>
+ <SelectItem value="RESCHEDULED" className="font-bold text-xs uppercase tracking-widest">{t('rescheduledFilter')}</SelectItem>
+ <SelectItem value="CANCELLED" className="font-bold text-xs uppercase tracking-widest text-rose-500">{t('cancelledFilter')}</SelectItem>
  </SelectContent>
  </Select>
  {(hearingSearch || hearingStatusFilter !== "all") && (
@@ -623,7 +625,7 @@ export default function JudgeDashboard() {
  className="h-12 px-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
  onClick={() => { setHearingSearch(""); setHearingStatusFilter("all"); }}
  >
- Reset Filters
+ {t('resetFilters')}
  </Button>
  )}
  </div>
@@ -656,7 +658,7 @@ export default function JudgeDashboard() {
  </div>
  <div className="flex justify-between items-start mb-4">
  <div className="space-y-1">
- <h4 className="font-black font-display text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{hearing.title || hearing.case?.title || "Hearing Session"}</h4>
+ <h4 className="font-black font-display text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{hearing.title || hearing.case?.title || "{t('hearingSession')}"}</h4>
  <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
  <FileText className="h-3 w-3 text-primary" /> {hearing.case_details?.file_number || hearing.case?.file_number || hearing.caseId || "N/A"}
  </p>
@@ -700,8 +702,8 @@ export default function JudgeDashboard() {
  </p>
  <p className="text-sm font-medium text-muted-foreground">
  {date || hearingSearch || hearingStatusFilter !== "all" 
- ? "Try adjusting your current filters or selection." 
- : "You have no upcoming hearings in your current docket."}
+ ? "{t('adjustCurrentFilters')}" 
+ : "{t('noDocketHearings')}"}
  </p>
  </div>
  </div>
@@ -716,8 +718,8 @@ export default function JudgeDashboard() {
  <TabsContent value="notifications" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden max-w-4xl mx-auto">
  <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-2xl font-black font-display tracking-tight">System Updates</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Keep track of case assignments and procedural changes.</CardDescription>
+ <CardTitle className="text-2xl font-black font-display tracking-tight">{t('systemUpdatesTitle')}</CardTitle>
+ <CardDescription className="text-muted-foreground font-medium">{t('keepTrackUpdates')}</CardDescription>
  </CardHeader>
  <CardContent className="p-8">
  {notifications?.length > 0 ? (
@@ -766,8 +768,8 @@ export default function JudgeDashboard() {
  <Bell className="h-12 w-12 text-muted-foreground/20" />
  </div>
  <div className="space-y-1">
- <p className="text-xl font-black font-display text-foreground">Awaiting Notifications</p>
- <p className="text-sm font-medium text-muted-foreground">Procedural updates and alerts will appear here.</p>
+ <p className="text-xl font-black font-display text-foreground">{t('awaitingNotifications')}</p>
+ <p className="text-sm font-medium text-muted-foreground">{t('proceduralUpdates')}</p>
  </div>
  </div>
  )}
@@ -781,7 +783,7 @@ export default function JudgeDashboard() {
  <Dialog open={!!selectedHearing} onOpenChange={(open) => !open && setSelectedHearing(null)}>
  <DialogContent className="sm:max-w-[600px]">
  <DialogHeader>
- <DialogTitle>Hearing Details</DialogTitle>
+ <DialogTitle>{t('hearingDetailsTitle')}</DialogTitle>
  <DialogDescription>
  {selectedHearing?.case?.file_number || selectedHearing?.caseId} — {selectedHearing?.title || selectedHearing?.case?.title}
  </DialogDescription>
@@ -791,7 +793,7 @@ export default function JudgeDashboard() {
  <div className="space-y-6 py-4">
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-1">
- <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Date & Time</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('dateAndTime')}</span>
  <p className="font-medium flex items-center gap-2">
  <CalendarDays className="h-4 w-4 text-primary" />
  {selectedHearing.scheduled_date
@@ -800,25 +802,25 @@ export default function JudgeDashboard() {
  </p>
  </div>
  <div className="space-y-1">
- <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Location</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('location')}</span>
  <p className="font-medium flex items-center gap-2">
  <MapPin className="h-4 w-4 text-primary" />
  {selectedHearing.location || selectedHearing.courtroom || "N/A"}
  </p>
  </div>
  <div className="space-y-1">
- <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Hearing Type</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('hearingType')}</span>
  <p className="font-medium">{selectedHearing.hearing_type || selectedHearing.type || "N/A"}</p>
  </div>
  <div className="space-y-1">
- <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Status</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('status')}</span>
  <Badge variant="outline" className={statusColors[selectedHearing.status] || ""}>{selectedHearing.status}</Badge>
  </div>
  </div>
 
  {selectedHearing.agenda && (
  <div className="space-y-2">
- <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Agenda</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('agenda')}</span>
  <p className="text-sm border rounded-lg p-3 bg-muted/50">{selectedHearing.agenda}</p>
  </div>
  )}
@@ -826,7 +828,7 @@ export default function JudgeDashboard() {
  {/* Participants */}
  {selectedHearing.participants?.length > 0 && (
  <div className="space-y-2">
- <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Participants</span>
+ <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('participants')}</span>
  <div className="space-y-1">
  {selectedHearing.participants.map((p, i) => (
  <div key={i} className="flex justify-between items-center text-sm p-2 border rounded">
@@ -841,7 +843,7 @@ export default function JudgeDashboard() {
  )}
 
  <DialogFooter className="gap-2 sm:gap-0 flex-wrap">
- <Button variant="outline" onClick={() => setSelectedHearing(null)}>Close</Button>
+ <Button variant="outline" onClick={() => setSelectedHearing(null)}>{t('close')}</Button>
  {selectedHearing && !["CONDUCTED", "CANCELLED", "COMPLETED"].includes(selectedHearing.status) && (
  <>
  <Button
@@ -915,46 +917,46 @@ export default function JudgeDashboard() {
  <Dialog open={!!completingHearing} onOpenChange={(open) => !open && setCompletingHearing(null)}>
  <DialogContent className="sm:max-w-[500px]">
  <DialogHeader>
- <DialogTitle>Complete Hearing</DialogTitle>
+ <DialogTitle>{t('completeHearingTitle')}</DialogTitle>
  <DialogDescription>
- Record the outcome and optionally schedule a follow-up hearing.
+ {t('recordOutcome')}
  </DialogDescription>
  </DialogHeader>
  <div className="space-y-4 py-4">
  <div className="space-y-2">
- <Label>Summary *</Label>
+ <Label>{t('summaryRequired')}</Label>
  <Textarea
- placeholder="Brief summary of what occurred..."
+ placeholder="{t('briefSummary')}"
  value={completeNotes.summary}
  onChange={(e) => setCompleteNotes({ ...completeNotes, summary: e.target.value })}
  />
  </div>
  <div className="space-y-2">
- <Label>Action Taken *</Label>
+ <Label>{t('actionTaken')}</Label>
  <Select value={completeNotes.action} onValueChange={(v) => setCompleteNotes({ ...completeNotes, action: v })}>
  <SelectTrigger>
  <SelectValue />
  </SelectTrigger>
  <SelectContent>
- <SelectItem value="CONTINUED">Continued</SelectItem>
- <SelectItem value="POSTPONED">Postponed</SelectItem>
- <SelectItem value="ADJOURNED">Adjourned</SelectItem>
- <SelectItem value="RESOLVED">Resolved</SelectItem>
+ <SelectItem value="CONTINUED">{t('actionContinued')}</SelectItem>
+ <SelectItem value="POSTPONED">{t('actionPostponed')}</SelectItem>
+ <SelectItem value="ADJOURNED">{t('actionAdjourned')}</SelectItem>
+ <SelectItem value="RESOLVED">{t('actionResolved')}</SelectItem>
  </SelectContent>
  </Select>
  </div>
  <div className="space-y-2">
- <Label>Judge Comment</Label>
+ <Label>{t('judgeComment')}</Label>
  <Textarea
- placeholder="Judge's observations or comments..."
+ placeholder="{t('judgeObservations')}"
  value={completeNotes.judge_comment}
  onChange={(e) => setCompleteNotes({ ...completeNotes, judge_comment: e.target.value })}
  />
  </div>
  <div className="space-y-2">
- <Label>Meeting Minutes / Proceedings</Label>
+ <Label>{t('meetingMinutes')}</Label>
  <Textarea
- placeholder="Record of proceedings..."
+ placeholder="{t('recordOfProceedings')}"
  value={completeNotes.minutes}
  onChange={(e) => setCompleteNotes({ ...completeNotes, minutes: e.target.value })}
  />
@@ -984,12 +986,12 @@ export default function JudgeDashboard() {
  <Dialog open={!!cancellingHearing} onOpenChange={(open) => !open && setCancellingHearing(null)}>
  <DialogContent className="sm:max-w-[400px]">
  <DialogHeader>
- <DialogTitle>Cancel Hearing</DialogTitle>
- <DialogDescription>This will notify all participants.</DialogDescription>
+ <DialogTitle>{t('cancelHearingTitle')}</DialogTitle>
+ <DialogDescription>{t('notifyParticipants')}</DialogDescription>
  </DialogHeader>
  <div className="space-y-4 py-4">
  <div className="space-y-2">
- <Label>Reason for Cancellation</Label>
+ <Label>{t('reasonForCancellation')}</Label>
  <Textarea
  placeholder="Provide a reason..."
  value={cancelReason}
@@ -1148,14 +1150,14 @@ export default function JudgeDashboard() {
  <Dialog open={!!reschedulingHearing} onOpenChange={(open) => !open && setReschedulingHearing(null)}>
  <DialogContent className="sm:max-w-[450px]">
  <DialogHeader>
- <DialogTitle>Reschedule Hearing</DialogTitle>
+ <DialogTitle>{t('rescheduleHearingTitle')}</DialogTitle>
  <DialogDescription>
- Move this hearing to a new date and time. A new hearing will be created and participants notified.
+ {t('rescheduleDesc')}
  </DialogDescription>
  </DialogHeader>
  <div className="space-y-4 py-4">
  <div className="space-y-2">
- <Label>New Date *</Label>
+ <Label>{t('newDateRequired')}</Label>
   <Input
   type="date"
   min={format(new Date(), "yyyy-MM-dd")}
@@ -1164,7 +1166,7 @@ export default function JudgeDashboard() {
   />
  </div>
  <div className="space-y-2">
- <Label>New Time *</Label>
+ <Label>{t('newTimeRequired')}</Label>
  <Input
  type="time"
  value={rescheduleData.new_time}
@@ -1172,7 +1174,7 @@ export default function JudgeDashboard() {
  />
  </div>
  <div className="space-y-2">
- <Label>Reason for Rescheduling</Label>
+ <Label>{t('reasonForRescheduling')}</Label>
  <Textarea
  placeholder="Provide a reason..."
  value={rescheduleData.reason}
@@ -1204,14 +1206,14 @@ export default function JudgeDashboard() {
  <Dialog open={!!editingHearing} onOpenChange={(open) => !open && setEditingHearing(null)}>
  <DialogContent className="sm:max-w-[500px]">
  <DialogHeader>
- <DialogTitle>Edit Hearing</DialogTitle>
+ <DialogTitle>{t('editHearingTitle')}</DialogTitle>
  <DialogDescription>
- Update hearing details. Changes will be applied immediately.
+ {t('editHearingDesc')}
  </DialogDescription>
  </DialogHeader>
  <div className="space-y-4 py-4">
  <div className="space-y-2">
- <Label>Title</Label>
+ <Label>{t('titleLabel')}</Label>
  <Input
  value={editData.title}
  onChange={(e) => setEditData({ ...editData, title: e.target.value })}
@@ -1242,7 +1244,7 @@ export default function JudgeDashboard() {
  </Select>
  </div>
  <div className="space-y-2">
- <Label>Location / Courtroom</Label>
+ <Label>{t('locationCourtroom')}</Label>
  <Input
  value={editData.location}
  onChange={(e) => setEditData({ ...editData, location: e.target.value })}
@@ -1281,9 +1283,9 @@ export default function JudgeDashboard() {
  <Dialog open={!!attendanceHearing} onOpenChange={(open) => !open && setAttendanceHearing(null)}>
  <DialogContent className="sm:max-w-[550px]">
  <DialogHeader>
- <DialogTitle>Record Attendance</DialogTitle>
+ <DialogTitle>{t('recordAttendanceTitle')}</DialogTitle>
  <DialogDescription>
- Mark each participant as Present, Absent, or Late for this hearing session.
+ {t('recordAttendanceDesc')}
  </DialogDescription>
  </DialogHeader>
  <div className="space-y-3 py-4 max-h-[400px] overflow-y-auto">
@@ -1318,7 +1320,7 @@ export default function JudgeDashboard() {
  </Select>
  </div>
  )) : (
- <p className="text-sm text-muted-foreground text-center py-8">No participants found for this hearing.</p>
+ <p className="text-sm text-muted-foreground text-center py-8">{t('noParticipantsFound')}</p>
  )}
  </div>
  <DialogFooter>
@@ -1356,8 +1358,8 @@ export default function JudgeDashboard() {
  <CheckCircle className="h-10 w-10 animate-fade-in group-hover:scale-110 transition-transform" />
  </div>
  <div className="space-y-1">
- <h2 className="text-2xl font-black font-display tracking-tight text-white uppercase tracking-wider">Session Conducted</h2>
- <p className="text-sm font-medium text-emerald-400 uppercase tracking-widest font-bold">Judicial Record Finalized</p>
+ <h2 className="text-2xl font-black font-display tracking-tight text-white uppercase tracking-wider">{t('sessionConducted')}</h2>
+ <p className="text-sm font-medium text-emerald-400 uppercase tracking-widest font-bold">{t('judicialRecordFinalized')}</p>
  </div>
  </div>
  
@@ -1365,10 +1367,10 @@ export default function JudgeDashboard() {
  <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
  <div className="flex items-center gap-3">
  <Scale className="h-4 w-4 text-emerald-500" />
- <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Linked Case File</p>
+ <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{t('linkedCaseFile')}</p>
  </div>
  <p className="text-sm font-bold text-muted-foreground leading-relaxed">
- {lastCompletedHearing?.case?.title || "Active Legal Proceeding"}
+ {lastCompletedHearing?.case?.title || "{t('activeLegalProceeding')}"}
  </p>
  </div>
 
@@ -1383,21 +1385,21 @@ export default function JudgeDashboard() {
  onClick={handleScheduleFollowUp}
  className="w-full h-12 rounded-2xl font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
  >
- Yes, Schedule Next Session
+ {t('yesScheduleNext')}
  </Button>
  <Button 
  variant="ghost" 
  onClick={() => setShowFollowUpPrompt(false)}
  className="w-full h-12 rounded-2xl font-bold uppercase tracking-widest text-muted-foreground hover:text-white hover:bg-muted/30"
  >
- Maybe Later
+ {t('maybeLater')}
  </Button>
  </div>
  </div>
  </div>
  
  <div className="bg-emerald-500/5 p-4 flex justify-center border-t border-emerald-500/10">
- <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">JusticeHub Judicial Workflow</p>
+ <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">{t('judicialWorkflow')}</p>
  </div>
  </DialogContent>
  </Dialog>

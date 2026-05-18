@@ -1,9 +1,8 @@
 from langchain_core.tools import tool
-from ai.schemas import CreateActionSchema, FetchCaseStatusSchema, LegalSearchSchema
+from ai.schemas import CreateActionSchema, FetchCaseStatusSchema
 from cases.models import Case, CaseActionRequest
 from django.utils import timezone
 from datetime import datetime
-from ai.rag.retriever import search_knowledge_base
 
 def get_tools(user=None):
 
@@ -61,12 +60,4 @@ def get_tools(user=None):
         except Exception as e:
             return f"Failed to fetch case status: {str(e)}"
 
-    @tool(args_schema=LegalSearchSchema)
-    def search_legal_knowledge_base_tool(query: str) -> str:
-        """Searches the legal knowledge base for procedures, laws, or guidelines. Use this for general legal questions."""
-        try:
-            return search_knowledge_base(query)
-        except Exception as e:
-            return f"Error searching knowledge base: {str(e)}"
-
-    return [create_case_action_tool, fetch_case_status_tool, search_legal_knowledge_base_tool]
+    return [create_case_action_tool, fetch_case_status_tool]
