@@ -52,6 +52,7 @@ export default function ClerkCaseDetailPage() {
  phone_number: "",
  first_name: "",
  last_name: "",
+  address: "",
  });
 
  // Decision Section State
@@ -71,7 +72,7 @@ export default function ClerkCaseDetailPage() {
  onSuccess: () => {
  queryClient.invalidateQueries(["case-detail", id]);
  setIsDefendantOpen(false);
- setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "" });
+ setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "", address: "" });
  toast.success("Defendant account created and linked.");
  },
  onError: (err) => toast.error(err.message || "Failed to create defendant account")
@@ -98,8 +99,9 @@ export default function ClerkCaseDetailPage() {
  setDefendantForm({
  email: "",
  phone_number: "",
- first_name: caseData.defendant_name?.split(' ')[0] || "",
- last_name: caseData.defendant_name?.split(' ').slice(1).join(' ') || "",
+ first_name: caseData.defendant_first_name || caseData.defendant_name?.split(' ')[0] || "",
+ last_name: caseData.defendant_last_name || caseData.defendant_name?.split(' ').slice(1).join(' ') || "",
+  address: caseData.defendant_address || "",
  });
  setIsDefendantOpen(true);
  };
@@ -454,9 +456,9 @@ export default function ClerkCaseDetailPage() {
  <Input
  placeholder="First name"
  value={defendantForm.first_name}
- onChange={(e) => setDefendantForm({...defendantForm, first_name: e.target.value})}
- className="h-11 bg-background border-border rounded-xl"
- disabled={defendantMutation.isPending}
+ disabled={true} readOnly
+ className="h-11 bg-muted border-border rounded-xl font-bold text-[#1A202C]"
+ // disabled
  />
  </div>
  <div className="space-y-2">
@@ -464,13 +466,23 @@ export default function ClerkCaseDetailPage() {
  <Input
  placeholder="Last name"
  value={defendantForm.last_name}
- onChange={(e) => setDefendantForm({...defendantForm, last_name: e.target.value})}
- className="h-11 bg-background border-border rounded-xl"
- disabled={defendantMutation.isPending}
+ disabled={true} readOnly
+ className="h-11 bg-muted border-border rounded-xl font-bold text-[#1A202C]"
+ // disabled
  />
  </div>
  </div>
  <div className="space-y-2">
+  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Address (ReadOnly)</label>
+  <Input
+  placeholder="Address"
+  value={defendantForm.address}
+  className="h-11 bg-muted border-border rounded-xl font-bold text-[#1A202C]"
+  disabled={true}
+  readOnly
+  />
+  </div>
+  <div className="space-y-2">
  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5">
  <Mail className="h-3 w-3" /> Email Address *
  </label>

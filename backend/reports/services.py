@@ -200,7 +200,7 @@ class ReportService:
                 "paid_cases": status_stats["approved"], # Assuming approved usually means paid in some flows, but better to use payment_status
                 "actual_paid_cases": active_cases.filter(payment_status='PAID').count(),
                 "collection_rate": f"{(active_cases.filter(payment_status='PAID').count() / status_stats['total_cases'] * 100):.1f}%" if status_stats['total_cases'] > 0 else "0%",
-                "revenue_by_month": [{"month": f"{timezone.now().year}-{item['created_at__month']:02d}", "revenue": item['revenue']} for item in revenue_by_month]
+                "revenue_by_month": [{"month": f"{item['created_at__year']}-{item['created_at__month']:02d}", "revenue": float(item['revenue'] or 0)} for item in revenue_qs.filter(created_at__range=(start, end)).values('created_at__year', 'created_at__month').annotate(revenue=Sum('amount')).order_by('created_at__year', 'created_at__month')]
             },
             "export_links": {
                 "csv": f"/api/reports/admin/export/csv/?report_type=system&days={days or 90}",

@@ -295,7 +295,7 @@ class CaseListSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'file_number', 'category_name', 'category_code', 'category_fee',
             'parent_category_name', 'status', 'status_display', 'priority', 'priority_display',
             'client_name', 'client_email', 'assigned_judge', 'created_at', 'closed_date',
-            'defendant_name', 'defendant_address', 'rejection_reason', 'defendant',
+            'defendant_name', 'defendant_first_name', 'defendant_last_name', 'defendant_address', 'rejection_reason', 'defendant',
             'has_defendant_responded', 'responded_at'
         ]
 
@@ -329,6 +329,8 @@ class CaseCreateSerializer(serializers.ModelSerializer):
     )
     # Optional free-text defendant info (used when defendant is not a registered user yet)
     defendant_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    defendant_first_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    defendant_last_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     defendant_address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
@@ -336,6 +338,7 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'case_summary',
             'category', 'priority', 'plaintiff', 'defendant', 'defendant_name',
+            'defendant_first_name', 'defendant_last_name',
             'defendant_address', 'plaintiff_lawyer', 'defendant_lawyer',
             'documents', 'document_types'
         ]
@@ -351,14 +354,16 @@ class CaseCreateSerializer(serializers.ModelSerializer):
         plaintiff = attrs.get('plaintiff')
         defendant = attrs.get('defendant')
         defendant_name = attrs.get('defendant_name', '')
+        defendant_first_name = attrs.get('defendant_first_name', '')
+        defendant_last_name = attrs.get('defendant_last_name', '')
 
         if not plaintiff:
             raise serializers.ValidationError("A case must have a Plaintiff.")
 
-        # Defendant must be provided as either a User FK or a name/address
-        if not defendant and not defendant_name:
+        # Defendant must be provided as either a User FK or both first name and last name
+        if not defendant and (not defendant_first_name or not defendant_last_name):
             raise serializers.ValidationError(
-                "A case must have a Defendant (either a registered user or a defendant name)."
+                "A case must have a Defendant (either a registered user or a defendant first name and last name)."
             )
 
         if defendant and plaintiff == defendant:
@@ -443,7 +448,7 @@ class CaseDetailSerializer(serializers.ModelSerializer):
             'id', 'case_number', 'title', 'description', 'case_summary',
             'category', 'status', 'status_display', 'priority', 'priority_display',
             'file_number', 'court_name', 'court_room',
-            'created_by', 'plaintiff', 'defendant', 'defendant_name', 'defendant_address',
+            'created_by', 'plaintiff', 'defendant', 'defendant_name', 'defendant_first_name', 'defendant_last_name', 'defendant_address',
             'plaintiff_lawyer', 'defendant_lawyer',
             'reviewed_by', 'reviewed_at', 'rejection_reason',
             'filing_date', 'closed_date', 'created_at', 'updated_at',

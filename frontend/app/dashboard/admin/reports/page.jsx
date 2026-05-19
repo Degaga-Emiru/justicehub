@@ -180,35 +180,54 @@ export default function ReportsPage() {
 
  const url = getReportDownloadUrl(format, type, filters);
  const token = localStorage.getItem("access_token");
+
+ const mimeTypes = {
+   pdf: 'application/pdf',
+   excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+   csv: 'text/csv',
+ };
+ const mimeType = mimeTypes[format] || 'application/octet-stream';
+ const ext = format === 'pdf' ? '.pdf' : (format === 'excel' ? '.xlsx' : '.csv');
+
  fetch(url, {
  headers: { "Authorization": `Bearer ${token}` }
  })
- .then(res => {
- if (!res.ok) throw new Error("Failed to download");
- return res.blob();
+ .then(async res => {
+   if (!res.ok) {
+     let errMsg = `Server error ${res.status}`;
+     try {
+       const errJson = await res.json();
+       errMsg = errJson.detail || errMsg;
+     } catch {}
+     throw new Error(errMsg);
+   }
+   return res.arrayBuffer();
  })
- .then(blob => {
- const tempUrl = window.URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.style.display = 'none';
- a.href = tempUrl;
- const ext = format === 'pdf' ? '.pdf' : (format === 'excel' ? '.xlsx' : '.csv');
- a.download = `justicehub_${type}_report${ext}`;
- document.body.appendChild(a);
- a.click();
- window.URL.revokeObjectURL(tempUrl);
+ .then(buffer => {
+   // Create blob with explicit MIME type so browser handles it correctly
+   const blob = new Blob([buffer], { type: mimeType });
+   const tempUrl = window.URL.createObjectURL(blob);
+   const a = document.createElement('a');
+   a.style.display = 'none';
+   a.href = tempUrl;
+   a.download = `justicehub_${type}_report${ext}`;
+   document.body.appendChild(a);
+   a.click();
+   document.body.removeChild(a);
+   // Delay revoke to ensure download starts
+   setTimeout(() => window.URL.revokeObjectURL(tempUrl), 2000);
 
  if (predefinedRange && predefinedRange !== "custom") {
  const rangeText = predefinedRange.replace(/_/g, ' ');
  toast.success(`Report generated successfully for ${rangeText}`);
  } else if (effectiveStartDate && effectiveEndDate) {
- toast.success(`Report generated successfully from ${effectiveStartDate} to ${effectiveEndDate}`);
+ toast.success(`Report generated from ${effectiveStartDate} to ${effectiveEndDate}`);
  } else {
  toast.success("Report generated successfully");
  }
  })
  .catch(err => {
- toast.error("Error downloading report: " + err.message);
+ toast.error("Failed to generate report: " + err.message);
  })
  .finally(() => {
  setIsDownloading(false);

@@ -21,9 +21,9 @@ import { useLanguage } from "@/components/language-provider";
 
 // Schema for Step 1: Party Details
 const step1Schema = z.object({
- defendantName: z.string().min(2, "Defendant name is required"),
+ defendantFirstName: z.string().min(2, "Defendant first name is required"),
+ defendantLastName: z.string().min(2, "Defendant last name is required"),
  defendantAddress: z.string().optional(),
- defendantEmail: z.string().email("Invalid email").optional().or(z.literal("")),
 });
 
 // Schema for Step 2: Case Details
@@ -71,9 +71,9 @@ const step3Schema = z.object({
  } = useForm({
  resolver: zodResolver(step === 1 ? step1Schema : step === 2 ? step2Schema : step3Schema),
  defaultValues: {
- defendantName: "",
+ defendantFirstName: "",
+ defendantLastName: "",
  defendantAddress: "",
- defendantEmail: "",
  categoryId: "",
  title: "",
  description: "",
@@ -107,7 +107,12 @@ const step3Schema = z.object({
  formData.append("category", allData.categoryId);
  formData.append("priority", allData.priority);
  formData.append("description", allData.description);
- formData.append("defendant_name", allData.defendantName);
+ formData.append("defendant_first_name", allData.defendantFirstName);
+		formData.append("defendant_last_name", allData.defendantLastName);
+		if (allData.defendantAddress) {
+			formData.append("defendant_address", allData.defendantAddress);
+		}
+
  
  // Expected backend fields map directly now.
  
@@ -171,20 +176,23 @@ const step3Schema = z.object({
   <Input id="plaintiff" value={user?.name || ""} disabled className="bg-muted font-bold text-[#1A202C]" />
   </div>
   <div className="space-y-2">
-  <Label htmlFor="defendantName" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantName")}</Label>
-  <Input id="defendantName" placeholder={t("phDefendantName")} {...register("defendantName")} className="font-bold text-[#1A202C]" />
-  {errors.defendantName && <p className="text-xs text-destructive font-bold">{errors.defendantName.message}</p>}
+  <Label htmlFor="defendantFirstName" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">Defendant First Name *</Label>
+  <Input id="defendantFirstName" placeholder="First Name" {...register("defendantFirstName")} className="font-bold text-[#1A202C]" />
+  {errors.defendantFirstName && <p className="text-xs text-destructive font-bold">{errors.defendantFirstName.message}</p>}
   </div>
+  </div>
+  <div className="grid gap-4 sm:grid-cols-2">
+  <div className="space-y-2">
+  <Label htmlFor="defendantLastName" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">Defendant Last Name *</Label>
+  <Input id="defendantLastName" placeholder="Last Name" {...register("defendantLastName")} className="font-bold text-[#1A202C]" />
+  {errors.defendantLastName && <p className="text-xs text-destructive font-bold">{errors.defendantLastName.message}</p>}
   </div>
   <div className="space-y-2">
   <Label htmlFor="defendantAddress" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantAddress")}</Label>
   <Input id="defendantAddress" placeholder={t("phDefendantAddress")} {...register("defendantAddress")} className="font-bold text-[#1A202C]" />
   </div>
-  <div className="space-y-2">
-  <Label htmlFor="defendantEmail" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantEmail")}</Label>
-  <Input id="defendantEmail" type="email" placeholder={t("phDefendantEmail")} {...register("defendantEmail")} className="font-bold text-[#1A202C]" />
-  {errors.defendantEmail && <p className="text-xs text-destructive font-bold">{errors.defendantEmail.message}</p>}
   </div>
+
   </div>
   )}
 

@@ -120,6 +120,8 @@ class Case(SoftDeleteModel):
     )
     # Free-text fallback when the defendant is not yet a registered user
     defendant_name = models.CharField(max_length=200, blank=True, null=True)
+    defendant_first_name = models.CharField(max_length=100, blank=True, null=True)
+    defendant_last_name = models.CharField(max_length=100, blank=True, null=True)
     defendant_address = models.TextField(blank=True, null=True)
     
     # Legal Representatives
@@ -202,6 +204,9 @@ class Case(SoftDeleteModel):
                 raise ValidationError("A closed case cannot be modified.")
 
     def save(self, *args, **kwargs):
+        if self.defendant_first_name or self.defendant_last_name:
+            self.defendant_name = f"{self.defendant_first_name or ''} {self.defendant_last_name or ''}".strip()
+            
         self.clean()
         
         # 2.2: Strict Status Flow Enforcement

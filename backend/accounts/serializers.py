@@ -367,6 +367,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return []
 
     def get_address(self, obj):
+        if getattr(obj, 'address', None):
+            return obj.address
         parts = filter(None, [obj.address_subcity, obj.address_kebele, obj.address_city, obj.address_region])
         return ", ".join(parts) if any(parts) else None
 

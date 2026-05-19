@@ -69,6 +69,7 @@ export default function ClerkDashboardPage() {
  phone_number: "",
  first_name: "",
  last_name: "",
+  address: "",
  });
 
  // Queries
@@ -123,7 +124,7 @@ export default function ClerkDashboardPage() {
  queryClient.invalidateQueries(["clerk-caseDetails"]);
  setIsDefendantOpen(false);
  setDefendantTarget(null);
- setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "" });
+ setDefendantForm({ email: "", phone_number: "", first_name: "", last_name: "", address: "" });
  toast.success("Defendant account created and linked.");
  },
  onError: (err) => toast.error(err.message || "Failed to create defendant account")
@@ -161,8 +162,9 @@ export default function ClerkDashboardPage() {
  setDefendantForm({
  email: "",
  phone_number: "",
- first_name: caseItem.defendant_name?.split(' ')[0] || "",
- last_name: caseItem.defendant_name?.split(' ').slice(1).join(' ') || "",
+ first_name: caseItem.defendant_first_name || caseItem.defendant_name?.split(' ')[0] || "",
+ last_name: caseItem.defendant_last_name || caseItem.defendant_name?.split(' ').slice(1).join(' ') || "",
+  address: caseItem.defendant_address || "",
  });
  setIsDefendantOpen(true);
  };
@@ -288,7 +290,7 @@ export default function ClerkDashboardPage() {
  <TableRow className="border-border hover:bg-transparent">
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Ref #</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Case Profile</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Jurisdiction</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Category</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Priority</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
@@ -309,7 +311,7 @@ export default function ClerkDashboardPage() {
  </div>
  </TableCell>
  <TableCell>
- <span className="text-xs font-black uppercase tracking-widest">{c.category?.name || "General"}</span>
+ <span className="text-xs font-black uppercase tracking-widest">{c.category_name || c.category?.name || "General"}</span>
  </TableCell>
  <TableCell>
  <Badge variant="outline" className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border-none bg-muted/50">
@@ -361,7 +363,7 @@ export default function ClerkDashboardPage() {
  <TableRow className="border-border hover:bg-transparent">
   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
-  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Jurisdiction</TableHead>
+  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Category</TableHead>
   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Status</TableHead>
   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
  </TableRow>
@@ -378,7 +380,7 @@ export default function ClerkDashboardPage() {
  <TableCell className="py-6">
  <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{c.title}</span>
  </TableCell>
-  <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category_name || "GENERAL"}</TableCell>
+  <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category_name || c.category?.name || "General"}</TableCell>
  <TableCell>
  <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", STATUS_COLORS[c.status])}>
  {STATUS_LABELS[c.status] || c.status}
@@ -488,7 +490,7 @@ export default function ClerkDashboardPage() {
  <TableRow className="border-border hover:bg-transparent">
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Jurisdiction</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Category</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Security State</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Audit</TableHead>
  </TableRow>
@@ -502,7 +504,7 @@ export default function ClerkDashboardPage() {
  >
  <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number || "—"}</TableCell>
  <TableCell className="py-6 font-black font-display text-sm tracking-tight group-hover:text-primary transition-colors">{c.title}</TableCell>
-  <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category_name || "GENERAL"}</TableCell>
+  <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category_name || c.category?.name || "General"}</TableCell>
  <TableCell>
  <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", STATUS_COLORS[c.status])}>
  {STATUS_LABELS[c.status] || c.status}
@@ -582,8 +584,28 @@ export default function ClerkDashboardPage() {
  <DialogContent>
  <DialogHeader><DialogTitle>Register Defendant</DialogTitle></DialogHeader>
  <div className="space-y-4 py-4">
- <Input placeholder="Email Address" value={defendantForm.email} onChange={(e) => setDefendantForm({...defendantForm, email: e.target.value})} className="rounded-xl h-12" />
- <Input placeholder="Phone Number" value={defendantForm.phone_number} onChange={(e) => setDefendantForm({...defendantForm, phone_number: e.target.value})} className="rounded-xl h-12" />
+ <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-1">
+      <label className="text-[10px] font-black uppercase tracking-widest text-[#4A5568] ml-1">First Name (ReadOnly)</label>
+      <Input value={defendantForm.first_name} disabled className="rounded-xl h-12 bg-muted font-bold text-[#1A202C]" />
+    </div>
+    <div className="space-y-1">
+      <label className="text-[10px] font-black uppercase tracking-widest text-[#4A5568] ml-1">Last Name (ReadOnly)</label>
+      <Input value={defendantForm.last_name} disabled className="rounded-xl h-12 bg-muted font-bold text-[#1A202C]" />
+    </div>
+  </div>
+  <div className="space-y-1">
+    <label className="text-[10px] font-black uppercase tracking-widest text-[#4A5568] ml-1">Address (ReadOnly)</label>
+    <Input value={defendantForm.address} disabled className="rounded-xl h-12 bg-muted font-bold text-[#1A202C]" />
+  </div>
+  <div className="space-y-1">
+    <label className="text-[10px] font-black uppercase tracking-widest text-[#4A5568] ml-1">Email Address *</label>
+    <Input placeholder="Email Address" value={defendantForm.email} onChange={(e) => setDefendantForm({...defendantForm, email: e.target.value})} className="rounded-xl h-12 font-bold text-[#1A202C]" />
+  </div>
+  <div className="space-y-1">
+    <label className="text-[10px] font-black uppercase tracking-widest text-[#4A5568] ml-1">Phone Number *</label>
+    <Input placeholder="Phone Number" value={defendantForm.phone_number} onChange={(e) => setDefendantForm({...defendantForm, phone_number: e.target.value})} className="rounded-xl h-12 font-bold text-[#1A202C]" />
+  </div>
  </div>
  <DialogFooter>
  <Button className="w-full rounded-xl font-bold h-12" onClick={() => defendantMutation.mutate({ caseId: defendantTarget.id, data: defendantForm })} disabled={defendantMutation.isPending}>Setup Secure Account</Button>

@@ -52,6 +52,7 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     address_city = models.CharField(max_length=50, default="Hawassa City")
     address_subcity = models.CharField(max_length=50, null=True, blank=True)
     address_kebele = models.CharField(max_length=50, null=True, blank=True)
+    address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     
     # Status flags
