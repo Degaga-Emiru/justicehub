@@ -121,23 +121,39 @@ def process_public_chat_message(message_text):
     """
     Process a message from an unauthenticated user on the public landing page.
     Restricts the prompt to general answers and does not save to DB.
+    Uses the same LLM as the agent (Gemini → Groq fallback) so it doesn't
+    depend on the HuggingFace API key.
     """
+    from langchain_core.messages import SystemMessage, HumanMessage
+    from ai.agents.case_agent import get_llm
+
     lang = detect_language(message_text)
     intent = classify_intent(message_text)
-    
+
     import time
     start_time = time.time()
-    
-    # Custom public prompt wrapper
-    system_instruction = "You are a JusticeHub assistant for the public landing page. Answer general questions about the system, its features, and basic legal terms. DO NOT provide legal advice or ask for case specifics. Keep it brief and friendly."
-    
-    # We construct a simple prompt
-    prompt = f"System: {system_instruction}\n\nUser: {message_text}"
-    
+
+    system_instruction = (
+        "You are a JusticeHub assistant for the public landing page. "
+        "Answer general questions about the system, its features, and basic legal terms. "
+        "DO NOT provide legal advice or ask for case specifics. Keep it brief and friendly."
+    )
+
     try:
-        result = generate(prompt, {'temperature': 0.3})
+        llm = get_llm()
+        messages = [
+            SystemMessage(content=system_instruction),
+            HumanMessage(content=message_text),
+        ]
+        response = llm.invoke(messages)
+        content = response.content
+        if isinstance(content, list):
+            content = "".join(
+                part.get("text", "") if isinstance(part, dict) else str(part)
+                for part in content
+            )
         return {
-            'content': result['text'],
+            'content': content,
             'intent': intent,
             'language': lang,
             'latency_ms': int((time.time() - start_time) * 1000)
@@ -145,8 +161,7 @@ def process_public_chat_message(message_text):
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"[AI] Public Agent failed: {str(e)}\n{error_details}")
-        
+        print(f"[AI] Public chat failed: {str(e)}\n{error_details}")
         return {
             'content': "I'm currently unable to answer questions. Please try again later.",
             'error': str(e)

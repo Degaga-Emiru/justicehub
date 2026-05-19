@@ -13,9 +13,11 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Legend, Cell, AreaChart, Area
 } from "recharts";
+import { useLanguage } from "@/components/language-provider";
 import { format } from "date-fns";
 
 export default function AdminOverviewPage() {
+  const { t } = useLanguage();
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: fetchDashboardStats,
@@ -48,7 +50,7 @@ export default function AdminOverviewPage() {
     return (
       <div className="flex flex-col h-[50vh] items-center justify-center gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm font-black text-foreground uppercase tracking-widest">Generating Insights...</p>
+        <p className="text-sm font-black text-foreground uppercase tracking-widest">{t('generatingInsights')}</p>
       </div>
     );
   }
@@ -63,7 +65,7 @@ export default function AdminOverviewPage() {
 
   const statCards = [
     {
-      title: "Total Users",
+      title: t('totalUsersLabel'),
       value: totalUsers,
       icon: Users,
       description: `${usersByRole["JUDGE"] || 0} Judges · ${usersByRole["REGISTRAR"] || 0} Registrars`,
@@ -73,7 +75,7 @@ export default function AdminOverviewPage() {
       glow: "bg-blue-500/5",
     },
     {
-      title: "Active Cases",
+      title: t('activeCasesAdmin'),
       value: stats?.active_cases ?? 0,
       icon: Gavel,
       description: `${stats?.pending_review ?? 0} awaiting review`,
@@ -83,18 +85,18 @@ export default function AdminOverviewPage() {
       glow: "bg-purple-500/5",
     },
     {
-        title: "Resolution Rate",
+        title: t('resolutionRateLabel'),
         value: stats?.total_cases ? `${((stats?.closed_cases / (stats?.total_cases || 1)) * 100).toFixed(1)}%` : "0%",
         icon: CheckCircle,
-        description: "Overall case closure rate",
+        description: t('overallClosureRate'),
         href: "/dashboard/admin/reports",
         color: "text-emerald-500",
         bg: "bg-emerald-500/10",
         glow: "bg-emerald-500/5",
     },
     {
-        title: "System Health",
-        value: health?.status === "HEALTHY" ? "Optimal" : health?.status || "Unknown",
+        title: t('systemHealthLabel'),
+        value: health?.status === "HEALTHY" ? t('optimal') : health?.status || "Unknown",
         icon: Server,
         description: `${health?.performance?.avg_response_ms || 0}ms avg response`,
         href: "/dashboard/admin/settings",
@@ -112,16 +114,16 @@ export default function AdminOverviewPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-4xl font-black font-display tracking-tight text-foreground">Analytics Command Center</h1>
+          <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{t('analyticsCommandCenter')}</h1>
           <p className="text-foreground font-medium text-lg leading-relaxed flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            JusticeHub System Intelligence
+            {t('systemIntelligence')}
           </p>
         </div>
         <div className="flex items-center gap-2">
             <Link href="/dashboard/admin/reports">
                 <button className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-black text-xs uppercase tracking-widest hover:opacity-90 transition-opacity">
-                    Generate Full Audit
+                    {t('generateFullAudit')}
                 </button>
             </Link>
         </div>
@@ -173,12 +175,12 @@ export default function AdminOverviewPage() {
         <Card className="lg:col-span-2 bg-card border-border overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-xl font-black font-display">Case Flow Trends</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase tracking-tight">Last 30 Days: Created vs. Closed</CardDescription>
+              <CardTitle className="text-xl font-black font-display">{t('caseFlowTrends')}</CardTitle>
+              <CardDescription className="text-xs font-bold uppercase tracking-tight">{t('last30DaysCreatedClosed')}</CardDescription>
             </div>
             <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
-              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary" /> Created</div>
-              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Closed</div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary" /> {t('createdLabel')}</div>
+              <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {t('closedLabel')}</div>
             </div>
           </CardHeader>
           <CardContent className="p-0 pb-4">
@@ -230,8 +232,8 @@ export default function AdminOverviewPage() {
         <Card className="bg-card border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-xl font-black font-display">Hearings</CardTitle>
-              <CardDescription className="text-xs font-bold uppercase tracking-tight">Scheduled for Today</CardDescription>
+              <CardTitle className="text-xl font-black font-display">{t('hearingsTodayLabel')}</CardTitle>
+              <CardDescription className="text-xs font-bold uppercase tracking-tight">{t('scheduledForToday')}</CardDescription>
             </div>
             <Calendar className="h-5 w-5 text-primary" />
           </CardHeader>
@@ -262,12 +264,12 @@ export default function AdminOverviewPage() {
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center space-y-2 opacity-90">
                     <Calendar className="h-10 w-10 text-foreground" />
-                    <p className="text-xs font-black uppercase tracking-widest text-foreground">No hearings today</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-foreground">{t('noHearingsToday')}</p>
                 </div>
               )}
               <Link href="/dashboard/admin/hearings">
                 <button className="w-full mt-2 flex items-center justify-center gap-2 py-2 text-[10px] font-black uppercase tracking-widest text-primary border border-primary/20 rounded-xl hover:bg-primary/5 transition-colors">
-                    View Full Calendar <ArrowRight className="h-3 w-3" />
+                    {t('viewFullCalendarBtn')} <ArrowRight className="h-3 w-3" />
                 </button>
               </Link>
             </div>
@@ -281,9 +283,9 @@ export default function AdminOverviewPage() {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-purple-500" />
-                    <CardTitle className="text-xl font-black font-display">Judge Load Intelligence</CardTitle>
+                    <CardTitle className="text-xl font-black font-display">{t('judgeLoadIntelligence')}</CardTitle>
                 </div>
-                <CardDescription className="text-xs font-bold uppercase tracking-tight">Active Case Load & Performance Ranking</CardDescription>
+                <CardDescription className="text-xs font-bold uppercase tracking-tight">{t('activeCaseLoadRanking')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="h-[250px] w-full">
@@ -318,9 +320,9 @@ export default function AdminOverviewPage() {
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-foreground" />
-                    <CardTitle className="text-xl font-black font-display">Judicial Insights</CardTitle>
+                    <CardTitle className="text-xl font-black font-display">{t('judicialInsights')}</CardTitle>
                 </div>
-                <CardDescription className="text-xs font-bold uppercase tracking-tight text-foreground">Smart alerts and system trends</CardDescription>
+                <CardDescription className="text-xs font-bold uppercase tracking-tight text-foreground">{t('smartAlerts')}</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
@@ -338,11 +340,11 @@ export default function AdminOverviewPage() {
                     ))}
                     <div className="pt-2 grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 text-center">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground mb-1">Avg Resolution</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground mb-1">{t('avgResolution')}</p>
                             <p className="text-2xl font-black font-display">{analytics?.resolution_time_metrics?.average || 0}d</p>
                         </div>
                         <div className="p-4 rounded-2xl bg-muted/20 border border-border/50 text-center">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground mb-1">Backlog</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground mb-1">{t('backlogLabel')}</p>
                             <p className="text-2xl font-black font-display text-red-500">{analytics?.intelligence_insights?.system_backlog || 0}</p>
                         </div>
                     </div>

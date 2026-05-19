@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,7 +31,7 @@ const STATUS_COLORS = {
 };
 
 const STATUS_LABELS = {
- PENDING_REVIEW: "Pending Review",
+ PENDING_REVIEW: "Pending {t('reviewBtn')}",
  APPROVED: "Approved",
  PAID: "Paid — Ready",
  ASSIGNED: "Assigned",
@@ -42,6 +43,7 @@ const STATUS_LABELS = {
 
 export default function RegistrarDashboardPage() {
  const queryClient = useQueryClient();
+ const { t } = useLanguage();
  const [searchTerm, setSearchTerm] = useState("");
 
  // Assign Judge Modal State
@@ -52,7 +54,7 @@ export default function RegistrarDashboardPage() {
 
 
 
- // Create Defendant Account Modal State
+ // {t('createDefendantOption')} Account Modal State
  const [isDefendantOpen, setIsDefendantOpen] = useState(false);
  const [defendantTarget, setDefendantTarget] = useState(null);
  const [defendantForm, setDefendantForm] = useState({
@@ -159,16 +161,16 @@ export default function RegistrarDashboardPage() {
  {/* Header */}
  <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
  <div className="space-y-1">
- <h1 className="text-4xl font-black font-display tracking-tight text-[#1A202C]">Registrar Command</h1>
+ <h1 className="text-4xl font-black font-display tracking-tight text-[#1A202C]">{t('registrarCommand')}</h1>
  <p className="text-[#4A5568] font-bold text-lg leading-relaxed flex items-center gap-2 opacity-100">
  <ClipboardList className="h-5 w-5 text-primary" />
- Case intake review, judge assignment, and court administration.
+ {t('caseIntakeReviewDesc')}
  </p>
  </div>
  <div className="relative max-w-sm w-full group">
  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4A5568] group-focus-within:text-primary transition-colors opacity-100" />
  <Input
- placeholder="Search by file number or title..."
+ placeholder="{t('searchByFileOrTitle')}"
  className="h-11 pl-11 bg-muted/30 border-border rounded-2xl focus-visible:ring-primary/20 focus-visible:bg-muted/50 transition-all font-bold text-sm text-[#1A202C]"
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
@@ -181,21 +183,21 @@ export default function RegistrarDashboardPage() {
  <Card className="bg-card shadow-sm border-border hover:border-amber-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-amber-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">Pending Intake</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">{t('pendingIntakeLabel')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
  <FileText className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-[#1A202C]">{filteredIntake.length}</div>
- <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">Awaiting review</p>
+ <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">{t('awaitingReviewSub')}</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">Pending Assignment</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">{t('pendingAssignmentLabel')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
  <UserCheck className="h-5 w-5" />
  </div>
@@ -204,35 +206,35 @@ export default function RegistrarDashboardPage() {
  <div className="text-4xl font-black font-display text-[#1A202C]">
  {stats.pending_assignment !== undefined ? stats.pending_assignment : pendingAssignment.length}
  </div>
- <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">Need judge assigned</p>
+ <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">{t('needJudgeAssigned')}</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">Active Judges</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">{t('activeJudgesLabel')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
  <ShieldCheck className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-[#1A202C]">{judges.length}</div>
- <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">Available for assignment</p>
+ <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">{t('availableForAssignment')}</p>
  </CardContent>
  </Card>
 
  <Card className="bg-card shadow-sm border-border hover:border-purple-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-purple-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">Total Cases</CardTitle>
+ <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">{t('totalCasesLabel')}</CardTitle>
  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
  <Scale className="h-5 w-5" />
  </div>
  </CardHeader>
  <CardContent>
  <div className="text-4xl font-black font-display text-[#1A202C]">{cases.length}</div>
- <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">In the registry</p>
+ <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">{t('inTheRegistry')}</p>
  </CardContent>
  </Card>
  </div>
@@ -241,15 +243,15 @@ export default function RegistrarDashboardPage() {
  <Tabs defaultValue="intake" className="w-full space-y-8">
  <TabsList className="h-14 p-1.5 bg-muted/30 border border-border rounded-2xl bg-background shadow-sm border-border backdrop-blur-xl w-full lg:max-w-2xl mx-auto flex">
  <TabsTrigger value="intake" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
- Intake Review
+ {t('intakeReviewTab')}
  <Badge className="bg-amber-500/20 text-amber-600 border-none text-[10px] font-black h-5 px-1.5">{filteredIntake.length}</Badge>
  </TabsTrigger>
  <TabsTrigger value="assignment" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
- Judge Assignment
+ {t('judgeAssignmentTab')}
  <Badge className="bg-blue-500/20 text-blue-600 border-none text-[10px] font-black h-5 px-1.5">{pendingAssignment.length}</Badge>
  </TabsTrigger>
  <TabsTrigger value="all" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
- All Cases
+ {t('allCasesTab')}
  </TabsTrigger>
  </TabsList>
 
@@ -257,8 +259,8 @@ export default function RegistrarDashboardPage() {
  <TabsContent value="intake" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">Registration Queue</CardTitle>
- <CardDescription className="text-[#4A5568] font-bold opacity-100">Review and verify incoming case filings before processing.</CardDescription>
+ <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">{t('registrationQueue')}</CardTitle>
+ <CardDescription className="text-[#4A5568] font-bold opacity-100">{t('reviewVerifyDesc')}</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {intakeLoading ? (
@@ -270,12 +272,12 @@ export default function RegistrarDashboardPage() {
  <Table>
  <TableHeader className="bg-muted/30">
  <TableRow className="border-border hover:bg-transparent">
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] pl-8 opacity-100">Entry #</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Case Profile</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] pl-8 opacity-100">{t('entryNumber')}</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('caseProfile')}</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Category</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Priority</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Filed Date</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] text-right pr-8 opacity-100">Command</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('priorityLabel')}</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('filedDate')}</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] text-right pr-8 opacity-100">{t('commandLabel')}</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -321,8 +323,8 @@ export default function RegistrarDashboardPage() {
  <FileCheck className="h-10 w-10 text-[#4A5568] opacity-20" />
  </div>
  <div className="space-y-1">
- <p className="text-xl font-black font-display text-[#1A202C]">Clear Queue</p>
- <p className="text-sm font-bold text-[#4A5568] opacity-100">All incoming filings have been processed.</p>
+ <p className="text-xl font-black font-display text-[#1A202C]">{t('clearQueue')}</p>
+ <p className="text-sm font-bold text-[#4A5568] opacity-100">{t('allFilingsProcessed')}</p>
  </div>
  </div>
  </TableCell>
@@ -340,8 +342,8 @@ export default function RegistrarDashboardPage() {
  <TabsContent value="assignment" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
   <CardHeader className="p-8 border-b border-border">
-  <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">Judge Assignment Queue</CardTitle>
-  <CardDescription className="text-[#4A5568] font-bold opacity-100">Assign verified cases to available judges in the jurisdiction.</CardDescription>
+  <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">{t('judgeAssignmentQueue')}</CardTitle>
+  <CardDescription className="text-[#4A5568] font-bold opacity-100">{t('assignVerifiedCases')}</CardDescription>
   </CardHeader>
  <CardContent className="p-0">
  {casesLoading ? (
@@ -353,12 +355,12 @@ export default function RegistrarDashboardPage() {
  <Table>
  <TableHeader className="bg-muted/30">
   <TableRow className="border-border hover:bg-transparent">
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] pl-8 opacity-100">Docket #</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Title</TableHead>
+   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] pl-8 opacity-100">{t('docketNumber')}</TableHead>
+   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('tblTitle')}</TableHead>
    <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Category</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Status</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Filed</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] text-right pr-8 opacity-100">Action</TableHead>
+   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('tblStatus')}</TableHead>
+   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('filedLabel')}</TableHead>
+   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] text-right pr-8 opacity-100">{t('actionLabel')}</TableHead>
   </TableRow>
   </TableHeader>
  <TableBody>
@@ -388,7 +390,7 @@ export default function RegistrarDashboardPage() {
  </Button>
  )}
  <Button size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20" onClick={(e) => { e.stopPropagation(); handleAssignClick(c); }}>
- <UserCheck className="mr-2 h-4 w-4" /> Assign Judge
+ <UserCheck className="mr-2 h-4 w-4" /> {t('assignJudgeBtn')}
  </Button>
  </div>
  </TableCell>
@@ -402,8 +404,8 @@ export default function RegistrarDashboardPage() {
   <UserCheck className="h-10 w-10 text-[#4A5568] opacity-20" />
   </div>
   <div className="space-y-1">
-  <p className="text-xl font-black font-display text-[#1A202C]">All Assigned</p>
-  <p className="text-sm font-bold text-[#4A5568] opacity-100">No cases waiting for judge assignment.</p>
+  <p className="text-xl font-black font-display text-[#1A202C]">{t('allAssigned')}</p>
+  <p className="text-sm font-bold text-[#4A5568] opacity-100">{t('noCasesWaitingAssignment')}</p>
   </div>
  </div>
  </TableCell>
@@ -421,8 +423,8 @@ export default function RegistrarDashboardPage() {
  <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
  <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">Master Registry</CardTitle>
- <CardDescription className="text-[#4A5568] font-bold opacity-100">Comprehensive index of all recorded legal proceedings.</CardDescription>
+ <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">{t('masterRegistry')}</CardTitle>
+ <CardDescription className="text-[#4A5568] font-bold opacity-100">{t('comprehensiveIndex')}</CardDescription>
  </CardHeader>
  <CardContent className="p-0">
  {casesLoading ? (
@@ -439,7 +441,7 @@ export default function RegistrarDashboardPage() {
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Category</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Filed</TableHead>
  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Status</TableHead>
- <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] text-right pr-8 opacity-100">Actions</TableHead>
+ <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] text-right pr-8 opacity-100">{t('actionsLabel')}</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -481,7 +483,7 @@ export default function RegistrarDashboardPage() {
  className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors"
  onSelect={(e) => { e.preventDefault(); window.location.href = `/dashboard/clerk/cases/${c.id}`; }}
  >
- <FileSearch className="h-4 w-4 text-primary" /> View Details
+ <FileSearch className="h-4 w-4 text-primary" /> {t('viewDetailsOption')}
  </DropdownMenuItem>
  {(c.status === "PAID" || c.status === "APPROVED" || c.status === "ASSIGNMENT_FAILED") && (
  <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors" onSelect={(e) => { e.preventDefault(); handleAssignClick(c); }}>
@@ -502,7 +504,7 @@ export default function RegistrarDashboardPage() {
  ) : (
  <TableRow>
  <TableCell colSpan={6} className="py-32 text-center text-[#4A5568] font-black uppercase tracking-widest text-xs opacity-100">
- No cases found in the registry.
+ {t('noCasesInRegistry')}
  </TableCell>
  </TableRow>
  )}
@@ -523,18 +525,18 @@ export default function RegistrarDashboardPage() {
  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
  <UserCheck className="h-5 w-5" />
  </div>
- Assign Judge to Case
+ {t('assignJudgeToCase')}
  </DialogTitle>
  <DialogDescription className="text-[#4A5568] font-bold opacity-100">
- Select an active judge for <span className="font-black text-[#1A202C]">{targetCase?.file_number || targetCase?.title}</span>.
+ {t('selectJudgeFor')} <span className="font-black text-[#1A202C]">{targetCase?.file_number || targetCase?.title}</span>.
  </DialogDescription>
  </DialogHeader>
  <div className="grid gap-4 py-4">
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">Select Judge</label>
+ <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">{t('selectJudge')}</label>
  <Select value={selectedJudgeId} onValueChange={setSelectedJudgeId}>
  <SelectTrigger className="h-12 bg-background border-border rounded-xl">
- <SelectValue placeholder="-- Select a Judge --" />
+ <SelectValue placeholder="{t('selectAJudge')}" />
  </SelectTrigger>
  <SelectContent>
  {(() => {
@@ -558,9 +560,9 @@ export default function RegistrarDashboardPage() {
  </div>
 
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">Assignment Notes</label>
+ <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">{t('assignmentNotes')}</label>
  <Textarea 
- placeholder="Enter reason or instructions for this assignment..."
+ placeholder="{t('enterAssignmentNotes')}"
  value={assignmentNotes}
  onChange={(e) => setAssignmentNotes(e.target.value)}
  className="min-h-[100px] bg-background border-border rounded-xl resize-none"
@@ -581,13 +583,13 @@ export default function RegistrarDashboardPage() {
  className="rounded-xl font-bold bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20"
  >
  {assignMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
- {assignMutation.isPending ? "Assigning..." : "Confirm Assignment"}
+ {assignMutation.isPending ? t('assigning') : t('confirmAssignment')}
  </Button>
  </DialogFooter>
  </DialogContent>
   </Dialog>
  
-  {/* Create Defendant Account Dialog */}
+  {/* {t('createDefendantAccount')} Dialog */}
  <Dialog open={isDefendantOpen} onOpenChange={(open) => !defendantMutation.isPending && setIsDefendantOpen(open)}>
  <DialogContent className="sm:max-w-[480px]">
  <DialogHeader>
@@ -598,7 +600,7 @@ export default function RegistrarDashboardPage() {
  Create Defendant Account
  </DialogTitle>
  <DialogDescription className="text-[#4A5568] font-bold opacity-100">
- Create and link a defendant account for <span className="font-black text-[#1A202C]">{defendantTarget?.title}</span>. An activation OTP will be sent to the provided email.
+ {t('createDefendantDesc')} <span className="font-black text-[#1A202C]">{defendantTarget?.title}</span>{t('otpSentDesc')}
  </DialogDescription>
  </DialogHeader>
  <div className="grid gap-4 py-4">
@@ -611,7 +613,7 @@ export default function RegistrarDashboardPage() {
  )}
  <div className="grid grid-cols-2 gap-3">
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">First Name *</label>
+ <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">{t('firstNameRequired')}</label>
  <Input
  placeholder="First name"
  value={defendantForm.first_name}
@@ -621,7 +623,7 @@ export default function RegistrarDashboardPage() {
  />
  </div>
  <div className="space-y-2">
- <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">Last Name *</label>
+ <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 opacity-100">{t('lastNameRequired')}</label>
  <Input
  placeholder="Last name"
  value={defendantForm.last_name}
@@ -633,7 +635,7 @@ export default function RegistrarDashboardPage() {
  </div>
  <div className="space-y-2">
  <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 flex items-center gap-1.5 opacity-100">
- <Mail className="h-3 w-3" /> Email Address *
+ <Mail className="h-3 w-3" /> {t('emailAddressRequired')}
  </label>
  <Input
  type="email"
@@ -646,7 +648,7 @@ export default function RegistrarDashboardPage() {
  </div>
  <div className="space-y-2">
  <label className="text-xs font-black uppercase tracking-widest text-[#2D3748] ml-1 flex items-center gap-1.5 opacity-100">
- <Phone className="h-3 w-3" /> Phone Number *
+ <Phone className="h-3 w-3" /> {t('phoneNumberRequired')}
  </label>
  <Input
  type="tel"
@@ -668,7 +670,7 @@ export default function RegistrarDashboardPage() {
  className="rounded-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white shadow-lg shadow-indigo-500/20"
  >
  {defendantMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
- {defendantMutation.isPending ? "Creating..." : "Create & Send OTP"}
+ {defendantMutation.isPending ? t('creating') : t('createAndSendOTP')}
  </Button>
  </DialogFooter>
  </DialogContent>

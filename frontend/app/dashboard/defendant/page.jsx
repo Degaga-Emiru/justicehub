@@ -59,9 +59,9 @@ export default function DefendantDashboard() {
     <div className="space-y-10 animate-fade-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div className="space-y-1">
-          <h1 className="text-4xl font-bold font-display tracking-tight text-[#1A202C]">Defense Command</h1>
+          <h1 className="text-4xl font-bold font-display tracking-tight text-[#1A202C]">{t('defenseCommand')}</h1>
           <p className="text-[#4A5568] font-bold text-lg leading-relaxed opacity-100">
-            Welcome back, {user?.name || "Defendant"}. Monitor your active legal standing.
+            {t('monitorLegalStanding').replace('{name}', user?.name || t('defendant'))}
           </p>
         </div>
       </div>
@@ -71,14 +71,14 @@ export default function DefendantDashboard() {
         <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-bold uppercase tracking-[0.1em] text-[#2D3748]">Cases Against You</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase tracking-[0.1em] text-[#2D3748]">{t('casesAgainstYou')}</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
               <Shield className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-black font-display text-[#1A202C]">{cases?.length || 0}</div>
-            <p className="text-xs font-bold text-[#4A5568] uppercase tracking-[0.05em] mt-1 opacity-100">Total Litigation</p>
+            <p className="text-xs font-bold text-[#4A5568] uppercase tracking-[0.05em] mt-1 opacity-100">{t('totalLitigation')}</p>
           </CardContent>
         </Card>
 
@@ -88,7 +88,7 @@ export default function DefendantDashboard() {
         )}>
           {pendingActions.length > 0 && <div className="absolute inset-0 bg-rose-500/5 animate-pulse-slow"></div>}
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
-            <CardTitle className="text-xs font-bold uppercase tracking-[0.1em] text-[#2D3748]">Pending Actions</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase tracking-[0.1em] text-[#2D3748]">{t('pendingActions')}</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
               <AlertTriangle className="h-5 w-5" />
             </div>
@@ -97,10 +97,10 @@ export default function DefendantDashboard() {
             <div className="text-4xl font-black font-display text-[#1A202C]">{pendingActions.length}</div>
             {pendingActions.length > 0 ? (
               <Link href="/dashboard/defendant/cases" className="inline-flex items-center text-xs font-black text-rose-500 hover:text-rose-600 uppercase tracking-wider mt-2 group/act">
-                Respond Now <ArrowRight className="ml-1 h-3 w-3 group-hover/act:translate-x-1 transition-transform" />
+                {t('respondNow')} <ArrowRight className="ml-1 h-3 w-3 group-hover/act:translate-x-1 transition-transform" />
               </Link>
             ) : (
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">All clear</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">{t('allClear')}</p>
             )}
           </CardContent>
         </Card>
@@ -108,28 +108,28 @@ export default function DefendantDashboard() {
         <Card className="bg-card shadow-sm border-border hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Hearings</CardTitle>
+            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t('hearingsLabel')}</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
               <Calendar className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-black font-display text-foreground">{upcomingHearingsCount}</div>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.05em] mt-1">Next 30 Days</p>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.05em] mt-1">{t('next30Days')}</p>
           </CardContent>
         </Card>
 
         <Card className="bg-card shadow-sm border-border hover:border-slate-500/30 transition-all duration-500 overflow-hidden relative group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-slate-500/10 transition-colors"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Resolved</CardTitle>
+            <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">{t('resolvedLabel')}</CardTitle>
             <div className="h-10 w-10 rounded-xl bg-slate-500/10 text-muted-foreground flex items-center justify-center">
               <CheckCircle className="h-5 w-5" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-black font-display text-foreground">{resolvedCases.length}</div>
-            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.05em] mt-1">Total Closed</p>
+            <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.05em] mt-1">{t('totalClosed')}</p>
           </CardContent>
         </Card>
       </div>
@@ -140,12 +140,12 @@ export default function DefendantDashboard() {
           <CardHeader className="p-8 pb-4">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">Active Disputes</CardTitle>
-                <CardDescription className="text-[#4A5568] font-bold opacity-100">Ongoing legal proceedings involving your account.</CardDescription>
+                <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">{t('activeDisputes')}</CardTitle>
+                <CardDescription className="text-[#4A5568] font-bold opacity-100">{t('ongoingProceedings')}</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="font-bold text-primary group" asChild>
                 <Link href="/dashboard/defendant/cases">
-                  View All <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  {t('viewAll')} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
             </div>
@@ -191,7 +191,7 @@ export default function DefendantDashboard() {
                 <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center text-primary">
                   <Shield className="h-8 w-8" />
                 </div>
-                <p className="text-lg font-bold text-[#1A202C] max-w-xs text-center px-4 opacity-100">No active legal disputes found for your account.</p>
+                <p className="text-lg font-bold text-[#1A202C] max-w-xs text-center px-4 opacity-100">{t('noActiveDisputes')}</p>
               </div>
             )}
           </CardContent>
@@ -202,8 +202,8 @@ export default function DefendantDashboard() {
           <CardHeader className="p-8 pb-4">
             <div className="flex justify-between items-center">
               <div className="space-y-1">
-                <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">Court Schedule</CardTitle>
-                <CardDescription className="text-[#4A5568] font-bold opacity-100">Your upcoming summons and hearings.</CardDescription>
+                <CardTitle className="text-2xl font-bold font-display tracking-tight text-[#1A202C]">{t('courtSchedule')}</CardTitle>
+                <CardDescription className="text-[#4A5568] font-bold opacity-100">{t('upcomingSummons')}</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="font-bold text-primary group" asChild>
                 <Link href="/dashboard/defendant/schedule">
@@ -244,7 +244,7 @@ export default function DefendantDashboard() {
                           <span className="flex items-center gap-1.5"><Clock className="h-3 w-3 text-primary" /> {format(new Date(hearing.scheduled_date), "h:mm a")}</span>
                         </div>
                         <span className="text-[10px] font-black text-primary group-hover:underline uppercase tracking-widest">
-                          View Details
+                          {t('viewDetails')}
                         </span>
                       </div>
                     </div>
@@ -257,14 +257,14 @@ export default function DefendantDashboard() {
                 <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center text-primary">
                   <Calendar className="h-8 w-8" />
                 </div>
-                <p className="text-lg font-bold text-[#1A202C] max-w-xs opacity-100">No upcoming hearings scheduled.</p>
+                <p className="text-lg font-bold text-[#1A202C] max-w-xs opacity-100">{t('noUpcomingHearingsScheduled')}</p>
               </div>
             )}
           </CardContent>
           <div className="p-8 pt-6">
             <Button variant="outline" className="w-full h-12 rounded-xl font-bold border-border bg-background shadow-sm border-border hover:bg-muted/30 transition-all text-sm group" asChild>
               <Link href="/dashboard/defendant/schedule">
-                View Full Docket <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                {t('viewFullDocket')} <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
           </div>
