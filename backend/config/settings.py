@@ -246,6 +246,16 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
 # Logging
+# In production (Render), only log to console. File logging only works locally.
+_log_handlers = ['console']
+
+if DEBUG:
+    # Ensure the logs directory exists locally
+    import os as _os
+    _log_dir = BASE_DIR / 'logs'
+    _log_dir.mkdir(exist_ok=True)
+    _log_handlers = ['file', 'console']
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -270,32 +280,32 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            'handlers': _log_handlers,
             'level': 'INFO',
             'propagate': True,
         },
         'cases': {
-            'handlers': ['file', 'console'],
+            'handlers': _log_handlers,
             'level': 'INFO',
             'propagate': True,
         },
         'notifications': {
-            'handlers': ['file', 'console'],
+            'handlers': _log_handlers,
             'level': 'INFO',
             'propagate': True,
         },
         'audit_logs': {
-            'handlers': ['file', 'console'],
+            'handlers': _log_handlers,
             'level': 'INFO',
             'propagate': True,
         },
         'core': {
-            'handlers': ['file', 'console'],
+            'handlers': _log_handlers,
             'level': 'DEBUG',
             'propagate': True,
         },
         'hearings': {
-            'handlers': ['file', 'console'],
+            'handlers': _log_handlers,
             'level': 'DEBUG',
             'propagate': True,
         },
