@@ -1011,7 +1011,7 @@ class JudgeProfileViewSet(viewsets.ModelViewSet):
         
         # Track important fields
         tracked_fields = ['max_active_cases', 'is_active', 'years_of_experience', 'status']
-        changes = track_model_changes(old_instance, profile, tracked_fields)
+        changes = track_model_changes(old_instance, profile, tracked_fields) or {}
         
         # Specialization changes
         added = new_specializations - old_specializations
@@ -1019,8 +1019,8 @@ class JudgeProfileViewSet(viewsets.ModelViewSet):
         
         if added or removed:
             changes['specializations'] = {
-                'added': list(added),
-                'removed': list(removed)
+                'added': [str(x) for x in added],
+                'removed': [str(x) for x in removed]
             }
             
             # Send notifications
@@ -1049,7 +1049,7 @@ class JudgeProfileViewSet(viewsets.ModelViewSet):
             action_type=AuditLog.ActionType.USER_UPDATED,
             obj=profile.user,
             description=f"Admin updated judge profile for {profile.user.email}",
-            changes=changes,
+            changes=changes if changes else None,
             entity_name=profile.user.email
         )
 

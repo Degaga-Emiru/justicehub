@@ -776,16 +776,12 @@ export async function scheduleHearing(data) {
 
 export async function rescheduleHearing(id, data) {
     try {
-        // Backend expects { new_date: "YYYY-MM-DD", new_time: "HH:MM", reason: "..." }
         const payload = {};
-        if (data.new_date) payload.new_date = data.new_date;
-        if (data.new_time) payload.new_time = data.new_time;
-        if (data.reason) payload.reason = data.reason;
-        // Fallback: if caller sends scheduled_date as ISO, split it
-        if (data.scheduled_date && !data.new_date) {
-            const dt = new Date(data.scheduled_date);
-            payload.new_date = dt.toISOString().split('T')[0];
-            payload.new_time = dt.toTimeString().slice(0, 5);
+        if (data.new_date && data.new_time) {
+            const dt = new Date(`${data.new_date}T${data.new_time}`);
+            payload.scheduled_date = dt.toISOString();
+        } else if (data.scheduled_date) {
+            payload.scheduled_date = new Date(data.scheduled_date).toISOString();
         }
         if (data.reason) payload.reason = data.reason;
         const res = await fetch(`${getApiUrl()}/hearings/${id}/reschedule/`, {

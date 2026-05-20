@@ -108,9 +108,9 @@ export default function SearchCasesPage() {
  </span>
  </div>
  </TableCell>
- <TableCell>{c.category?.name || c.category || "N/A"}</TableCell>
+ <TableCell>{c.category_name || c.category?.name || c.category || "N/A"}</TableCell>
  <TableCell>
- {c.filing_date ? format(new Date(c.filing_date), "MMM d, yyyy") : "N/A"}
+ {(c.filing_date || c.created_at) ? format(new Date(c.filing_date || c.created_at), "MMM d, yyyy") : "N/A"}
  </TableCell>
  <TableCell>
  <Badge variant="outline" className={

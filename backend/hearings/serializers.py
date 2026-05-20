@@ -362,15 +362,21 @@ class RecordAttendanceSerializer(serializers.Serializer):
 
 
 class HearingRescheduleSerializer(serializers.Serializer):
-    new_date = serializers.DateField()
-    new_time = serializers.TimeField()
+    scheduled_date = serializers.DateTimeField(required=False)
+    new_date = serializers.DateField(required=False)
+    new_time = serializers.TimeField(required=False)
     reason = serializers.CharField(required=False, allow_blank=True)
     
     def validate(self, attrs):
-        import datetime
-        
-        naive_dt = datetime.datetime.combine(attrs['new_date'], attrs['new_time'])
-        aware_dt = timezone.make_aware(naive_dt, timezone.get_current_timezone())
+        if 'scheduled_date' in attrs:
+            aware_dt = attrs['scheduled_date']
+        else:
+            import datetime
+            naive_dt = datetime.datetime.combine(attrs['new_date'], attrs['new_time'])
+            from django.utils import timezone
+            aware_dt = timezone.make_aware(naive_dt, timezone.get_current_timezone())
+            
+        from django.utils import timezone
         if aware_dt <= timezone.now():
             raise serializers.ValidationError("Scheduled date must be in the future.")
             
