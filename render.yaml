@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: justicehub-backend
+    env: python
+    buildCommand: "sh ./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: justicehub-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: FRONTEND_URL
+        value: "https://justicehub-frontend.onrender.com"
+
+  - type: web
+    name: justicehub-frontend
+    env: node
+    buildCommand: "npm run build"
+    startCommand: "npm start"
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: "https://justicehub-backend.onrender.com/api"
+
+databases:
+  - name: justicehub-db
+    databaseName: justicehub
+    user: justicehub_user
+    plan: free
