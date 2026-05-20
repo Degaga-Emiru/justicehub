@@ -19,6 +19,12 @@ services:
         value: "*"
       - key: FRONTEND_URL
         value: "https://justicehub-frontend.onrender.com"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
 
   - type: web
     name: justicehub-frontend
