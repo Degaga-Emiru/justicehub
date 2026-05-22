@@ -114,3 +114,4 @@ whitenoise==6.12.0
 xxhash==3.7.0
 zopfli==0.4.1
 zstandard==0.25.0
+openpyxl==3.1.2

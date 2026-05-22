@@ -2,6 +2,8 @@ import csv
 import json
 import io
 from django.utils import timezone
+
+# Import ReportLab independently so chart issues don't break PDF generation
 try:
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import letter
@@ -9,10 +11,17 @@ try:
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch
-    from .chart_utils import ChartGenerator
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
+
+# Import chart utilities separately so a missing matplotlib never disables the PDF engine
+try:
+    from .chart_utils import ChartGenerator
+    CHARTS_AVAILABLE = True
+except Exception:
+    CHARTS_AVAILABLE = False
+    ChartGenerator = None
 
 try:
     import openpyxl
@@ -51,41 +60,75 @@ class ExportGenerator:
             return ExportGenerator.to_csv(data, "report.csv")
 
         wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Report"
+        # Remove default sheet
+        wb.remove(wb.active)
 
-        # Styles
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
-        center_align = Alignment(horizontal="center")
+        # Helper to create a sheet
+        def create_sheet(sheet_title, sheet_data):
+            # Clean up sheet title (max 31 chars, no invalid chars)
+            safe_title = str(sheet_title)[:31].replace('*', '').replace(':', '').replace('?', '').replace('/', '').replace('\\', '')
+            if not safe_title:
+                safe_title = "Data"
+            ws = wb.create_sheet(title=safe_title)
+            
+            # Styles
+            header_font = Font(bold=True, color="FFFFFF")
+            header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+            
+            # Add metadata row
+            ws.append([f"Report: {title}", f"Generated: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"])
+            ws.append([])
+            
+            if isinstance(sheet_data, list) and sheet_data and isinstance(sheet_data[0], dict):
+                # It's a list of dicts (table format)
+                headers = list(sheet_data[0].keys())
+                ws.append([str(h).replace('_', ' ').title() for h in headers])
+                # Style headers
+                for cell in ws[ws.max_row]:
+                    cell.font = header_font
+                    cell.fill = header_fill
+                # Add rows
+                for row_item in sheet_data:
+                    ws.append([str(row_item.get(h, '')) for h in headers])
+            elif isinstance(sheet_data, dict):
+                # Key-Value pairs
+                ws.append(["Metric", "Value"])
+                for cell in ws[ws.max_row]:
+                    cell.font = header_font
+                    cell.fill = header_fill
+                    
+                def flatten_dict(d, prefix=""):
+                    for k, v in d.items():
+                        new_prefix = f"{prefix}{k} > " if prefix else f"{k} > "
+                        if isinstance(v, dict):
+                            flatten_dict(v, new_prefix)
+                        elif isinstance(v, list):
+                            ws.append([new_prefix.strip(" > "), str(v)])
+                        else:
+                            ws.append([new_prefix.strip(" > ").replace('_', ' ').title(), str(v)])
+                flatten_dict(sheet_data)
+            else:
+                ws.append(["Value"])
+                ws.append([str(sheet_data)])
 
-        ws.append([title])
-        ws.merge_cells('A1:C1')
-        ws['A1'].font = Font(bold=True, size=14)
-        ws.append([f"Generated on: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}"])
-        ws.append([])
-
-        def add_dict(d, row_offset=0):
-            for k, v in d.items():
-                if isinstance(v, dict):
-                    ws.append([k.upper()])
-                    add_dict(v)
-                elif isinstance(v, list):
-                    ws.append([k.upper()])
-                    if v and isinstance(v[0], dict):
-                        headers = list(v[0].keys())
-                        ws.append(headers)
-                        for item in v:
-                            ws.append([item.get(h) for h in headers])
-                    else:
-                        for item in v:
-                            ws.append([item])
-                else:
-                    ws.append([k, v])
-
+        # Iterate over top-level keys in data to create sheets
         if isinstance(data, dict):
-            add_dict(data)
-        
+            for key, val in data.items():
+                if isinstance(val, (dict, list)):
+                    create_sheet(key.replace('_', ' ').title(), val)
+                else:
+                    # Collect scalar values into a 'Summary' sheet if they exist at root
+                    if "Summary" not in wb.sheetnames:
+                        ws = wb.create_sheet("Summary")
+                        ws.append(["Metric", "Value"])
+                    ws = wb["Summary"]
+                    ws.append([str(key).replace('_', ' ').title(), str(val)])
+        else:
+            create_sheet("Data", data)
+
+        if not wb.sheetnames:
+            wb.create_sheet("Empty Report")
+
         buffer = io.BytesIO()
         wb.save(buffer)
         return buffer.getvalue()
@@ -93,9 +136,47 @@ class ExportGenerator:
     @staticmethod
     def to_pdf(data, title, report_type="System Report"):
         if not REPORTLAB_AVAILABLE:
+            # ReportLab not installed — generate a minimal but VALID PDF as a fallback
+            # so Adobe never shows "Failed to open" (plain text saved as .pdf is the cause)
+            try:
+                from reportlab.pdfgen import canvas as _canvas
+                from reportlab.lib.pagesizes import letter as _letter
+                _buf = io.BytesIO()
+                _c = _canvas.Canvas(_buf, pagesize=_letter)
+                _c.drawString(72, 720, f"{title} — ReportLab not installed on this server.")
+                _c.drawString(72, 700, "Please install reportlab: pip install reportlab")
+                _c.save()
+                _buf.seek(0)
+                return _buf.getvalue()
+            except Exception:
+                pass
             output = f"--- {title} ---\n\n" + json.dumps(data, indent=4, default=str)
             return output.encode('utf-8')
 
+        try:
+            return ExportGenerator._build_pdf(data, title, report_type)
+        except Exception as e:
+            # If PDF generation crashes, return a valid PDF with an error message
+            # so the file always opens in Adobe instead of showing "Failed to open"
+            import traceback
+            err_buf = io.BytesIO()
+            doc = SimpleDocTemplate(err_buf, pagesize=letter)
+            styles = getSampleStyleSheet()
+            error_text = traceback.format_exc()
+            elements = [
+                Paragraph("Report Generation Error", styles['Heading1']),
+                Spacer(1, 0.2 * inch),
+                Paragraph(f"An error occurred while generating the report: {str(e)}", styles['Normal']),
+                Spacer(1, 0.1 * inch),
+                Paragraph("Technical Details:", styles['Heading3']),
+                Paragraph(error_text.replace('\n', '<br/>').replace(' ', '&nbsp;'), styles['Code']),
+            ]
+            doc.build(elements)
+            err_buf.seek(0)
+            return err_buf.getvalue()
+
+    @staticmethod
+    def _build_pdf(data, title, report_type="System Report"):
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
         styles = getSampleStyleSheet()
@@ -172,13 +253,16 @@ class ExportGenerator:
         
         # Pie chart using real cases_by_type from database
         cases_by_type = data.get('cases_by_type', [])
-        if cases_by_type:
-            chart_data = {c['case_type']: c['count'] for c in cases_by_type if c.get('count', 0) > 0}
-            if chart_data:
-                pie_buf = ChartGenerator.generate_pie_chart(chart_data, "Case Distribution by Category")
-                if pie_buf:
-                    elements.append(Spacer(1, 0.2 * inch))
-                    elements.append(Image(pie_buf, width=4*inch, height=3*inch))
+        if cases_by_type and CHARTS_AVAILABLE:
+            try:
+                chart_data = {c['case_type']: c['count'] for c in cases_by_type if c.get('count', 0) > 0}
+                if chart_data:
+                    pie_buf = ChartGenerator.generate_pie_chart(chart_data, "Case Distribution by Category")
+                    if pie_buf:
+                        elements.append(Spacer(1, 0.2 * inch))
+                        elements.append(Image(pie_buf, width=4*inch, height=3*inch))
+            except Exception:
+                pass  # Chart failure is non-fatal; PDF continues without it
         elements.append(Spacer(1, 0.2 * inch))
 
         # 4. PARTICIPANT PROFILE (Demographics)
@@ -280,15 +364,18 @@ class ExportGenerator:
             trend_p = Paragraph(f"- Trend Analysis: Revenue {trend_word} by {abs(pct):.1f}% compared to the previous month.", body_style)
             elements.append(trend_p)
             
-        if rev_month:
-            # Use real month labels and revenue values from the database
-            labels = [str(m.get('month', '')) for m in rev_month[-6:]]
-            values = [float(m.get('revenue', 0) or 0) for m in rev_month[-6:]]
-            if any(v > 0 for v in values):
-                bar_buf = ChartGenerator.generate_bar_chart(labels, values, "Monthly Revenue (ETB)")
-                if bar_buf:
-                    elements.append(Spacer(1, 0.1 * inch))
-                    elements.append(Image(bar_buf, width=5*inch, height=2.5*inch))
+        if rev_month and CHARTS_AVAILABLE:
+            try:
+                # Use real month labels and revenue values from the database
+                labels = [str(m.get('month', '')) for m in rev_month[-6:]]
+                values = [float(m.get('revenue', 0) or 0) for m in rev_month[-6:]]
+                if any(v > 0 for v in values):
+                    bar_buf = ChartGenerator.generate_bar_chart(labels, values, "Monthly Revenue (ETB)")
+                    if bar_buf:
+                        elements.append(Spacer(1, 0.1 * inch))
+                        elements.append(Image(bar_buf, width=5*inch, height=2.5*inch))
+            except Exception:
+                pass  # Chart failure is non-fatal; PDF continues without it
                 
         elements.append(Spacer(1, 0.2 * inch))
 
@@ -371,3 +458,4 @@ class ExportGenerator:
         doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
         buffer.seek(0)
         return buffer.getvalue()
+

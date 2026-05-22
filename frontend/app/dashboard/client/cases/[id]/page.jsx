@@ -219,14 +219,27 @@ export default function ClientCaseDetailPage() {
    <span className="text-[10px] font-black text-[#4A5568] uppercase opacity-100">{doc.document_type}</span>
    </div>
   </div>
+  <div className="flex gap-2">
+  <Button
+    size="sm"
+    variant="outline"
+    className="rounded-xl shadow-sm text-xs bg-primary/5 text-primary hover:bg-primary/10 border-primary/20"
+    onClick={() => {
+        const url = doc.latest_version?.file_url || doc.file;
+        if (url) window.open(url, '_blank');
+    }}
+  >
+    View
+  </Button>
   <Button 
     size="sm" 
-    variant="ghost" 
-    className="h-9 px-3 font-bold text-xs hover:text-primary"
+    variant="secondary" 
+    className="rounded-xl shadow-sm text-xs"
     onClick={() => doc.latest_version?.file_url ? downloadDocument(doc.latest_version.file_url, doc.description || doc.document_type) : window.open(doc.file, '_blank')}
   >
   <Download className="h-4 w-4 mr-2" /> Download
   </Button>
+  </div>
   </div>
    <div className="flex items-center justify-between px-2 text-[10px] font-black uppercase tracking-widest text-[#2D3748] opacity-100">
      <div className="flex items-center gap-2">
@@ -387,14 +400,16 @@ export default function ClientCaseDetailPage() {
         </div>
       </div>
       {d.pdf_document && (
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="h-9 px-4 font-bold text-xs border-primary/20 hover:bg-primary/10"
-          onClick={() => downloadDocument(d.pdf_document, `Judgment_${caseData.file_number}`)}
-        >
-          <Download className="h-4 w-4 mr-2" /> Download PDF
-        </Button>
+          <div className="flex gap-2 w-full max-w-[250px]">
+            <Button size="sm" variant="outline" className="flex-1 justify-center rounded-xl shadow-sm text-xs bg-primary/5 text-primary hover:bg-primary/10 border-primary/20"
+              onClick={() => { if(d.pdf_document) window.open(d.pdf_document, '_blank'); }}>
+              View
+            </Button>
+            <Button size="sm" variant="outline" className="flex-1 justify-center rounded-xl shadow-sm text-xs border-primary/20 hover:bg-primary/5 text-[#2D3748] font-bold"
+              onClick={() => downloadDocument(d.pdf_document, `Judgment_${caseData.file_number}`)}>
+              <Download className="h-4 w-4 mr-2" /> Download
+            </Button>
+          </div>
       )}
     </div>
   </div>

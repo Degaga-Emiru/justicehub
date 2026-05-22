@@ -17,6 +17,16 @@ class CitizenRegistrationSerializer(serializers.ModelSerializer):
             'address_region', 'address_city', 'address_subcity', 'address_kebele'
         ]
     
+    def validate_email(self, value):
+        if User.all_objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def validate_phone_number(self, value):
+        if User.all_objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError("A user with this phone number already exists.")
+        return value
+
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"password": "Passwords do not match"})
@@ -60,6 +70,16 @@ class AdminCreateUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['first_name', 'last_name', 'email', 'phone_number', 'role', 'specialization_ids']
     
+    def validate_email(self, value):
+        if User.all_objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def validate_phone_number(self, value):
+        if User.all_objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError("A user with this phone number already exists.")
+        return value
+
     def validate_role(self, value):
         if value == 'CITIZEN':
             raise serializers.ValidationError("Citizens can self-register. Use citizen registration endpoint.")
@@ -385,8 +405,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         ]
         
     def validate_phone_number(self, value):
-        # Check if phone number already exists
-        if User.objects.exclude(pk=self.instance.pk).filter(phone_number=value).exists():
+        # Check if phone number already exists including soft-deleted ones
+        if User.all_objects.exclude(pk=self.instance.pk).filter(phone_number=value).exists():
             raise serializers.ValidationError("This phone number is already in use.")
         return value
 

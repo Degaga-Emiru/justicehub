@@ -159,7 +159,7 @@ export default function ReportsPage() {
  setExportEndDate(end.toISOString().split('T')[0]);
  };
 
- const handleDownload = (format, type) => {
+ const handleAction = (action, format, type) => {
  let effectiveStartDate = exportStartDate;
  let effectiveEndDate = exportEndDate;
 
@@ -210,10 +210,16 @@ export default function ReportsPage() {
    const a = document.createElement('a');
    a.style.display = 'none';
    a.href = tempUrl;
-   a.download = `justicehub_${type}_report${ext}`;
-   document.body.appendChild(a);
-   a.click();
-   document.body.removeChild(a);
+   
+   if (action === 'view') {
+       window.open(tempUrl, '_blank');
+   } else {
+       a.download = `justicehub_${type}_report${ext}`;
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+   }
+   
    // Delay revoke to ensure download starts
    setTimeout(() => window.URL.revokeObjectURL(tempUrl), 2000);
 
@@ -1131,12 +1137,22 @@ export default function ReportsPage() {
  <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Formatted PDF optimized for printing and presentations.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleDownload('pdf', 'system')} disabled={isDownloading}>
- {isDownloading && downloadFormat === 'pdf' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System PDF</>}
+ <div className="flex gap-2 w-full mt-auto">
+ <Button className="flex-1 rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleAction('download', 'pdf', 'system')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'pdf' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> ...</> : <><Download className="mr-1 h-3 w-3" /> System</>}
  </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleDownload('pdf', 'analytics')} disabled={isDownloading}>
- {isDownloading && downloadFormat === 'pdf' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics PDF</>}
+ <Button className="flex-1 rounded-xl font-bold text-xs uppercase tracking-widest bg-rose-500/10 text-rose-600 hover:bg-rose-500/20" variant="ghost" onClick={() => handleAction('view', 'pdf', 'system')} disabled={isDownloading}>
+ View
  </Button>
+ </div>
+ <div className="flex gap-2 w-full">
+ <Button className="flex-1 rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleAction('download', 'pdf', 'analytics')} disabled={isDownloading}>
+ {isDownloading && downloadFormat === 'pdf' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> ...</> : <><Download className="mr-1 h-3 w-3" /> Analytics</>}
+ </Button>
+ <Button className="flex-1 rounded-xl font-bold text-xs uppercase tracking-widest bg-rose-500/10 text-rose-600 hover:bg-rose-500/20" variant="ghost" onClick={() => handleAction('view', 'pdf', 'analytics')} disabled={isDownloading}>
+ View
+ </Button>
+ </div>
  </div>
  </div>
 
@@ -1149,10 +1165,10 @@ export default function ReportsPage() {
  <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Multi-sheet dataset for financial deep-dive analysis.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleDownload('excel', 'system')} disabled={isDownloading}>
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleAction('download', 'excel', 'system')} disabled={isDownloading}>
  {isDownloading && downloadFormat === 'excel' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System XLSX</>}
  </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleDownload('excel', 'analytics')} disabled={isDownloading}>
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleAction('download', 'excel', 'analytics')} disabled={isDownloading}>
  {isDownloading && downloadFormat === 'excel' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics XLSX</>}
  </Button>
  </div>
@@ -1167,10 +1183,10 @@ export default function ReportsPage() {
  <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Flattened matrix for database ingestion and ML pipelines.</p>
  
  <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleDownload('csv', 'system')} disabled={isDownloading}>
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleAction('download', 'csv', 'system')} disabled={isDownloading}>
  {isDownloading && downloadFormat === 'csv' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System CSV</>}
  </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleDownload('csv', 'analytics')} disabled={isDownloading}>
+ <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleAction('download', 'csv', 'analytics')} disabled={isDownloading}>
  {isDownloading && downloadFormat === 'csv' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics CSV</>}
  </Button>
  </div>

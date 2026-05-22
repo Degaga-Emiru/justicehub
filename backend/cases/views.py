@@ -1142,7 +1142,7 @@ class CaseTimelineView(generics.RetrieveAPIView):
                 'date': doc.uploaded_at,
                 'event_type': 'DOCUMENT_UPLOADED',
                 'title': 'Document Uploaded',
-                'description': f'{doc.file_name} uploaded',
+                'description': f'{doc.get_document_type_display()} uploaded',
                 'user': doc.uploaded_by.get_full_name(),
                 'icon': 'file'
             })
