@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchDefendantCases, fetchDefendantDocuments, downloadDocument } from "@/lib/api";
+import { fetchDefendantCases, fetchDefendantDocuments, downloadDefendantDocumentVersion, viewDefendantDocumentVersion } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FolderOpen, FileText, Download, Loader2, Search, Filter, ArrowRight, ExternalLink, Scale, Gavel, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function DefendantDocumentsPage() {
  const [selectedCaseId, setSelectedCaseId] = useState(null);
@@ -171,13 +172,17 @@ export default function DefendantDocumentsPage() {
                                     </div>
                                   </div>
                                   <div className="flex gap-2 w-full md:w-auto">
-                                    {doc.latest_version?.file_url ? (
+                                    {doc.latest_version?.id ? (
                                       <>
                                         <Button 
                                           variant="ghost" 
                                           size="sm" 
                                           className="rounded-xl hover:bg-primary/10 hover:text-primary text-xs font-bold px-4"
-                                          onClick={() => window.open(doc.latest_version.file_url, '_blank')}
+                                          onClick={async () => {
+                                            try {
+                                              await viewDefendantDocumentVersion(doc.latest_version.id);
+                                            } catch { toast.error("Failed to view document"); }
+                                          }}
                                         >
                                           <ExternalLink className="h-3.5 w-3.5 mr-2" /> View
                                         </Button>
@@ -185,7 +190,12 @@ export default function DefendantDocumentsPage() {
                                           variant="ghost" 
                                           size="sm" 
                                           className="rounded-xl hover:bg-primary/10 hover:text-primary text-xs font-bold px-4"
-                                          onClick={() => downloadDocument(doc.latest_version.file_url, doc.description || "legal_document")}
+                                          onClick={async () => {
+                                            try {
+                                              await downloadDefendantDocumentVersion(doc.latest_version.id, doc.description || 'document');
+                                              toast.success("Download started");
+                                            } catch { toast.error("Failed to download document"); }
+                                          }}
                                         >
                                           <Download className="h-3.5 w-3.5 mr-2" /> Download
                                         </Button>

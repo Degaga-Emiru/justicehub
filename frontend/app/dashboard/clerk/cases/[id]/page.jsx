@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   ArrowLeft, FileText, Download, User, Calendar, Scale, 
-  Loader2, UserPlus, Mail, Phone, CheckCircle, XCircle 
+  Loader2, UserPlus, Mail, Phone, CheckCircle, XCircle, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { reviewCase } from "@/lib/api";
@@ -306,11 +306,18 @@ export default function ClerkCaseDetailPage() {
  </Badge>
  )}
  {fileUrl ? (
- <Button variant="outline" size="sm" asChild className="rounded-xl border-border hover:bg-primary/10 hover:text-primary transition-all">
+ <>
+ <Button variant="ghost" size="sm" asChild className="h-9 px-3 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 font-bold text-xs">
  <a href={fileUrl} target="_blank" rel="noopener noreferrer">
- <Download className="h-4 w-4 mr-2" /> View
+ <ExternalLink className="h-4 w-4 mr-1" /> View
  </a>
  </Button>
+ <Button variant="ghost" size="sm" asChild className="h-9 px-3 rounded-lg text-primary hover:bg-primary/10 font-bold text-xs">
+ <a href={fileUrl} download target="_blank" rel="noopener noreferrer">
+ <Download className="h-4 w-4 mr-2" /> Download
+ </a>
+ </Button>
+ </>
  ) : (
  <Button variant="outline" size="sm" disabled className="rounded-xl">
  No File

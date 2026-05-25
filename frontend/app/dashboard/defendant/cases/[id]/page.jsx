@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchDefendantCaseById, fetchCaseTimeline, updateCaseStatus, fetchDefendantDocuments, submitDefendantResponse, downloadDocument } from "@/lib/api";
+import { fetchDefendantCaseById, fetchCaseTimeline, updateCaseStatus, fetchDefendantDocuments, submitDefendantResponse, downloadDocument, viewDefendantDocumentVersion, downloadDefendantDocumentVersion } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -428,14 +428,24 @@ export default function DefendantCaseDetailPage() {
         </div>
       </div>
       {d.pdf_document && (
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="h-9 px-4 font-bold text-xs border-primary/20 hover:bg-primary/10"
-          onClick={() => downloadDocument(d.pdf_document, `Judgment_${caseData.file_number}`)}
-        >
-          <Download className="h-4 w-4 mr-2" /> Download PDF
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-4 font-bold text-xs border-primary/20 hover:bg-primary/10"
+            onClick={() => window.open(d.pdf_document, '_blank')}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" /> View
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 px-4 font-bold text-xs border-primary/20 hover:bg-primary/10"
+            onClick={() => downloadDocument(d.pdf_document, `Judgment_${caseData.file_number}`)}
+          >
+            <Download className="h-4 w-4 mr-2" /> Download PDF
+          </Button>
+        </div>
       )}
     </div>
     </div>
@@ -500,7 +510,11 @@ export default function DefendantCaseDetailPage() {
   variant="ghost" 
   size="icon" 
   className="h-8 w-8 text-slate-400 hover:text-white hover:bg-muted/50"
-  onClick={() => window.open(doc.latest_version.file_url, '_blank')}
+  onClick={async () => {
+    try {
+      await viewDefendantDocumentVersion(doc.latest_version.id);
+    } catch { toast.error("Failed to view document"); }
+  }}
   title="View"
   >
   <ExternalLink className="h-4 w-4" />
@@ -509,7 +523,11 @@ export default function DefendantCaseDetailPage() {
   variant="ghost" 
   size="icon" 
   className="h-8 w-8 text-primary hover:bg-primary/10"
-  onClick={() => downloadDocument(doc.latest_version.file_url, doc.description || "legal_document")}
+  onClick={async () => {
+    try {
+      await downloadDefendantDocumentVersion(doc.latest_version.id, doc.description || 'document');
+    } catch { toast.error("Failed to download document"); }
+  }}
   title="Download"
   >
   <Download className="h-4 w-4" />

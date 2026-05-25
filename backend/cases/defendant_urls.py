@@ -9,4 +9,5 @@ router.register(r'cases', DefendantCaseViewSet, basename='defendant-case')
 urlpatterns = [
     path('', include(router.urls)),
     path('hearings/', DefendantHearingView.as_view(), name='defendant-hearings'),
+    path('documents/versions/<uuid:version_id>/download/', DefendantCaseViewSet.as_view({'get': 'download_version'}), name='defendant-version-download'),
 ]

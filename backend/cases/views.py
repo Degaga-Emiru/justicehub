@@ -743,7 +743,10 @@ class CitizenDocumentViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'], url_path='versions/(?P<version_id>[^/.]+)/download')
     def download_version(self, request, version_id=None):
-        """Download a specific version"""
+        """Download a specific version - supports both local and Cloudinary storage"""
+        import os
+        from django.http import FileResponse
+
         version = get_object_or_404(CaseDocumentVersion, id=version_id)
         
         # Check permissions
@@ -761,11 +764,9 @@ class CitizenDocumentViewSet(viewsets.ViewSet):
         
         if not is_authorized:
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            
-        from django.http import FileResponse
         
         # Log Document Download
-        from audit_logs.utils import create_audit_log
+        from audit_logs.services import create_audit_log
         from audit_logs.models import AuditLog
         create_audit_log(
             request=request,
@@ -774,8 +775,48 @@ class CitizenDocumentViewSet(viewsets.ViewSet):
             description=f"User {user.get_full_name()} downloaded {document.get_document_type_display()} (v{version.version_number})",
             entity_name=version.file_name
         )
+
+        # Use just the base filename for Content-Disposition (no path separators)
+        clean_filename = os.path.basename(version.file_name) if version.file_name else 'document'
         
-        return FileResponse(version.file.open('rb'), as_attachment=True, filename=version.file_name)
+        action = request.query_params.get('action', 'download')
+        is_attachment = action == 'download'
+
+        # Check if remote storage (e.g., Cloudinary)
+        is_remote = False
+        try:
+            if hasattr(version.file, 'url') and version.file.url.startswith('http'):
+                is_remote = True
+        except Exception:
+            pass
+
+        if not is_remote:
+            try:
+                file_obj = version.file.open('rb')
+                return FileResponse(file_obj, as_attachment=is_attachment, filename=clean_filename)
+            except Exception:
+                pass
+        else:
+            # Fallback: return the cloud storage URL (Cloudinary, S3, etc.)
+            try:
+                file_url = version.file.url
+                if is_attachment and 'cloudinary.com' in file_url:
+                    parts = file_url.split('/upload/')
+                    if len(parts) == 2:
+                        file_url = f"{parts[0]}/upload/fl_attachment/{parts[1]}"
+                        
+                return Response({
+                    "redirect_url": file_url,
+                    "filename": clean_filename,
+                    "message": "File is hosted on cloud storage. Use the redirect_url to access it."
+                }, status=status.HTTP_200_OK)
+            except Exception:
+                pass
+
+        return Response(
+            {"error": "File not found", "details": "The document file could not be located. It may have been removed or is unavailable."},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
     def destroy(self, request, pk=None):
         """Soft delete document"""
@@ -836,7 +877,7 @@ class JudgeDocumentViewSet(viewsets.ViewSet):
         version.save()
         
         # Log Document Approved
-        from audit_logs.utils import create_audit_log
+        from audit_logs.services import create_audit_log
         from audit_logs.models import AuditLog
         create_audit_log(
             request=request,
@@ -865,7 +906,7 @@ class JudgeDocumentViewSet(viewsets.ViewSet):
         version.save()
         
         # Log Document Rejected
-        from audit_logs.utils import create_audit_log
+        from audit_logs.services import create_audit_log
         from audit_logs.models import AuditLog
         create_audit_log(
             request=request,
@@ -893,7 +934,7 @@ class JudgeDocumentViewSet(viewsets.ViewSet):
         version_to_restore.save()
         
         # Log Version Restored
-        from audit_logs.utils import create_audit_log
+        from audit_logs.services import create_audit_log
         from audit_logs.models import AuditLog
         create_audit_log(
             request=request,

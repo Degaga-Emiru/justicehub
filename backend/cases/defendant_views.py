@@ -202,6 +202,61 @@ class DefendantCaseViewSet(viewsets.ReadOnlyModelViewSet):
         
         return Response({"message": "Case receipt acknowledged successfully."})
 
+    @action(detail=False, methods=['get'], url_path='versions/(?P<version_id>[^/.]+)/download')
+    def download_version(self, request, version_id=None):
+        """Download/stream a specific document version for defendants"""
+        import os
+        from django.http import FileResponse
+
+        version = get_object_or_404(CaseDocumentVersion, id=version_id)
+        document = version.document
+        case = document.case
+
+        if case.defendant != request.user and document.uploaded_by != request.user:
+            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Use just the base filename for Content-Disposition (no path separators)
+        clean_filename = os.path.basename(version.file_name) if version.file_name else 'document'
+
+        action = request.query_params.get('action', 'download')
+        is_attachment = action == 'download'
+
+        # Check if remote storage (e.g., Cloudinary)
+        is_remote = False
+        try:
+            if hasattr(version.file, 'url') and version.file.url.startswith('http'):
+                is_remote = True
+        except Exception:
+            pass
+
+        if not is_remote:
+            try:
+                # Works for local filesystem storage
+                file_obj = version.file.open('rb')
+                return FileResponse(file_obj, as_attachment=is_attachment, filename=clean_filename)
+            except Exception:
+                pass
+        else:
+            # Return JSON with redirect_url so the frontend can handle view vs download
+            try:
+                file_url = version.file.url
+                if is_attachment and 'cloudinary.com' in file_url:
+                    parts = file_url.split('/upload/')
+                    if len(parts) == 2:
+                        file_url = f"{parts[0]}/upload/fl_attachment/{parts[1]}"
+                return Response({
+                    "redirect_url": file_url,
+                    "filename": clean_filename,
+                    "message": "File is hosted on cloud storage. Use the redirect_url to access it."
+                }, status=status.HTTP_200_OK)
+            except Exception:
+                pass
+
+        return Response(
+            {"error": "File not found", "details": "The document file could not be located. It may have been removed or is unavailable."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
     @action(detail=True, methods=['get'])
     def actions(self, request, pk=None):
         """List all requested actions for this case"""

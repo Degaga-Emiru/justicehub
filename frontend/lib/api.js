@@ -1309,22 +1309,6 @@ export async function createImmediateDecision(caseId, data) {
 // JUDGE DOCUMENT & DECISION EXTENDED APIs
 // ======================================
 
-export async function downloadJudgeDocument(documentId) {
-    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-    const res = await fetch(`${getApiUrl()}/judge/documents/${documentId}/download`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
-    if (!res.ok) throw new Error("Failed to download document");
-    const blob = await res.blob();
-    const contentDisp = res.headers.get("content-disposition");
-    const match = contentDisp && contentDisp.match(/filename="?(.+?)"?$/);
-    const filename = match ? match[1] : `document_${documentId}`;
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    window.URL.revokeObjectURL(url);
-}
-
 export async function downloadDocument(fileUrl, filename = "document") {
     try {
         const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
@@ -1522,18 +1506,216 @@ export async function uploadCitizenDocument(caseId, data) {
 
 export async function fetchCitizenCaseDocuments(caseId) {
     const res = await apiRequest(`${getApiUrl()}/cases/citizen/cases/${caseId}/documents/`);
-    if (!res.ok) return [];
-    return await res.json();
+    if (!res.ok) {
+        console.error('fetchCitizenCaseDocuments error:', res.status, await res.text());
+        return [];
+    }
+    const data = await res.json();
+    console.log('fetchCitizenCaseDocuments response:', data);
+    return data;
 }
 
-export async function downloadCitizenDocumentVersion(versionId) {
+/**
+ * Unified document fetch helper.
+ * Returns { blob, mimeType, filename } for local files, or { redirectUrl, filename } for cloud storage.
+ */
+async function _fetchDocumentVersion(url) {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     const headers = token ? { "Authorization": `Bearer ${token}` } : {};
-    const res = await fetch(`${getApiUrl()}/cases/citizen/documents/versions/${versionId}/download/`, { headers });
-    if (!res.ok) {
-        throw new Error("Failed to download document");
+    let res;
+    try {
+        // use apiRequest which includes automatic token refresh on 401
+        res = await apiRequest(url, { headers });
+    } catch (err) {
+        console.error('Document fetch network error:', err);
+        throw new Error('Failed to access document');
     }
-    return res;
+
+    if (!res.ok) {
+        const errorText = await res.text().catch(() => res.statusText || '');
+        console.error('Document fetch error:', res.status, errorText);
+        if (res.status === 401) {
+            // clear tokens and redirect to login if possible
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                window.location.href = '/auth/login?expired=true';
+            }
+            throw new Error('Unauthorized. Please login again.');
+        }
+        if (res.status === 403) throw new Error('Permission denied to access document');
+        throw new Error('Failed to access document');
+    }
+    const contentType = res.headers.get('content-type') || '';
+    // If backend returned JSON (Cloudinary redirect_url case)
+    if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.redirect_url) {
+            return { redirectUrl: data.redirect_url, filename: data.filename || 'document' };
+        }
+        throw new Error(data.error || data.detail || 'Failed to access document');
+    }
+    // Local file blob — preserve MIME type so browser can render inline
+    const rawBlob = await res.blob();
+    const mimeType = contentType.split(';')[0].trim() || rawBlob.type || 'application/octet-stream';
+    const blob = new Blob([rawBlob], { type: mimeType });
+    // Try to extract filename from Content-Disposition
+    const contentDisp = res.headers.get('content-disposition');
+    const match = contentDisp && contentDisp.match(/filename[^;=\n]*=(['"]?)([^;\n]*)\1/);
+    const filename = match ? match[2].trim() : 'document';
+    return { blob, mimeType, filename };
+}
+
+/** View a citizen document version in a new browser tab (no download) */
+export async function viewCitizenDocumentVersion(versionId) {
+    // Open the tab FIRST (synchronously) to bypass popup blockers
+    const newTab = window.open('', '_blank');
+    try {
+        const url = `${getApiUrl()}/cases/citizen/documents/versions/${versionId}/download/?action=view`;
+        const result = await _fetchDocumentVersion(url);
+        if (result.redirectUrl) {
+            if (newTab) newTab.location.href = result.redirectUrl;
+            else window.open(result.redirectUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        // Create object URL with correct MIME type so browser renders inline
+        const objectUrl = window.URL.createObjectURL(result.blob);
+        if (newTab) {
+            newTab.location.href = objectUrl;
+        } else {
+            window.open(objectUrl, '_blank', 'noopener,noreferrer');
+        }
+        // Revoke after a delay to let the tab fully load
+        setTimeout(() => window.URL.revokeObjectURL(objectUrl), 30000);
+    } catch (e) {
+        if (newTab) newTab.close();
+        throw e;
+    }
+}
+
+/** Download a citizen document version to disk */
+export async function downloadCitizenDocumentVersion(versionId, suggestedFilename) {
+    const url = `${getApiUrl()}/cases/citizen/documents/versions/${versionId}/download/?action=download`;
+    const result = await _fetchDocumentVersion(url);
+    const filename = suggestedFilename || result.filename || 'document';
+    if (result.redirectUrl) {
+        const a = document.createElement('a');
+        a.href = result.redirectUrl;
+        a.download = filename;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+    }
+    const objectUrl = window.URL.createObjectURL(result.blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(objectUrl);
+}
+
+/** View a defendant document version in a new browser tab (no download) */
+export async function viewDefendantDocumentVersion(versionId) {
+    // Open the tab FIRST (synchronously) to bypass popup blockers
+    const newTab = window.open('', '_blank');
+    try {
+        const url = `${getApiUrl()}/defendant/documents/versions/${versionId}/download/?action=view`;
+        const result = await _fetchDocumentVersion(url);
+        if (result.redirectUrl) {
+            if (newTab) newTab.location.href = result.redirectUrl;
+            else window.open(result.redirectUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        const objectUrl = window.URL.createObjectURL(result.blob);
+        if (newTab) {
+            newTab.location.href = objectUrl;
+        } else {
+            window.open(objectUrl, '_blank', 'noopener,noreferrer');
+        }
+        setTimeout(() => window.URL.revokeObjectURL(objectUrl), 30000);
+    } catch (e) {
+        if (newTab) newTab.close();
+        throw e;
+    }
+}
+
+/** Download a defendant document version to disk */
+export async function downloadDefendantDocumentVersion(versionId, suggestedFilename) {
+    const url = `${getApiUrl()}/defendant/documents/versions/${versionId}/download/?action=download`;
+    const result = await _fetchDocumentVersion(url);
+    const filename = suggestedFilename || result.filename || 'document';
+    if (result.redirectUrl) {
+        const a = document.createElement('a');
+        a.href = result.redirectUrl;
+        a.download = filename;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+    }
+    const objectUrl = window.URL.createObjectURL(result.blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(objectUrl);
+}
+
+/** View a judge document in a new browser tab (no download) */
+export async function viewJudgeDocument(documentId) {
+    // Open the tab FIRST (synchronously) to bypass popup blockers
+    const newTab = window.open('', '_blank');
+    try {
+        const url = `${getApiUrl()}/judge/documents/${documentId}/download/?action=view`;
+        const result = await _fetchDocumentVersion(url);
+        if (result.redirectUrl) {
+            if (newTab) newTab.location.href = result.redirectUrl;
+            else window.open(result.redirectUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        const objectUrl = window.URL.createObjectURL(result.blob);
+        if (newTab) {
+            newTab.location.href = objectUrl;
+        } else {
+            window.open(objectUrl, '_blank', 'noopener,noreferrer');
+        }
+        setTimeout(() => window.URL.revokeObjectURL(objectUrl), 30000);
+    } catch (e) {
+        if (newTab) newTab.close();
+        throw e;
+    }
+}
+
+/** Download a judge document to disk */
+export async function downloadJudgeDocument(documentId, suggestedFilename) {
+    const url = `${getApiUrl()}/judge/documents/${documentId}/download/?action=download`;
+    const result = await _fetchDocumentVersion(url);
+    const filename = suggestedFilename || result.filename || 'document';
+    if (result.redirectUrl) {
+        const a = document.createElement('a');
+        a.href = result.redirectUrl;
+        a.download = filename;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+    }
+    const objectUrl = window.URL.createObjectURL(result.blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(objectUrl);
 }
 
 export async function deleteCitizenDocument(docId) {

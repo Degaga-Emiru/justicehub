@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchCaseById, updateCaseStatus, fetchCaseTimeline, downloadJudgeDocument } from "@/lib/api";
+import { fetchCaseById, updateCaseStatus, fetchCaseTimeline, downloadJudgeDocument, viewJudgeDocument } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, FileText, Download, User, Calendar, Scale, Loader2, Play, Gavel, Clock, MapPin, History, CheckCircle, Shield } from "lucide-react";
+import { ArrowLeft, FileText, Download, ExternalLink, User, Calendar, Scale, Loader2, Play, Gavel, Clock, MapPin, History, CheckCircle, Shield } from "lucide-react";
+
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { statusColors, priorityColors } from "@/lib/mock-data";
@@ -107,7 +108,7 @@ export default function JudgeCaseDetailPage() {
  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 px-2 border-primary/30 text-primary">
  Judicial Record
  </Badge>
- <CardTitle className="text-3xl font-black font-display tracking-tight text-white leading-tight">
+ <CardTitle className="text-3xl font-black font-display tracking-tight leading-tight text-foreground">
  {caseData.title}
  </CardTitle>
  <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground mt-2">
@@ -179,6 +180,15 @@ export default function JudgeCaseDetailPage() {
  <p className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{doc.document_type}</p>
  </div>
  </div>
+ <div className="flex items-center gap-2">
+ <Button 
+ variant="ghost" 
+ size="sm" 
+ className="h-9 px-3 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 font-bold text-xs"
+ onClick={() => viewJudgeDocument(docId).catch(err => toast.error(err.message))}
+ >
+ <ExternalLink className="h-4 w-4 mr-1" /> View
+ </Button>
  <Button 
  variant="ghost" 
  size="sm" 
@@ -187,6 +197,7 @@ export default function JudgeCaseDetailPage() {
  >
  <Download className="h-4 w-4 mr-2" /> Download
  </Button>
+ </div>
  </div>
  );
  })}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchCaseById, fetchCaseTimeline, initiatePayment, submitPayment, downloadDocument } from "@/lib/api";
+import { fetchCaseById, fetchCaseTimeline, initiatePayment, submitPayment, downloadDocument, viewCitizenDocumentVersion, downloadCitizenDocumentVersion } from "@/lib/api";
 import { useAuthStore } from "@/store/auth-store";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -224,9 +224,12 @@ export default function ClientCaseDetailPage() {
     size="sm"
     variant="outline"
     className="rounded-xl shadow-sm text-xs bg-primary/5 text-primary hover:bg-primary/10 border-primary/20"
-    onClick={() => {
-        const url = doc.latest_version?.file_url || doc.file;
-        if (url) window.open(url, '_blank');
+    onClick={async () => {
+        try {
+          const versionId = doc.latest_version?.id;
+          if (!versionId) { toast?.error?.("No file attached"); return; }
+          await viewCitizenDocumentVersion(versionId);
+        } catch (err) { console.error(err); }
     }}
   >
     View
@@ -235,7 +238,13 @@ export default function ClientCaseDetailPage() {
     size="sm" 
     variant="secondary" 
     className="rounded-xl shadow-sm text-xs"
-    onClick={() => doc.latest_version?.file_url ? downloadDocument(doc.latest_version.file_url, doc.description || doc.document_type) : window.open(doc.file, '_blank')}
+    onClick={async () => {
+        try {
+          const versionId = doc.latest_version?.id;
+          if (!versionId) return;
+          await downloadCitizenDocumentVersion(versionId, doc.description || doc.document_type || 'document');
+        } catch (err) { console.error(err); }
+    }}
   >
   <Download className="h-4 w-4 mr-2" /> Download
   </Button>

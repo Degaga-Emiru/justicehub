@@ -138,6 +138,7 @@ class JudgeDocumentDownloadView(APIView):
     """
     Download Case Document
     GET /api/judge/documents/{document_id}/download
+    Supports both local filesystem and cloud storage (Cloudinary, S3, etc.)
     """
     permission_classes = [permissions.IsAuthenticated, IsJudge]
 
@@ -164,8 +165,46 @@ class JudgeDocumentDownloadView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            file_path = active_version.file.path
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=active_version.file_name)
+            clean_filename = os.path.basename(active_version.file_name) if active_version.file_name else 'document'
+            
+            action = request.query_params.get('action', 'download')
+            is_attachment = action == 'download'
+
+            # Check if remote storage (e.g., Cloudinary)
+            is_remote = False
+            try:
+                if hasattr(active_version.file, 'url') and active_version.file.url.startswith('http'):
+                    is_remote = True
+            except Exception:
+                pass
+
+            if not is_remote:
+                try:
+                    file_obj = active_version.file.open('rb')
+                    return FileResponse(file_obj, as_attachment=is_attachment, filename=clean_filename)
+                except Exception:
+                    pass
+            else:
+                # Fallback: return cloud storage URL (Cloudinary, S3, etc.)
+                try:
+                    file_url = active_version.file.url
+                    if is_attachment and 'cloudinary.com' in file_url:
+                        parts = file_url.split('/upload/')
+                        if len(parts) == 2:
+                            file_url = f"{parts[0]}/upload/fl_attachment/{parts[1]}"
+                            
+                    return response.Response({
+                        "redirect_url": file_url,
+                        "filename": clean_filename,
+                        "message": "File is hosted on cloud storage. Use the redirect_url to access it."
+                    }, status=status.HTTP_200_OK)
+                except Exception:
+                    pass
+
+            return response.Response(
+                {"detail": "File could not be located on local or cloud storage."},
+                status=status.HTTP_404_NOT_FOUND
+            )
             
         except CaseDocument.DoesNotExist:
             return response.Response(
