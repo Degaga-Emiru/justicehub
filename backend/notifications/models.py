@@ -78,7 +78,7 @@ class NotificationPreference(models.Model):
     # Channels
     email_notifications = models.BooleanField(default=True)
     push_notifications = models.BooleanField(default=True)
-    sms_notifications = models.BooleanField(default=False)
+    sms_notifications = models.BooleanField(default=True)
     
     # Types to receive
     case_updates = models.BooleanField(default=True)

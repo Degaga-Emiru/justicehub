@@ -66,14 +66,6 @@ export default function ClosedCaseAnalyticsPage() {
           </div>
           <p className="text-[#4A5568] font-bold pl-13 opacity-100">Operational insights and system efficiency metrics.</p>
         </div>
-        <Button 
-          className="rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold h-12 px-6 shadow-xl shadow-primary/20"
-          asChild
-        >
-          <a href="http://127.0.0.1:8000/api/cases/export/csv/" download>
-            <Download className="mr-2 h-4 w-4" /> Export Report
-          </a>
-        </Button>
       </div>
 
       {/* KPI Cards */}

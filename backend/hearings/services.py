@@ -3,6 +3,7 @@ from django.conf import settings
 from .models import Hearing, HearingReminder
 from notifications.services import create_notification
 from core.utils.email import send_email_template
+from core.utils.sms import send_sms
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,6 +23,19 @@ def send_hearing_reminders():
     for reminder in reminders:
         try:
             send_hearing_reminder_email(reminder)
+            
+            # Send SMS as well if user has a phone number
+            if reminder.user.phone_number:
+                hours_until = (reminder.hearing.scheduled_date - timezone.now()).total_seconds() / 3600
+                if hours_until <= 0.6: interval_text = "in 30 mins"
+                elif hours_until <= 1.5: interval_text = "in 1 hr"
+                elif hours_until <= 25: interval_text = "tomorrow"
+                elif hours_until <= 49: interval_text = "in 2 days"
+                else: interval_text = "soon"
+                
+                sms_message = f"Justice Hub Reminder: Hearing {interval_text} for case {reminder.hearing.case.file_number}."
+                send_sms(reminder.user.phone_number, sms_message)
+                
             reminder.is_sent = True
             reminder.sent_at = now
             reminder.save()
@@ -95,12 +109,21 @@ def send_hearing_notification_email(hearing, recipient, notification_type='SCHED
     else:
         subject = f"NOTICE: Court Hearing Scheduled - Case {hearing.case.file_number}"
         
-    return send_email_template(
+    result = send_email_template(
         subject=subject,
         template_name='emails/hearing_detailed_notification.html',
         context=context,
         recipient_list=[recipient.email]
     )
+    
+    # Send SMS notification
+    if recipient.phone_number:
+        sms_msg = f"Justice Hub: Hearing {notification_type.lower()} for case {hearing.case.file_number} on {hearing.scheduled_date.strftime('%B %d at %I:%M %p')}."
+        if len(sms_msg) > 160:
+            sms_msg = sms_msg[:157] + "..."
+        send_sms(recipient.phone_number, sms_msg)
+    
+    return result
 
 
 def send_hearing_notification(hearing, notification_type):

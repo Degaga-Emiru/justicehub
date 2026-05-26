@@ -247,26 +247,42 @@ class LoginSerializer(serializers.Serializer):
 
 
 class ForgotPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    
-    def validate_email(self, value):
-        try:
-            user = User.objects.get(email=value)
-            if not user.is_verified:
-                raise serializers.ValidationError("Please verify your email first")
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User with this email does not exist")
-        
-        return value
-    
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        email = (attrs.get('email') or '').strip()
+        phone_number = (attrs.get('phone_number') or '').strip()
+
+        if not email and not phone_number:
+            raise serializers.ValidationError("Please provide either an email address or a phone number.")
+
+        user = None
+
+        if email:
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                raise serializers.ValidationError({"email": "No user found with this email address."})
+        elif phone_number:
+            try:
+                user = User.objects.get(phone_number=phone_number)
+            except User.DoesNotExist:
+                raise serializers.ValidationError({"phone_number": "No user found with this phone number."})
+
+        if user and not user.is_verified:
+            raise serializers.ValidationError("Please verify your account first before resetting your password.")
+
+        attrs['user'] = user
+        return attrs
+
     def save(self):
-        email = self.validated_data['email']
-        user = User.objects.get(email=email)
-        
+        user = self.validated_data['user']
+
         # Mark old password reset OTPs as used
         OTP.objects.filter(user=user, purpose='PASSWORD_RESET', is_used=False).update(is_used=True)
-        
-        # Send password reset OTP
+
+        # Send password reset OTP (goes to email + SMS via send_otp_email)
         send_otp_email(user, 'PASSWORD_RESET')
         return user
 

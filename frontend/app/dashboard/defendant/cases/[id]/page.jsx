@@ -175,16 +175,16 @@ export default function DefendantCaseDetailPage() {
  <CardContent className="p-8 space-y-8">
  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 px-2">
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category</p>
- <p className="text-sm font-bold text-slate-400">{caseData.category?.name || caseData.category || "General Civil"}</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</p>
+ <p className="text-sm font-bold text-foreground">{caseData.category?.name || caseData.category || "General Civil"}</p>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Court Jurisdiction</p>
- <p className="text-base font-bold text-slate-400 truncate">{caseData.court_name || "Superior Court"}</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Court Jurisdiction</p>
+ <p className="text-base font-bold text-foreground truncate">{caseData.court_name || "Superior Court"}</p>
  </div>
  <div className="space-y-1">
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hearing Status</p>
- <p className="text-sm font-bold text-slate-400">{caseData.next_hearing_date ? "Scheduled" : "Pending Intake"}</p>
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Hearing Status</p>
+ <p className="text-sm font-bold text-foreground">{caseData.next_hearing_date ? "Scheduled" : "Pending Intake"}</p>
  </div>
  <div className="space-y-1">
  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Defense ID</p>
@@ -195,10 +195,10 @@ export default function DefendantCaseDetailPage() {
  <Separator className="bg-muted/30" />
 
  <div className="space-y-3">
- <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2">
+ <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2 px-2">
  <AlertTriangle className="h-4 w-4 text-amber-500" /> Plaintiff's Claims
  </h3>
- <div className="text-base font-semibold leading-relaxed bg-muted/30 p-6 rounded-2xl border border-border text-slate-400 shadow-inner">
+ <div className="text-base font-semibold leading-relaxed bg-muted/30 p-6 rounded-2xl border border-border text-foreground shadow-inner">
  {caseData.description || "The plaintiff has not provided a description."}
  </div>
  </div>
@@ -566,8 +566,8 @@ export default function DefendantCaseDetailPage() {
  <CardContent className="p-6 pt-0 space-y-4">
  <div className="p-5 rounded-2xl bg-[#0f172a] border border-rose-500/20 space-y-3">
  <div className="space-y-1">
- <p className="text-[10px] font-black text-slate-400 uppercase ">Summons Expiry</p>
- <p className="text-base font-black text-slate-400">{safeFormat(caseData.next_hearing_date, "MMM d, yyyy")}</p>
+ <p className="text-[10px] font-black text-muted-foreground uppercase ">Summons Expiry</p>
+ <p className="text-base font-black text-foreground">{safeFormat(caseData.next_hearing_date, "MMM d, yyyy")}</p>
  </div>
  <Badge variant="outline" className="text-[9px] font-black uppercase border-rose-500/30 text-rose-500">Legal Deadline</Badge>
  </div>

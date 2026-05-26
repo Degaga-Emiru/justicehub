@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.conf import settings
 from .models import Notification, NotificationPreference
 from core.utils.email import send_email_template
+from core.utils.sms import send_sms
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,15 +24,27 @@ def create_notification(user, type, title, message, case=None, priority='MEDIUM'
             metadata=metadata or {}
         )
         
-        # Check if user wants email notifications
-        try:
-            prefs = NotificationPreference.objects.get(user=user)
-        except NotificationPreference.DoesNotExist:
-            prefs = NotificationPreference.objects.create(user=user)
+        # Always send both email AND SMS for every notification (no preference checks)
         
-        # Send email if enabled
-        if prefs.email_notifications:
-            send_notification_email(notification)
+        # Send email always
+        send_notification_email(notification)
+            
+        # Send SMS always if user has a phone number
+        if user.phone_number:
+            # Create a concise SMS message
+            sms_text = f"Justice Hub: {title}"
+            if case:
+                sms_text += f" (Case: {case.title or case.file_number})"
+            sms_text += f" - {message}"
+            
+            # TextBee usually has limits, keep it concise
+            if len(sms_text) > 160:
+                sms_text = sms_text[:157] + "..."
+                
+            sms_success = send_sms(user.phone_number, sms_text)
+            if sms_success:
+                notification.push_sent = True
+                notification.save(update_fields=['push_sent'])
         
         logger.info(f"Notification created for user {user.email}: {type}")
         return notification

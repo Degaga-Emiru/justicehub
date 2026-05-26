@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ArrowLeft, FileText, Download, ExternalLink, User, Calendar, Scale, Loader2, Play, Gavel, Clock, MapPin, History, CheckCircle, Shield } from "lucide-react";
+import Link from "next/link";
 
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -168,24 +169,76 @@ export default function JudgeCaseDetailPage() {
  {caseData.documents?.length > 0 ? (
  <div className="grid gap-3">
  {caseData.documents.map((doc, i) => {
+ // Use version ID if available (preferred), otherwise fall back to doc ID
+ const versionId = doc.latest_version?.id;
  const docId = doc.document_id || doc.id;
+ const fileUrl = doc.latest_version?.file_url || doc.file_url || doc.file;
+
+ const handleView = async () => {
+ try {
+ if (versionId) {
+ await viewJudgeDocument(versionId);
+ } else if (fileUrl) {
+ window.open(fileUrl, '_blank', 'noopener,noreferrer');
+ } else {
+ await viewJudgeDocument(docId);
+ }
+ } catch (err) {
+ // Final fallback: open file URL directly
+ if (fileUrl) {
+ window.open(fileUrl, '_blank', 'noopener,noreferrer');
+ } else {
+ toast.error(err.message || 'Failed to open document');
+ }
+ }
+ };
+
+ const handleDownload = async () => {
+ const filename = doc.description || doc.document_type || 'document';
+ try {
+ if (versionId) {
+ await downloadJudgeDocument(versionId, filename);
+ } else if (fileUrl) {
+ const a = document.createElement('a');
+ a.href = fileUrl;
+ a.download = filename;
+ a.target = '_blank';
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+ } else {
+ await downloadJudgeDocument(docId, filename);
+ }
+ } catch (err) {
+ if (fileUrl) {
+ window.open(fileUrl, '_blank', 'noopener,noreferrer');
+ } else {
+ toast.error(err.message || 'Failed to download document');
+ }
+ }
+ };
+
  return (
- <div key={docId || i} className="flex items-center justify-between p-4 rounded-xl border border-border bg-background/40 hover:bg-muted/30 transition-all group">
+ <div key={versionId || docId || i} className="flex items-center justify-between p-4 rounded-xl border border-border bg-background/40 hover:bg-muted/30 transition-all group">
  <div className="flex items-center gap-3 min-w-0">
  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
  <FileText className="h-5 w-5 text-primary" />
  </div>
  <div className="flex flex-col min-w-0">
  <p className="font-bold text-sm truncate">{doc.description || doc.document_type || "Legal Filing"}</p>
- <p className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{doc.document_type}</p>
+ <p className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">
+ {doc.document_type}{versionId ? ` · v${doc.latest_version?.version_number || 1}` : ''}
+ </p>
  </div>
  </div>
  <div className="flex items-center gap-2">
+ {(versionId || fileUrl || docId) ? (
+ <>
  <Button 
  variant="ghost" 
  size="sm" 
  className="h-9 px-3 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 font-bold text-xs"
- onClick={() => viewJudgeDocument(docId).catch(err => toast.error(err.message))}
+ onClick={handleView}
  >
  <ExternalLink className="h-4 w-4 mr-1" /> View
  </Button>
@@ -193,10 +246,14 @@ export default function JudgeCaseDetailPage() {
  variant="ghost" 
  size="sm" 
  className="h-9 px-3 rounded-lg text-primary hover:bg-primary/10 font-bold text-xs"
- onClick={() => downloadJudgeDocument(docId).catch(err => toast.error(err.message))}
+ onClick={handleDownload}
  >
  <Download className="h-4 w-4 mr-2" /> Download
  </Button>
+ </>
+ ) : (
+ <span className="text-[10px] text-muted-foreground italic">No file</span>
+ )}
  </div>
  </div>
  );
@@ -332,5 +389,3 @@ export default function JudgeCaseDetailPage() {
  </div>
  );
 }
-
-import Link from "next/link";

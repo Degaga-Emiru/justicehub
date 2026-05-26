@@ -98,7 +98,7 @@ function VerifyOTPContent() {
  try {
  const result = await resendOTP(emailParam, purpose);
  if (result.success) {
- toast.success("New OTP sent to your email.");
+ toast.success("New OTP sent to your email and phone.");
  setTimeLeft(300); // Reset timer
  } else {
  toast.error(result.error);
@@ -122,7 +122,7 @@ function VerifyOTPContent() {
  {t("verifyOTP") || "Verify OTP"}
  </CardTitle>
  <CardDescription className="text-muted-foreground font-medium text-base">
- {t("otpSentTo") || "OTP sent to"}: <br /> 
+ {t("otpSentTo") || "OTP sent to your email and phone"}: <br /> 
  <span className="font-bold text-primary mt-1 inline-block">{emailParam}</span>
  </CardDescription>
  </div>

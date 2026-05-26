@@ -12,8 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Save, Lock, Loader2, User, Camera } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { changePassword, updateUserProfile, updateNotificationPreferences, uploadProfilePicture } from "@/lib/api";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { changePassword, updateUserProfile, updateNotificationPreferences, uploadProfilePicture, fetchNotificationPreferences } from "@/lib/api";
 import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -48,7 +48,7 @@ export function SettingsPage() {
  // Preferences State
  const [preferences, setPreferences] = useState({
  email_notifications: true,
- sms_notifications: false,
+ sms_notifications: true,
  });
 
  // Profile Picture State
@@ -56,6 +56,21 @@ export function SettingsPage() {
  const [picturePreview, setPicturePreview] = useState(null);
  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
+
+ const { data: fetchedPreferences } = useQuery({
+ queryKey: ["notificationPreferences"],
+ queryFn: fetchNotificationPreferences,
+ enabled: !!user,
+ });
+
+ useEffect(() => {
+ if (fetchedPreferences) {
+ setPreferences({
+ email_notifications: fetchedPreferences.email_notifications ?? true,
+ sms_notifications: fetchedPreferences.sms_notifications ?? true,
+ });
+ }
+ }, [fetchedPreferences]);
 
  useEffect(() => {
  if (user) {
@@ -83,8 +98,7 @@ export function SettingsPage() {
  setPicturePreview(user.profile_picture);
  }
  
- // Note: In a full app we would fetch the user's saved preferences from the backend
- // For now, we initialize from local state 
+ // Preferences are now fetched via react-query
  }
  }, [user]);
 

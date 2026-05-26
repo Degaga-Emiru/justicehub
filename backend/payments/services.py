@@ -9,6 +9,7 @@ from cases.constants import CaseStatus
 from cases.services import JudgeAssignmentService
 from notifications.services import create_notification
 from core.utils.email import send_email_template
+from core.utils.sms import send_sms
 from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
 from .models import Payment, Transaction
@@ -385,6 +386,13 @@ class PaymentService:
             context=context,
             recipient_list=[payment.user.email]
         )
+        
+        # Send SMS notification
+        if payment.user.phone_number:
+            sms_msg = f"Justice Hub: Payment of {payment.amount} ETB required for case {payment.case.file_number}. Check your email for payment link."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(payment.user.phone_number, sms_msg)
 
     @staticmethod
     def _send_confirmation_email(payment):
@@ -401,3 +409,10 @@ class PaymentService:
             context=context,
             recipient_list=[payment.user.email]
         )
+        
+        # Send SMS notification
+        if payment.user.phone_number:
+            sms_msg = f"Justice Hub: Payment of {payment.amount} ETB for case {payment.case.file_number} confirmed. Thank you."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(payment.user.phone_number, sms_msg)

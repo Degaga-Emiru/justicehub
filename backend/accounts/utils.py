@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.html import strip_tags
 from .models import OTP
+from core.utils.sms import send_sms
 
 def generate_otp():
     """Generate a 6-digit OTP."""
@@ -110,6 +111,12 @@ def send_otp_email(user, purpose='VERIFICATION'):
             recipient_list=[user.email],
             fail_silently=False,
         )
+        
+        # Send SMS
+        if user.phone_number:
+            sms_message = f"Justice Hub: Your OTP is {code}. It expires in {settings.OTP_EXPIRE_MINUTES} minutes."
+            send_sms(user.phone_number, sms_message)
+            
         return otp
     
     # Send HTML email
@@ -142,6 +149,11 @@ def send_otp_email(user, purpose='VERIFICATION'):
             fail_silently=False,
         )
     
+    # Send SMS regardless of HTML/Plain email success
+    if user.phone_number:
+        sms_message = f"Justice Hub: Your OTP is {code}. It expires in {settings.OTP_EXPIRE_MINUTES} minutes."
+        send_sms(user.phone_number, sms_message)
+        
     return otp
 
 
@@ -212,6 +224,9 @@ def send_password_change_notification(user):
         context=context,
         recipient_list=[user.email]
     )
+    
+    if user.phone_number:
+        send_sms(user.phone_number, f"Security Alert: Your Justice Hub password was changed on {context['change_time']}.")
 
 def send_password_reset_confirmation(user):
     """
@@ -232,6 +247,9 @@ def send_password_reset_confirmation(user):
         context=context,
         recipient_list=[user.email]
     )
+    
+    if user.phone_number:
+        send_sms(user.phone_number, f"Confirmation: Your Justice Hub password was reset on {context['reset_time']}.")
 
 def send_admin_reset_email(user, temp_password):
     """
@@ -253,3 +271,6 @@ def send_admin_reset_email(user, temp_password):
         context=context,
         recipient_list=[user.email]
     )
+    
+    if user.phone_number:
+        send_sms(user.phone_number, f"Justice Hub: Your password has been reset by an admin. Your temporary password is: {temp_password}")

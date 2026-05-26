@@ -1808,6 +1808,12 @@ export async function updateNotificationPreferences(data) {
     return await res.json();
 }
 
+export async function fetchNotificationPreferences() {
+    const res = await fetch(`${getApiUrl()}/notifications/preferences/`, { headers: getAuthHeaders() });
+    if (!res.ok) return { email_notifications: true, sms_notifications: true };
+    return await res.json();
+}
+
 
 // ==========================================
 // Citizen Hearing APIs

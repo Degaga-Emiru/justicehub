@@ -77,7 +77,7 @@ class JudgeCaseListView(generics.ListAPIView):
         ).select_related(
             'category', 'created_by', 'plaintiff', 'defendant'
         ).prefetch_related(
-            'documents', 'documents__versions'
+            'documents', 'documents__versions', 'hearings'
         )
         
         status_filter = self.request.query_params.get('status')

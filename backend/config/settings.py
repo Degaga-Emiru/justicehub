@@ -353,5 +353,6 @@ CHAPA_PUBLIC_KEY = os.getenv("CHAPA_PUBLIC_KEY")
 
 AUTH_USER_MODEL = 'accounts.User'
 
-
-
+# TextBee SMS Settings
+TEXTBEE_API_KEY = os.getenv("TEXTBEE_API_KEY")
+TEXTBEE_DEVICE_ID = os.getenv("TEXTBEE_DEVICE_ID")

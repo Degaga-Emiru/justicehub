@@ -218,7 +218,7 @@ export default function DecisionsPage() {
  setOrder(decision.order || "");
  };
 
- const activeCases = cases?.filter(c => ["ASSIGNED", "IN_PROGRESS"].includes(c.status)) || [];
+ const activeCases = cases?.filter(c => ["ASSIGNED", "IN_PROGRESS", "PAID", "PENDING_REVIEW", "APPROVED"].includes(c.status) && c.has_conducted_hearing) || [];
 
  // Check if all required content fields have content (for save button state)
  const hasContent = introduction || background || analysis || conclusion || order;
@@ -295,6 +295,24 @@ export default function DecisionsPage() {
  <p className="font-bold text-sm">{selectedCase.priority}</p>
  </div>
  </div>
+ 
+ {selectedCase.conducted_hearings && selectedCase.conducted_hearings.length > 0 && (
+  <div className="mt-4 pt-4 border-t border-border/50">
+  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block">Conducted Hearings</span>
+  <div className="space-y-2">
+  {selectedCase.conducted_hearings.map(h => (
+   <div key={h.id} className="bg-background/50 rounded-lg p-2 text-xs border border-border/50">
+   <div className="font-bold">{h.title || h.hearing_type}</div>
+   <div className="text-muted-foreground flex justify-between items-center mt-1">
+   <span>{h.conducted_at ? format(new Date(h.conducted_at), "MMM d, yyyy") : "Date Unknown"}</span>
+   <Badge variant="outline" className="text-[8px] h-4 px-1 py-0">{h.status}</Badge>
+   </div>
+   {h.summary && <div className="mt-1.5 text-muted-foreground/80 line-clamp-2 italic">{h.summary}</div>}
+   </div>
+  ))}
+  </div>
+  </div>
+ )}
  </div>
  )}
 
@@ -648,72 +666,72 @@ export default function DecisionsPage() {
  </CardContent>
  
  {selectedCase && (
- <CardFooter className="flex flex-col sm:flex-row justify-between bg-muted/20 p-6 md:px-8 border-t border-border gap-4">
- <div className="flex gap-2">
- <Button variant="ghost" className="rounded-xl font-bold text-muted-foreground hover:text-foreground" onClick={clearForm}>
- Discard Draft
- </Button>
- {currentDecisionId && (
- <Button
- variant="ghost"
- className="rounded-xl font-bold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
- onClick={() => downloadDecisionPdf(currentDecisionId).catch(err => toast.error(err.message))}
- >
- <Download className="mr-2 h-4 w-4" />
- PDF
- </Button>
- )}
- {currentDecisionId && (
- <label className="cursor-pointer">
- <input
- type="file"
- accept=".pdf,.docx"
- className="hidden"
- onChange={async (e) => {
- const file = e.target.files?.[0];
- if (!file) return;
- setUploadingDoc(true);
- try {
- await uploadDecisionDocument(currentDecisionId, file);
- toast.success("Decision document uploaded.");
- queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
- } catch (err) {
- toast.error(err.message);
- } finally {
- setUploadingDoc(false);
- e.target.value = "";
- }
- }}
- />
- <Button variant="ghost" asChild className="rounded-xl font-bold text-muted-foreground hover:text-foreground">
- <span>
- <Upload className="mr-2 h-4 w-4" />
- {uploadingDoc ? "Uploading..." : "Upload Doc"}
- </span>
- </Button>
- </label>
- )}
- </div>
- <div className="flex flex-col sm:flex-row gap-3">
- <Button
- variant="outline"
- className="rounded-xl font-bold bg-background hover:bg-background border-border"
- onClick={handleSave}
- disabled={createMutation.isPending || updateMutation.isPending || !hasContent}
- >
- <Save className="mr-2 h-4 w-4" />
- {createMutation.isPending || updateMutation.isPending ? "Saving..." : currentDecisionId ? "Update Draft" : "Save Draft"}
- </Button>
- <Button
- className="rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20"
- onClick={handleFinalize}
- disabled={finalizeMutation.isPending || !currentDecisionId}
- >
- <CheckCircle2 className="mr-2 h-4 w-4" />
- {finalizeMutation.isPending ? "Finalizing..." : "Finalize & Close Case"}
- </Button>
- </div>
- </CardFooter>
+  <CardFooter className="flex flex-col gap-4 bg-muted/20 p-6 md:px-8 border-t border-border">
+  <div className="flex flex-wrap gap-2">
+  <Button variant="ghost" className="rounded-xl font-bold text-muted-foreground hover:text-foreground" onClick={clearForm}>
+  Discard Draft
+  </Button>
+  {currentDecisionId && (
+  <Button
+  variant="ghost"
+  className="rounded-xl font-bold text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+  onClick={() => downloadDecisionPdf(currentDecisionId).catch(err => toast.error(err.message))}
+  >
+  <Download className="mr-2 h-4 w-4" />
+  PDF
+  </Button>
+  )}
+  {currentDecisionId && (
+  <label className="cursor-pointer">
+  <input
+  type="file"
+  accept=".pdf,.docx"
+  className="hidden"
+  onChange={async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  setUploadingDoc(true);
+  try {
+  await uploadDecisionDocument(currentDecisionId, file);
+  toast.success("Decision document uploaded.");
+  queryClient.invalidateQueries({ queryKey: ["case-decisions", selectedCaseId] });
+  } catch (err) {
+  toast.error(err.message);
+  } finally {
+  setUploadingDoc(false);
+  e.target.value = "";
+  }
+  }}
+  />
+  <Button variant="ghost" asChild className="rounded-xl font-bold text-muted-foreground hover:text-foreground">
+  <span>
+  <Upload className="mr-2 h-4 w-4" />
+  {uploadingDoc ? "Uploading..." : "Upload Doc"}
+  </span>
+  </Button>
+  </label>
+  )}
+  </div>
+  <div className="flex flex-wrap gap-3 sm:ml-auto">
+  <Button
+  variant="outline"
+  className="rounded-xl font-bold bg-background hover:bg-background border-border"
+  onClick={handleSave}
+  disabled={createMutation.isPending || updateMutation.isPending || !hasContent}
+  >
+  <Save className="mr-2 h-4 w-4" />
+  {createMutation.isPending || updateMutation.isPending ? "Saving..." : currentDecisionId ? "Update Draft" : "Save Draft"}
+  </Button>
+  <Button
+  className="rounded-xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20"
+  onClick={handleFinalize}
+  disabled={finalizeMutation.isPending || !currentDecisionId}
+  >
+  <CheckCircle2 className="mr-2 h-4 w-4" />
+  {finalizeMutation.isPending ? "Finalizing..." : "Finalize & Close Case"}
+  </Button>
+  </div>
+  </CardFooter>
  )}
  </Card>
  </div>

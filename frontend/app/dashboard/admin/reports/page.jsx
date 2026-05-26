@@ -116,6 +116,7 @@ export default function ReportsPage() {
  const [downloadFormat, setDownloadFormat] = useState("");
  const [downloadType, setDownloadType] = useState("");
  const [predefinedRange, setPredefinedRange] = useState("custom");
+ const [activeTab, setActiveTab] = useState("overview");
  
  const { data: stats, isLoading: statsLoading } = useQuery({
  queryKey: ["dashboard-stats"],
@@ -371,7 +372,7 @@ export default function ReportsPage() {
  </div>
 
  {/* Tabs */}
- <Tabs defaultValue="overview" className="w-full space-y-8">
+ <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-8">
  <TabsList className="h-14 p-1.5 bg-muted/30 border border-border rounded-2xl bg-background shadow-sm border-border backdrop-blur-xl w-full lg:max-w-2xl mx-auto flex">
  <TabsTrigger value="overview" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300">
  System Overview
@@ -1127,7 +1128,7 @@ export default function ReportsPage() {
  </div>
  </div>
 
- <div className="grid gap-8 md:grid-cols-3">
+ <div className="grid gap-8 md:grid-cols-1 max-w-2xl mx-auto">
  {/* PDF Block */}
  <div className="rounded-2xl border border-border p-8 flex flex-col items-center text-center hover:border-rose-500/30 hover:bg-rose-500/5 transition-all duration-500 group">
  <div className="h-16 w-16 rounded-[2rem] bg-rose-500/10 text-rose-500 flex items-center justify-center mb-6 transform group-hover:-rotate-6 transition-transform duration-500 shadow-lg shadow-rose-500/10">
@@ -1149,48 +1150,13 @@ export default function ReportsPage() {
  <Button className="flex-1 rounded-xl font-bold text-xs uppercase tracking-widest" variant="outline" onClick={() => handleAction('download', 'pdf', 'analytics')} disabled={isDownloading}>
  {isDownloading && downloadFormat === 'pdf' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> ...</> : <><Download className="mr-1 h-3 w-3" /> Analytics</>}
  </Button>
- <Button className="flex-1 rounded-xl font-bold text-xs uppercase tracking-widest bg-rose-500/10 text-rose-600 hover:bg-rose-500/20" variant="ghost" onClick={() => handleAction('view', 'pdf', 'analytics')} disabled={isDownloading}>
- View
+ <Button className="flex-1 rounded-xl font-bold text-xs uppercase tracking-widest bg-rose-500/10 text-rose-600 hover:bg-rose-500/20" variant="ghost" onClick={() => setActiveTab('analytics')} disabled={isDownloading}>
+ View Analytics
  </Button>
  </div>
  </div>
  </div>
 
- {/* Excel Block */}
- <div className="rounded-2xl border border-border p-8 flex flex-col items-center text-center hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all duration-500 group">
- <div className="h-16 w-16 rounded-[2rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-6 transform group-hover:-rotate-6 transition-transform duration-500 shadow-lg shadow-emerald-500/10">
- <FileSpreadsheet className="h-8 w-8" />
- </div>
- <h3 className="font-black font-display text-lg mb-2 tracking-tight">Analytical Workbook</h3>
- <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Multi-sheet dataset for financial deep-dive analysis.</p>
- 
- <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleAction('download', 'excel', 'system')} disabled={isDownloading}>
- {isDownloading && downloadFormat === 'excel' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System XLSX</>}
- </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-lg shadow-emerald-500/20" onClick={() => handleAction('download', 'excel', 'analytics')} disabled={isDownloading}>
- {isDownloading && downloadFormat === 'excel' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics XLSX</>}
- </Button>
- </div>
- </div>
-
- {/* CSV Block */}
- <div className="rounded-2xl border border-border p-8 flex flex-col items-center text-center hover:border-amber-500/30 hover:bg-amber-500/5 transition-all duration-500 group">
- <div className="h-16 w-16 rounded-[2rem] bg-amber-500/10 text-amber-500 flex items-center justify-center mb-6 transform group-hover:-rotate-6 transition-transform duration-500 shadow-lg shadow-amber-500/10">
- <DownloadCloud className="h-8 w-8" />
- </div>
- <h3 className="font-black font-display text-lg mb-2 tracking-tight">Raw Data Matrix</h3>
- <p className="text-sm text-foreground font-medium mb-8 leading-relaxed">Flattened matrix for database ingestion and ML pipelines.</p>
- 
- <div className="flex flex-col gap-2 w-full mt-auto">
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleAction('download', 'csv', 'system')} disabled={isDownloading}>
- {isDownloading && downloadFormat === 'csv' && downloadType === 'system' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><Download className="mr-2 h-4 w-4" /> System CSV</>}
- </Button>
- <Button className="w-full rounded-xl font-bold text-xs uppercase tracking-widest border-amber-500/20 text-amber-600 hover:bg-amber-500/10 hover:text-amber-700" variant="outline" onClick={() => handleAction('download', 'csv', 'analytics')} disabled={isDownloading}>
- {isDownloading && downloadFormat === 'csv' && downloadType === 'analytics' ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</> : <><ShieldCheck className="mr-2 h-4 w-4" /> Analytics CSV</>}
- </Button>
- </div>
- </div>
  </div>
  </CardContent>
  </Card>

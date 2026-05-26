@@ -572,7 +572,7 @@ export default function JudgeDashboard() {
  </Badge>
  </CardTitle>
  <CardDescription className="text-muted-foreground font-medium">
- {date ? "{t('proceedingsForDate')}" : "{t('completeScheduleOverview')}"}
+ {date ? t('proceedingsForDate') : t('completeScheduleOverview')}
  </CardDescription>
  </div>
  <div className="flex items-center gap-2">
@@ -600,7 +600,7 @@ export default function JudgeDashboard() {
  <div className="relative flex-1 group">
  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
  <Input 
- placeholder="{t('searchByDocket')}" 
+ placeholder={t('searchByDocket')} 
  className="pl-11 h-12 bg-muted/20 border-border rounded-2xl focus:ring-primary/20 transition-all font-medium"
  value={hearingSearch}
  onChange={(e) => setHearingSearch(e.target.value)}
@@ -658,7 +658,7 @@ export default function JudgeDashboard() {
  </div>
  <div className="flex justify-between items-start mb-4">
  <div className="space-y-1">
- <h4 className="font-black font-display text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{hearing.title || hearing.case?.title || "{t('hearingSession')}"}</h4>
+ <h4 className="font-black font-display text-lg tracking-tight text-foreground group-hover:text-primary transition-colors">{hearing.title || hearing.case?.title || t('hearingSession')}</h4>
  <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
  <FileText className="h-3 w-3 text-primary" /> {hearing.case_details?.file_number || hearing.case?.file_number || hearing.caseId || "N/A"}
  </p>
@@ -702,8 +702,8 @@ export default function JudgeDashboard() {
  </p>
  <p className="text-sm font-medium text-muted-foreground">
  {date || hearingSearch || hearingStatusFilter !== "all" 
- ? "{t('adjustCurrentFilters')}" 
- : "{t('noDocketHearings')}"}
+ ? t('adjustCurrentFilters') 
+ : t('noDocketHearings')}
  </p>
  </div>
  </div>
@@ -926,7 +926,7 @@ export default function JudgeDashboard() {
  <div className="space-y-2">
  <Label>{t('summaryRequired')}</Label>
  <Textarea
- placeholder="{t('briefSummary')}"
+ placeholder={t('briefSummary')}
  value={completeNotes.summary}
  onChange={(e) => setCompleteNotes({ ...completeNotes, summary: e.target.value })}
  />
@@ -948,7 +948,7 @@ export default function JudgeDashboard() {
  <div className="space-y-2">
  <Label>{t('judgeComment')}</Label>
  <Textarea
- placeholder="{t('judgeObservations')}"
+ placeholder={t('judgeObservations')}
  value={completeNotes.judge_comment}
  onChange={(e) => setCompleteNotes({ ...completeNotes, judge_comment: e.target.value })}
  />
@@ -956,7 +956,7 @@ export default function JudgeDashboard() {
  <div className="space-y-2">
  <Label>{t('meetingMinutes')}</Label>
  <Textarea
- placeholder="{t('recordOfProceedings')}"
+ placeholder={t('recordOfProceedings')}
  value={completeNotes.minutes}
  onChange={(e) => setCompleteNotes({ ...completeNotes, minutes: e.target.value })}
  />
@@ -1353,6 +1353,9 @@ export default function JudgeDashboard() {
  {/* Post-Hearing Follow-up Suggestion */}
  <Dialog open={showFollowUpPrompt} onOpenChange={setShowFollowUpPrompt}>
  <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden border-emerald-500/20 bg-[#020617] shadow-2xl shadow-emerald-500/10">
+ <DialogHeader className="sr-only">
+ <DialogTitle>{t('sessionConducted')}</DialogTitle>
+ </DialogHeader>
  <div className="bg-emerald-500/10 p-8 flex flex-col items-center text-center space-y-4 border-b border-emerald-500/20">
  <div className="h-20 w-20 rounded-[2.5rem] bg-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-inner group">
  <CheckCircle className="h-10 w-10 animate-fade-in group-hover:scale-110 transition-transform" />
@@ -1370,7 +1373,7 @@ export default function JudgeDashboard() {
  <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{t('linkedCaseFile')}</p>
  </div>
  <p className="text-sm font-bold text-muted-foreground leading-relaxed">
- {lastCompletedHearing?.case?.title || "{t('activeLegalProceeding')}"}
+ {lastCompletedHearing?.case?.title || t('activeLegalProceeding')}
  </p>
  </div>
 
@@ -1383,7 +1386,7 @@ export default function JudgeDashboard() {
  <div className="flex flex-col gap-3">
  <Button 
  onClick={handleScheduleFollowUp}
- className="w-full h-12 rounded-2xl font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+ className="w-full h-12 rounded-2xl font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95"
  >
  {t('yesScheduleNext')}
  </Button>

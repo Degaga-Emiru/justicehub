@@ -238,7 +238,11 @@ class ForgotPasswordView(APIView):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        return Response({"message": f"OTP sent to {user.email} for password reset. Please check your email."}, status=status.HTTP_200_OK)
+        return Response({
+            "message": f"OTP sent to your registered email and phone for password reset.",
+            "email": user.email
+        }, status=status.HTTP_200_OK)
+
 
 class ResetPasswordView(APIView):
     """Endpoint to reset password using OTP."""

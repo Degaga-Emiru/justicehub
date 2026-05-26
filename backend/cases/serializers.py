@@ -623,6 +623,8 @@ class JudgeCaseSerializer(serializers.ModelSerializer):
     plaintiff_name = serializers.SerializerMethodField()
     documents = CaseDocumentSerializer(many=True, read_only=True)
     document_count = serializers.IntegerField(source='documents.count', read_only=True)
+    has_conducted_hearing = serializers.SerializerMethodField()
+    conducted_hearings = serializers.SerializerMethodField()
     
     class Meta:
         model = Case
@@ -633,6 +635,7 @@ class JudgeCaseSerializer(serializers.ModelSerializer):
             'court_name', 'court_room', 'filing_date',
             'created_by_name', 'plaintiff_name', 'defendant_name',
             'documents', 'document_count',
+            'has_conducted_hearing', 'conducted_hearings',
             'created_at', 'updated_at'
         ]
 
@@ -640,6 +643,14 @@ class JudgeCaseSerializer(serializers.ModelSerializer):
         if obj.plaintiff:
             return obj.plaintiff.get_full_name()
         return obj.created_by.get_full_name() if obj.created_by else None
+
+    def get_has_conducted_hearing(self, obj):
+        return obj.hearings.filter(status='CONDUCTED').exists()
+
+    def get_conducted_hearings(self, obj):
+        from hearings.serializers import HearingSerializer
+        hearings = obj.hearings.filter(status='CONDUCTED').order_by('-conducted_at')
+        return HearingSerializer(hearings, many=True, context=self.context).data
 
 class CaseActionRequestSerializer(serializers.ModelSerializer):
     """Serializer for CaseActionRequest"""

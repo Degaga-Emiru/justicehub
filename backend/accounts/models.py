@@ -16,8 +16,8 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     
     # Phone number with validation
     phone_regex = RegexValidator(
-        regex=r'^\+?1?\d{9,15}$',
-        message="Phone number must be entered in format: '+999999999'. Up to 15 digits allowed."
+        regex=r'^\+\d{9,15}$',
+        message="Phone number must be entered in international format: '+999999999'. Up to 15 digits allowed."
     )
     phone_number = models.CharField(validators=[phone_regex], max_length=17, unique=True)
     

@@ -9,6 +9,7 @@ from audit_logs.services import create_audit_log
 from audit_logs.models import AuditLog
 from notifications.services import create_notification
 from core.utils.email import send_email_template
+from core.utils.sms import send_sms
 from .constants import CaseStatus
 
 logger = logging.getLogger(__name__)
@@ -211,23 +212,10 @@ class JudgeAssignmentService:
                 message=(
                     f"No judges available for case '{case.title}' "
                     f"(File No: {case.file_number}) in category {case.category.name}. "
-                    "Please assign the judge manually."
+                    "Please add a judge to this category and assign them to the case manually."
                 ),
                 case=case,
-                priority='HIGH'
-            )
-            
-        # Send email to staff users
-        staff_emails = list(staff_users.values_list('email', flat=True))
-        if staff_emails:
-            send_email_template(
-                subject=f"Action Required: Judge Assignment Failed - {case.file_number}",
-                template_name="emails/assignment_failed.html",
-                context={
-                    "case": case,
-                    "frontend_url": settings.FRONTEND_URL
-                },
-                recipient_list=staff_emails
+                priority='URGENT'
             )
     
     @classmethod
@@ -329,6 +317,13 @@ class CaseReviewService:
             context=context,
             recipient_list=[case.created_by.email]
         )
+        
+        # Send SMS notification
+        if case.created_by.phone_number:
+            sms_msg = f"Justice Hub: Payment required for case {case.file_number}. Check your email for payment instructions."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(case.created_by.phone_number, sms_msg)
     
     @classmethod
     @transaction.atomic
@@ -387,6 +382,13 @@ class CaseReviewService:
             context=context,
             recipient_list=[case.defendant.email]
         )
+        
+        # Send SMS notification
+        if case.defendant.phone_number:
+            sms_msg = f"Justice Hub: A legal case ({case.file_number}) has been opened. Check your email for details."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(case.defendant.phone_number, sms_msg)
     
     @classmethod
     def _send_acceptance_email(cls, case):
@@ -403,6 +405,13 @@ class CaseReviewService:
             context=context,
             recipient_list=[case.created_by.email]
         )
+        
+        # Send SMS notification
+        if case.created_by.phone_number:
+            sms_msg = f"Justice Hub: Your case {case.file_number} has been accepted. Check your email for details."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(case.created_by.phone_number, sms_msg)
     
     @classmethod
     def _send_rejection_email(cls, case):
@@ -419,6 +428,13 @@ class CaseReviewService:
             context=context,
             recipient_list=[case.created_by.email]
         )
+        
+        # Send SMS notification
+        if case.created_by.phone_number:
+            sms_msg = f"Justice Hub: Your case '{case.title[:30]}' status has been updated. Check your email for details."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(case.created_by.phone_number, sms_msg)
 
 
 class CaseNotificationService:
@@ -430,7 +446,6 @@ class CaseNotificationService:
         registrars = User.objects.filter(role__in=['REGISTRAR', 'CLERK'], is_active=True)
         
         for registrar in registrars:
-            # 1. Internal Notification
             create_notification(
                 user=registrar,
                 type='NEW_CASE_FILED',
@@ -439,22 +454,7 @@ class CaseNotificationService:
                 case=case,
                 priority='MEDIUM'
             )
-            
-            for registrar in registrars:
-                # 1. Internal Notification
-                create_notification(
-                    user=registrar,
-                    type='NEW_CASE_FILED',
-                    title='New Case Filed',
-                    message=f"A new case '{case.title}' has been filed and is pending review.",
-                    case=case,
-                    priority='MEDIUM'
-                )
-                
-        #         # 2. Email Notification
-        #         cls._send_registrar_new_case_email(registrar, case)
-        # except Exception as e:
-        #     logger.error(f"Failed to notify registrars for case {case.id}: {str(e)}")
+
 
     @classmethod
     def _send_registrar_new_case_email(cls, registrar, case):
@@ -471,6 +471,13 @@ class CaseNotificationService:
             context=context,
             recipient_list=[registrar.email]
         )
+        
+        # Send SMS notification
+        if registrar.phone_number:
+            sms_msg = f"Justice Hub: New case '{case.title[:40]}' needs review. Check your email."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(registrar.phone_number, sms_msg)
 
     @classmethod
     def notify_defendant_action_required(cls, case, action_description):

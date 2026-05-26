@@ -164,6 +164,14 @@ def handle_judge_assignment(sender, instance, created, **kwargs):
             context=context,
             recipient_list=[instance.judge.email]
         )
+        
+        # Send SMS notification to judge
+        from core.utils.sms import send_sms
+        if instance.judge.phone_number:
+            sms_msg = f"Justice Hub: You have been assigned to case {instance.case.file_number} - {instance.case.title[:50]}."
+            if len(sms_msg) > 160:
+                sms_msg = sms_msg[:157] + "..."
+            send_sms(instance.judge.phone_number, sms_msg)
     
     else:
         # Check if assignment ended

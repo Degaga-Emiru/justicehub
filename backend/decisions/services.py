@@ -12,6 +12,7 @@ from cases.models import User, CaseDocument
 from hearings.models import Hearing
 from core.exceptions import BusinessLogicError
 from core.utils.email import send_email_template
+from core.utils.sms import send_sms
 from core.cryptography import get_document_hash, sign_hash
 from .pdf_utils import append_visual_signature
 import logging
@@ -435,7 +436,7 @@ def deliver_decision(decision):
 
 def send_decision_email(decision, recipient):
     """
-    Send decision notification email
+    Send decision notification email and SMS
     """
     context = {
         'recipient': recipient,
@@ -444,12 +445,21 @@ def send_decision_email(decision, recipient):
         'frontend_url': settings.FRONTEND_URL
     }
     
-    return send_email_template(
+    result = send_email_template(
         subject=f"Decision Issued - {decision.case.file_number}",
         template_name='emails/decision_issued.html',
         context=context,
         recipient_list=[recipient.email]
     )
+    
+    # Send SMS notification
+    if recipient.phone_number:
+        sms_msg = f"Justice Hub: A decision has been issued for case {decision.case.file_number}. Decision No: {decision.decision_number}. Check your email for details."
+        if len(sms_msg) > 160:
+            sms_msg = sms_msg[:157] + "..."
+        send_sms(recipient.phone_number, sms_msg)
+    
+    return result
 
 
 def check_decision_acknowledgments():

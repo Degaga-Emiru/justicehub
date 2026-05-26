@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { useState } from "react";
-import { Loader2, Scale } from "lucide-react";
+import { Loader2, Scale, Mail, Phone } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/language-provider";
@@ -29,7 +29,7 @@ const signupSchema = z.object({
  first_name: z.string().min(2, "nameMinLength"),
  last_name: z.string().min(2, "nameMinLength"),
  email: z.string().email("invalidEmail"),
- phone_number: z.string().min(7, "phoneMinLength"),
+ phone_number: z.string().regex(/^\+251[79]\d{8}$/, "Phone must be in format +2519... or +2517... with 13 characters total"),
  sex: z.enum(["MALE", "FEMALE", "OTHER"], { required_error: "Required" }),
  address_subcity: z.string().min(2, "Required"),
  address_kebele: z.string().min(2, "Required"),
@@ -41,8 +41,12 @@ const signupSchema = z.object({
  path: ["confirm_password"],
 });
 
-const forgotPasswordSchema = z.object({
+const forgotPasswordEmailSchema = z.object({
  email: z.string().email("invalidEmail"),
+});
+
+const forgotPasswordPhoneSchema = z.object({
+ phone_number: z.string().min(10, "Please enter a valid phone number"),
 });
 
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
@@ -50,10 +54,11 @@ const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:800
 export function AuthForm({ type = "login", onTypeChange }) {
  const [isLoading, setIsLoading] = useState(false);
  const { login, signup, forgotPassword } = useAuthStore();
+ const [fpMethod, setFpMethod] = useState("email");
  const router = useRouter();
  const { t } = useLanguage();
 
- const schema = type === "signup" ? signupSchema : type === "forgot-password" ? forgotPasswordSchema : loginSchema;
+ const schema = type === "signup" ? signupSchema : type === "forgot-password" ? (fpMethod === "phone" ? forgotPasswordPhoneSchema : forgotPasswordEmailSchema) : loginSchema;
 
  const {
  register,
@@ -113,20 +118,22 @@ export function AuthForm({ type = "login", onTypeChange }) {
  );
  if (result.success) {
  router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
- toast.success("Account created! Please verify your email.");
+ toast.success("Account created! OTP sent to your email and phone.");
  } else {
  toast.error(result.error || t("failedCreateAccount"));
  }
  } else {
- // Forgot password – call the real API
- const result = await forgotPassword(data.email);
- if (result.success) {
- router.push(`/verify-otp?email=${encodeURIComponent(data.email)}&purpose=PASSWORD_RESET`);
- toast.success("OTP sent to your email.");
- } else {
- toast.error(result.error);
- }
- }
+  // Forgot password – supports email or phone number
+  const identifier = fpMethod === "phone" ? data.phone_number : data.email;
+  const result = await forgotPassword(identifier, fpMethod);
+  if (result.success) {
+  // result.email is always the canonical email returned by the server
+  router.push(`/verify-otp?email=${encodeURIComponent(result.email)}&purpose=PASSWORD_RESET`);
+  toast.success("OTP sent to your registered email and phone.");
+  } else {
+  toast.error(result.error);
+  }
+  }
  } catch (err) {
  toast.error(t("unexpectedError"));
  } finally {
@@ -175,17 +182,84 @@ export function AuthForm({ type = "login", onTypeChange }) {
  </div>
  )}
 
- <div className="space-y-2">
- <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("email")}</Label>
- <Input id="email" type="email" placeholder="name@example.com" {...register("email")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
- {errors.email && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.email.message)}</p>}
- </div>
+
+ {/* Forgot password: toggle between email and phone */}
+ {type === "forgot-password" && (
+  <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">
+    How would you like to identify yourself?
+   </p>
+   <div className="grid grid-cols-2 gap-2">
+    <button
+     type="button"
+     onClick={() => setFpMethod("email")}
+     className={`flex items-center justify-center gap-2 h-11 rounded-xl border-2 font-semibold text-sm transition-all duration-200 ${
+      fpMethod === "email"
+       ? "border-primary bg-primary/10 text-primary"
+       : "border-border text-muted-foreground hover:border-primary/50"
+     }`}
+    >
+     <Mail className="h-4 w-4" />
+     Email
+    </button>
+    <button
+     type="button"
+     onClick={() => setFpMethod("phone")}
+     className={`flex items-center justify-center gap-2 h-11 rounded-xl border-2 font-semibold text-sm transition-all duration-200 ${
+      fpMethod === "phone"
+       ? "border-primary bg-primary/10 text-primary"
+       : "border-border text-muted-foreground hover:border-primary/50"
+     }`}
+    >
+     <Phone className="h-4 w-4" />
+     Phone
+    </button>
+   </div>
+
+   {fpMethod === "email" ? (
+    <div className="space-y-2">
+     <Label htmlFor="fp-email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email Address</Label>
+     <Input
+      id="fp-email"
+      type="email"
+      placeholder="name@example.com"
+      {...register("email")}
+      className="h-12 bg-background border-border rounded-xl focus:ring-primary/20"
+     />
+     {errors.email && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.email.message)}</p>}
+    </div>
+   ) : (
+    <div className="space-y-2">
+     <Label htmlFor="fp-phone" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Phone Number</Label>
+     <Input
+      id="fp-phone"
+      type="tel"
+      placeholder="+251912345678"
+      {...register("phone_number")}
+      className="h-12 bg-background border-border rounded-xl focus:ring-primary/20"
+     />
+     {errors.phone_number && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{errors.phone_number.message}</p>}
+     <p className="text-[11px] text-muted-foreground ml-1">Enter the phone number linked to your account.</p>
+    </div>
+   )}
+  </div>
+ )}
+
+ {/* Normal email field for login / signup */}
+ {type !== "forgot-password" && (
+  <div className="space-y-2">
+  <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("email")}</Label>
+  <Input id="email" type="email" placeholder="name@example.com" {...register("email")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
+  {errors.email && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.email.message)}</p>}
+  </div>
+ )}
+
 
   {type === "signup" && (
   <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-75">
   <div className="space-y-2">
   <Label htmlFor="phone_number" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{t("phoneNumber") || "Phone Number"}</Label>
-  <Input id="phone_number" type="tel" placeholder="+251 9xx xxx xxx" {...register("phone_number")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
+  <Input id="phone_number" type="tel" placeholder="+2519xxxxxxxx or +2517xxxxxxxx" {...register("phone_number")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
   {errors.phone_number && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.phone_number.message)}</p>}
   </div>
 

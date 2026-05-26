@@ -125,24 +125,36 @@ export const useAuthStore = create((set) => ({
     },
 
 
-    forgotPassword: async (email) => {
+    forgotPassword: async (identifier, type = 'email') => {
         try {
+            const payload = type === 'phone'
+                ? { phone_number: identifier }
+                : { email: identifier };
+
             const res = await fetch(`${getApiUrl()}/auth/forgot-password/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
-                return { success: false, error: errorData.detail || errorData.email?.[0] || "Failed to send reset code" };
+                const msg = errorData.detail
+                    || errorData.email?.[0]
+                    || errorData.phone_number?.[0]
+                    || (typeof errorData === 'string' ? errorData : null)
+                    || "Failed to send reset code";
+                return { success: false, error: msg };
             }
 
-            return { success: true };
+            // Server always returns the canonical email regardless of how user identified
+            const data = await res.json();
+            return { success: true, email: data.email };
         } catch (error) {
             return { success: false, error: "Network error. Please try again later." };
         }
     },
+
 
     resetPassword: async (email, otp, new_password, confirm_password) => {
         try {
