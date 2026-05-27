@@ -218,6 +218,12 @@ justicehub/
 
 ---
 
+## Screenshots
+
+![App screenshot](docs/screenshots/home.png)
+
+Add more screenshots in `docs/screenshots` and update these references.
+
 ## ⚙️ Installation Guide
 
 ### 1️⃣ Clone Repository
