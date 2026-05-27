@@ -301,3 +301,8 @@ It is designed as a **complete digital justice infrastructure**.
 **Degaga Emiru**  
 Full Stack Developer
 Addis Ababa, Ethiopia 🇪🇹
+
+---
+
+## Contributor
+- Abdi updated documentation and repository maintenance.
