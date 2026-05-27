@@ -4,7 +4,7 @@ A modern digital legal case management platform
 
 ## 🌍 Overview
 
-**Justice Hub** is a modern digital legal case management platform designed to simplify and digitize legal service operations. It provides a centralized and secure environment where **Clients, Lawyers, and Administrators** can efficiently manage cases, documents, payments, and legal workflows.
+**Justice Hub** is a modern digital legal case management platform designed to streamline legal case workflows and digitize operations. It provides a centralized and secure environment where **Clients, Lawyers, and Administrators** can efficiently manage cases, documents, payments, and legal workflows.
 
 The platform enhances transparency, reduces paperwork, and strengthens collaboration within the justice ecosystem through a scalable RESTful architecture.
 
