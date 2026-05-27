@@ -1,10 +1,24 @@
 # ⚖️ Justice Hub
 
+A modern digital legal case management platform
+
 ## 🌍 Overview
 
-**Justice Hub** is a modern digital legal case management platform designed to simplify and digitize legal service operations. It provides a centralized and secure environment where **Clients, Lawyers, and Administrators** can efficiently manage cases, documents, payments, and legal workflows.
+**Justice Hub** is a modern digital legal case management platform designed to simplify and digitize legal service operations. It provides a centralized and secure environment where **Clients, and Administrators** can efficiently manage cases, documents, payments, and legal workflows.
 
 The platform enhances transparency, reduces paperwork, and strengthens collaboration within the justice ecosystem through a scalable RESTful architecture.
+
+---
+
+## Features
+
+- Case management and tracking
+- Secure document upload and management
+- Hearing scheduling and notifications
+- Decision drafting, signing and publishing
+- Role-based access control and audit logs
+
+---
 
 ---
 
@@ -12,7 +26,7 @@ The platform enhances transparency, reduces paperwork, and strengthens collabora
 
 ### 🔐 Secure Authentication & Authorization
 
-- Role-based access control (**Admin, Lawyer, Client**)
+- Role-based access control (**Admin, judge, Plaintiff, Defendant**)
 - JWT-based authentication
 - Secure password hashing
 - Custom user model
@@ -204,6 +218,12 @@ justicehub/
 
 ---
 
+## Screenshots
+
+![App screenshot](docs/screenshots/home.png)
+
+Add more screenshots in `docs/screenshots` and update these references.
+
 ## ⚙️ Installation Guide
 
 ### 1️⃣ Clone Repository
@@ -235,6 +255,15 @@ source venv/bin/activate
 
 ```bash
 pip install -r requirements.txt
+```
+
+### 3.1️⃣ Database & tests
+
+- Install and configure PostgreSQL and create the database specified in your `.env`.
+- Run the test suite with:
+
+```bash
+python manage.py test
 ```
 
 ### 4️⃣ Configure Environment Variables
@@ -301,3 +330,12 @@ It is designed as a **complete digital justice infrastructure**.
 **Degaga Emiru**  
 Full Stack Developer
 Addis Ababa, Ethiopia 🇪🇹
+
+---
+
+## 👥 Contributors
+
+- **Degaga Emiru** — Full Stack Developer, Project Lead ([GitHub](https://github.com/Degaga-Emiru))
+- **Abdi** — Final year project contributor (branch: `abdi-branch`)
+
+---
