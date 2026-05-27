@@ -57,6 +57,8 @@ export function DashboardLayout({ children }) {
  
  const normalizedRole = user?.role ? (roleMap[user.role.toUpperCase()] || user.role.toLowerCase()) : "client";
 
+ const pathname = usePathname();
+
  if (!isInitialized || (!isAuthenticated && isInitialized) || !user) {
  return (
  <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
@@ -70,8 +72,6 @@ export function DashboardLayout({ children }) {
  </div>
  );
  }
-
- const pathname = usePathname();
 
  let showTopSearch = false;
  if (normalizedRole === "client") {
@@ -96,7 +96,7 @@ export function DashboardLayout({ children }) {
  onClick={() => setMobileMenuOpen(false)}
  />
  <div className="fixed inset-y-0 left-0 z-50 w-72 bg-[#0f172a] shadow-2xl animate-in slide-in-from-left duration-500">
- <MobileSidebarContent user={user} logout={logout} onClose={() => setMobileMenuOpen(false)} normalizedRole={normalizedRole} />
+ <MobileSidebarContent user={user} logout={logout} onClose={() => setMobileMenuOpen(false)} normalizedRole={normalizedRole} pathname={pathname} />
  </div>
  </div>
  )}
@@ -178,7 +178,6 @@ export function DashboardLayout({ children }) {
 }
 
 // Mobile sidebar logic integration
-import { usePathname as usePathnameHook } from "next/navigation";
 import {
  LayoutDashboard, FileText, Calendar, Gavel, Users, BarChart3, ClipboardList, CreditCard, FilePlus, Layers
 } from "lucide-react";
@@ -214,9 +213,8 @@ const mobileRoleMenus = {
  ],
 };
 
-function MobileSidebarContent({ user, logout, onClose }) {
+function MobileSidebarContent({ user, logout, onClose, pathname }) {
  const { t } = useLanguage();
- const pathname = usePathnameHook();
  
  const roleMap = {
  'CITIZEN': 'client',
