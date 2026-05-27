@@ -10,6 +10,18 @@ The platform enhances transparency, reduces paperwork, and strengthens collabora
 
 ---
 
+## Features
+
+- Case management and tracking
+- Secure document upload and management
+- Hearing scheduling and notifications
+- Decision drafting, signing and publishing
+- Role-based access control and audit logs
+
+---
+
+---
+
 ## 🚀 Core Features
 
 ### 🔐 Secure Authentication & Authorization
