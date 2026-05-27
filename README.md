@@ -239,6 +239,15 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 3.1️⃣ Database & tests
+
+- Install and configure PostgreSQL and create the database specified in your `.env`.
+- Run the test suite with:
+
+```bash
+python manage.py test
+```
+
 ### 4️⃣ Configure Environment Variables
 
 Create a `.env` file:
