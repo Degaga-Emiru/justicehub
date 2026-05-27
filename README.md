@@ -333,5 +333,7 @@ Addis Ababa, Ethiopia 🇪🇹
 
 ---
 
-## Contributor
-- Abdi updated documentation and repository maintenance.
+## 👥 Contributors
+
+- **Degaga Emiru** — Full Stack Developer, Project Lead ([GitHub](https://github.com/Degaga-Emiru))
+- **Abdi** — Final year project contributor (branch: `abdi-branch`)
