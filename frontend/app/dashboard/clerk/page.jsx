@@ -207,22 +207,6 @@ export default function ClerkDashboardPage() {
  </CardContent>
  </Card>
 
- <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
- <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
- <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Pending Assignment</CardTitle>
- <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
- <UserCheck className="h-5 w-5" />
- </div>
- </CardHeader>
- <CardContent>
- <div className="text-4xl font-black font-display text-foreground">
- {stats.pending_assignment !== undefined ? stats.pending_assignment : pendingAssignment.length}
- </div>
- <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight mt-1">Need judge assigned</p>
- </CardContent>
- </Card>
-
  <Card className="bg-card shadow-sm border-border hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -258,10 +242,6 @@ export default function ClerkDashboardPage() {
  <TabsTrigger value="intake" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  Intake Review
  <Badge className="bg-amber-500/20 text-amber-600 border-none text-[10px] font-black h-5 px-1.5">{filteredIntake.length}</Badge>
- </TabsTrigger>
- <TabsTrigger value="assignment" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
- Assignment
- <Badge className="bg-blue-500/20 text-blue-600 border-none text-[10px] font-black h-5 px-1.5">{pendingAssignment.length}</Badge>
  </TabsTrigger>
  <TabsTrigger value="payments" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  Payments
@@ -333,73 +313,6 @@ export default function ClerkDashboardPage() {
  <TableRow>
  <TableCell colSpan={5} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
  No incoming filings at this time.
- </TableCell>
- </TableRow>
- )}
- </TableBody>
- </Table>
- </div>
- )}
- </CardContent>
- </Card>
- </TabsContent>
-
- {/* ASSIGNMENT TAB */}
- <TabsContent value="assignment" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
- <CardHeader className="p-8 border-b border-border">
- <CardTitle className="text-2xl font-black font-display tracking-tight">Judge Assignment</CardTitle>
- <CardDescription className="text-muted-foreground font-medium">Allocate validated cases to the appropriate judicial department.</CardDescription>
- </CardHeader>
- <CardContent className="p-0">
- {casesLoading ? (
- <div className="p-8 space-y-4">
- {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted/20 rounded-xl animate-pulse" />)}
- </div>
- ) : (
- <div className="overflow-x-auto">
- <Table>
- <TableHeader className="bg-muted/30">
- <TableRow className="border-border hover:bg-transparent">
-  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground pl-8">Docket #</TableHead>
-  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Title</TableHead>
-  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Category</TableHead>
-  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Status</TableHead>
-  <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-8">Actions</TableHead>
- </TableRow>
- </TableHeader>
- <TableBody>
- {pendingAssignment.length > 0 ? (
- pendingAssignment.map((c) => (
- <TableRow 
- key={c.id} 
- className="border-border hover:bg-muted/30 transition-colors group cursor-pointer" 
- onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
- >
- <TableCell className="font-mono text-xs font-bold text-muted-foreground pl-8">{c.file_number}</TableCell>
- <TableCell className="py-6">
- <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors">{c.title}</span>
- </TableCell>
-  <TableCell className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{c.category_name || c.category?.name || "General"}</TableCell>
- <TableCell>
- <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", STATUS_COLORS[c.status])}>
- {STATUS_LABELS[c.status] || c.status}
- </Badge>
- </TableCell>
- <TableCell className="text-right pr-8">
- <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-
- <Button size="sm" className="rounded-xl font-bold text-xs" onClick={(e) => { e.stopPropagation(); handleAssignClick(c); }}>
- Assign Judge
- </Button>
- </div>
- </TableCell>
- </TableRow>
- ))
- ) : (
- <TableRow>
- <TableCell colSpan={5} className="py-32 text-center text-muted-foreground font-bold uppercase tracking-widest text-xs">
- No cases awaiting assignment.
  </TableCell>
  </TableRow>
  )}
@@ -525,59 +438,6 @@ export default function ClerkDashboardPage() {
  </Card>
  </TabsContent>
  </Tabs>
-
- {/* Modals from Registrar Logic (Merged) */}
- <Dialog open={isAssignOpen} onOpenChange={(open) => !assignMutation.isPending && setIsAssignOpen(open)}>
- <DialogContent>
- <DialogHeader>
- <DialogTitle>Assign Judge</DialogTitle>
- <DialogDescription>Select the officer presiding over this matter.</DialogDescription>
- </DialogHeader>
- <div className="py-4 space-y-4">
- <Select value={selectedJudgeId} onValueChange={setSelectedJudgeId}>
- <SelectTrigger className="h-12 rounded-xl">
- <SelectValue placeholder="Select a Judge" />
- </SelectTrigger>
- <SelectContent>
- {(() => {
-   const caseCategory = (targetCase?.category?.name || "").trim().toLowerCase();
-   const filteredJudges = judges.filter(j => 
-    j.judge_specializations?.some(s => s.trim().toLowerCase() === caseCategory)
-   );
-   
-   if (filteredJudges.length === 0) {
-    return <div className="p-4 text-xs text-center text-muted-foreground font-bold uppercase tracking-widest">No Judges specialized in {targetCase?.category?.name || "this category"}</div>;
-   }
-   
-   return filteredJudges.map(j => (
-    <SelectItem key={j.id} value={j.id}>Judge {j.full_name || j.email}</SelectItem>
-   ));
-  })()}
- </SelectContent>
- </Select>
- 
- <div className="space-y-2">
-  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Assignment Notes</label>
-  <Textarea 
-  placeholder="Enter reason or instructions for this assignment..."
-  value={assignmentNotes}
-  onChange={(e) => setAssignmentNotes(e.target.value)}
-  className="min-h-[100px] bg-background border-border rounded-xl resize-none"
-  />
-  </div>
- </div>
- <DialogFooter>
- <Button variant="outline" onClick={() => setIsAssignOpen(false)}>Cancel</Button>
- <Button onClick={() => assignMutation.mutate({ 
-    caseId: targetCase.id, 
-    judgeId: selectedJudgeId,
-    notes: assignmentNotes 
-  })} disabled={!selectedJudgeId || assignMutation.isPending}>
- Confirm Assignment
- </Button>
- </DialogFooter>
- </DialogContent>
- </Dialog>
 
  {/* Create Defendant Modal */}
  <Dialog open={isDefendantOpen} onOpenChange={setIsDefendantOpen}>

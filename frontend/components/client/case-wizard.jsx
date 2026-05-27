@@ -31,7 +31,6 @@ const step2Schema = z.object({
  categoryId: z.string().min(1, "Case category is required"),
  title: z.string().min(3, "Case title must be at least 3 characters"),
  description: z.string().min(10, "Please provide a detailed description (at least 10 chars)"),
- priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
 });
 
 // Schema for Step 3: Documents
@@ -77,7 +76,6 @@ const step3Schema = z.object({
  categoryId: "",
  title: "",
  description: "",
- priority: "MEDIUM",
  documents: [],
  },
  mode: "onChange",
@@ -105,7 +103,7 @@ const step3Schema = z.object({
  const formData = new FormData();
  formData.append("title", allData.title);
  formData.append("category", allData.categoryId);
- formData.append("priority", allData.priority);
+ formData.append("priority", "MEDIUM");
  formData.append("description", allData.description);
  formData.append("defendant_first_name", allData.defendantFirstName);
 		formData.append("defendant_last_name", allData.defendantLastName);
@@ -221,20 +219,6 @@ const step3Schema = z.object({
   {errors.categoryId && <p className="text-xs text-destructive font-bold">{errors.categoryId.message}</p>}
   </div>
  
-  <div className="space-y-2">
-  <Label className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblPriorityLevel")}</Label>
-  <Select onValueChange={(val) => setValue("priority", val)} value={watch("priority")}>
-  <SelectTrigger className="font-bold text-[#1A202C]">
-  <SelectValue placeholder={t("phSelectPriority")} />
-  </SelectTrigger>
-  <SelectContent>
-  <SelectItem value="LOW">{t("priorityLow")}</SelectItem>
-  <SelectItem value="MEDIUM">{t("priorityMedium")}</SelectItem>
-  <SelectItem value="HIGH">{t("priorityHigh")}</SelectItem>
-  <SelectItem value="CRITICAL">{t("priorityCritical")}</SelectItem>
-  </SelectContent>
-  </Select>
-  </div>
   </div>
  
   <div className="space-y-2">

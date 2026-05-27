@@ -286,6 +286,17 @@ export default function AdminOverviewPage() {
                     <CardTitle className="text-xl font-black font-display">{t('judgeLoadIntelligence')}</CardTitle>
                 </div>
                 <CardDescription className="text-xs font-bold uppercase tracking-tight">{t('activeCaseLoadRanking')}</CardDescription>
+                {judgeData?.length > 0 && (
+                    <div className="mt-4 max-h-32 overflow-y-auto pr-2 no-scrollbar">
+                        <ul className="text-xs text-muted-foreground leading-relaxed font-medium list-disc pl-4 space-y-1">
+                            {judgeData.map((j, i) => (
+                                <li key={i}>
+                                    <span className="font-bold text-foreground">{j.name}</span>: {j.active_cases} active {j.active_cases === 1 ? 'case' : 'cases'}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </CardHeader>
             <CardContent>
                 <div className="h-[250px] w-full">
@@ -303,6 +314,7 @@ export default function AdminOverviewPage() {
                             <Tooltip 
                                 cursor={{fill: 'rgba(255,255,255,0.05)'}}
                                 contentStyle={{ backgroundColor: '#000', border: 'none', borderRadius: '12px', fontSize: '10px', fontWeight: '900', color: '#fff' }}
+                                formatter={(value) => [value, "Active Cases"]}
                             />
                             <Bar dataKey="active_cases" radius={[0, 4, 4, 0]} barSize={20}>
                                 {judgeData.map((entry, index) => (

@@ -71,6 +71,19 @@ export function DashboardLayout({ children }) {
  );
  }
 
+ const pathname = usePathname();
+
+ let showTopSearch = false;
+ if (normalizedRole === "client") {
+   if (pathname.includes("/dashboard/client/cases") || pathname.includes("/dashboard/client/documents")) {
+     showTopSearch = true;
+   }
+ } else if (normalizedRole === "defendant") {
+   if (pathname.includes("/dashboard/defendant/cases") || pathname.includes("/dashboard/defendant/documents")) {
+     showTopSearch = true;
+   }
+ }
+
  return (
  <div className="min-h-screen bg-background font-sans selection:bg-primary/20">
  <Sidebar />
@@ -105,13 +118,25 @@ export function DashboardLayout({ children }) {
  <Menu className="h-6 w-6" />
  </Button>
  
+ {showTopSearch && (
  <div className="relative max-w-md w-full hidden sm:block group">
  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4A5568] group-focus-within:text-primary transition-colors opacity-100" />
  <Input
  placeholder={t("searchCasesDocs")}
  className="h-11 pl-11 bg-muted/30 border-border rounded-2xl focus-visible:ring-primary/20 focus-visible:bg-muted/50 transition-all font-bold text-sm text-[#1A202C]"
+ onChange={(e) => {
+   const val = e.target.value;
+   const params = new URLSearchParams(window.location.search);
+   if (val) {
+     params.set("q", val);
+   } else {
+     params.delete("q");
+   }
+   router.replace(`${pathname}?${params.toString()}`);
+ }}
  />
  </div>
+ )}
  </div>
 
  <div className="flex items-center gap-6">

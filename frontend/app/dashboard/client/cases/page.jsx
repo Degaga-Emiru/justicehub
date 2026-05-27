@@ -12,8 +12,8 @@ import { CreditCard, CheckCircle, AlertTriangle, XCircle, FileText, Scale, Clock
 import { useLanguage } from "@/components/language-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const STATUS_LABELS = {
@@ -38,12 +38,14 @@ const STATUS_STYLES = {
  CLOSED: "bg-slate-500/10 text-muted-foreground",
 };
 
-export default function ClientCasesPage() {
+function ClientCasesPageContent() {
  const { user } = useAuthStore();
  const router = useRouter();
+ const searchParams = useSearchParams();
  const { t } = useLanguage();
 
  const [statusFilter, setStatusFilter] = useState("ACTIVE");
+ const searchQuery = searchParams.get("q")?.toLowerCase() || "";
 
  const { data: cases, isLoading: isLoadingCases } = useQuery({
  queryKey: ["client-cases", user?.id],
@@ -55,11 +57,23 @@ export default function ClientCasesPage() {
 
  // Filter logic
  const filteredCases = allCases.filter(c => {
+    let matchStatus = false;
     if (statusFilter === "ACTIVE") {
-      return !["CLOSED", "DECIDED"].includes(c.status);
+      matchStatus = !["CLOSED", "DECIDED"].includes(c.status);
+    } else if (statusFilter === "ALL") {
+      matchStatus = true;
+    } else {
+      matchStatus = c.status === statusFilter;
     }
-    if (statusFilter === "ALL") return true;
-    return c.status === statusFilter;
+
+    if (!matchStatus) return false;
+
+    if (searchQuery) {
+      const titleMatch = String(c.title || "").toLowerCase().includes(searchQuery);
+      const fileMatch = String(c.file_number || "").toLowerCase().includes(searchQuery);
+      return titleMatch || fileMatch;
+    }
+    return true;
   });
 
  const needsAction = allCases.filter(c => ["APPROVED", "REJECTED"].includes(c.status));
@@ -276,4 +290,12 @@ function CaseTable({ data, router, emptyMessage = "No cases found.", t }) {
  </Table>
  </div>
  );
+}
+
+export default function ClientCasesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading cases...</div>}>
+      <ClientCasesPageContent />
+    </Suspense>
+  );
 }

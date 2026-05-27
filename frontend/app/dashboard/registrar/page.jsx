@@ -196,22 +196,6 @@ export default function RegistrarDashboardPage() {
  </CardContent>
  </Card>
 
- <Card className="bg-card shadow-sm border-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden relative group">
- <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
- <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
- <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#2D3748] opacity-100">{t('pendingAssignmentLabel')}</CardTitle>
- <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
- <UserCheck className="h-5 w-5" />
- </div>
- </CardHeader>
- <CardContent>
- <div className="text-4xl font-black font-display text-[#1A202C]">
- {stats.pending_assignment !== undefined ? stats.pending_assignment : pendingAssignment.length}
- </div>
- <p className="text-xs font-black text-[#4A5568] uppercase tracking-tight mt-1 opacity-100">{t('needJudgeAssigned')}</p>
- </CardContent>
- </Card>
-
  <Card className="bg-card shadow-sm border-border hover:border-emerald-500/30 transition-all duration-500 overflow-hidden relative group">
  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -247,10 +231,6 @@ export default function RegistrarDashboardPage() {
  <TabsTrigger value="intake" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  {t('intakeReviewTab')}
  <Badge className="bg-amber-500/20 text-amber-600 border-none text-[10px] font-black h-5 px-1.5">{filteredIntake.length}</Badge>
- </TabsTrigger>
- <TabsTrigger value="assignment" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
- {t('judgeAssignmentTab')}
- <Badge className="bg-blue-500/20 text-blue-600 border-none text-[10px] font-black h-5 px-1.5">{pendingAssignment.length}</Badge>
  </TabsTrigger>
  <TabsTrigger value="all" className="flex-1 rounded-xl font-bold font-display tracking-tight text-xs uppercase data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 gap-2">
  {t('allCasesTab')}
@@ -340,87 +320,6 @@ export default function RegistrarDashboardPage() {
  </Card>
  </TabsContent>
 
- {/* ASSIGNMENT TAB */}
- <TabsContent value="assignment" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
- <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
-  <CardHeader className="p-8 border-b border-border">
-  <CardTitle className="text-2xl font-black font-display tracking-tight text-[#1A202C]">{t('judgeAssignmentQueue')}</CardTitle>
-  <CardDescription className="text-[#4A5568] font-bold opacity-100">{t('assignVerifiedCases')}</CardDescription>
-  </CardHeader>
- <CardContent className="p-0">
- {casesLoading ? (
- <div className="p-8 space-y-4">
- {[1, 2, 3].map(i => <div key={i} className="h-16 bg-muted/20 rounded-xl animate-pulse" />)}
- </div>
- ) : (
- <div className="overflow-x-auto">
- <Table>
- <TableHeader className="bg-muted/30">
-  <TableRow className="border-border hover:bg-transparent">
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] pl-8 opacity-100">{t('docketNumber')}</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('tblTitle')}</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">Category</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('tblStatus')}</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] opacity-100">{t('filedLabel')}</TableHead>
-   <TableHead className="py-5 font-black uppercase text-[10px] tracking-widest text-[#2D3748] text-right pr-8 opacity-100">{t('actionLabel')}</TableHead>
-  </TableRow>
-  </TableHeader>
- <TableBody>
- {pendingAssignment.length > 0 ? (
- pendingAssignment.map((c) => (
- <TableRow 
- key={c.id} 
- className="border-border hover:bg-muted/30 transition-colors group cursor-pointer" 
- onClick={() => window.location.href = `/dashboard/clerk/cases/${c.id}`}
- >
-   <TableCell className="font-mono text-xs font-black text-[#4A5568] pl-8 opacity-100">{c.file_number}</TableCell>
-   <TableCell className="py-6">
-   <span className="font-black font-display text-base tracking-tight group-hover:text-primary transition-colors text-[#1A202C]">{c.title}</span>
-   </TableCell>
-   <TableCell className="text-[10px] font-black uppercase tracking-widest text-[#4A5568] opacity-100">{c.category_name || "GENERAL"}</TableCell>
- <TableCell>
- <Badge className={cn("px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border-none", STATUS_COLORS[c.status])}>
- {STATUS_LABELS[c.status] || c.status}
- </Badge>
- </TableCell>
- <TableCell className="text-xs font-bold">{new Date(c.created_at).toLocaleDateString()}</TableCell>
- <TableCell className="text-right pr-8">
- <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
- {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
- <Button size="sm" variant="outline" className="rounded-xl font-bold text-xs border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 gap-1.5" onClick={(e) => { e.stopPropagation(); handleDefendantClick(c); }}>
- <UserPlus className="h-3.5 w-3.5" /> Defendant
- </Button>
- )}
- <Button size="sm" className="rounded-xl font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-primary to-blue-600 hover:from-primary hover:to-blue-500 text-white shadow-lg shadow-primary/20" onClick={(e) => { e.stopPropagation(); handleAssignClick(c); }}>
- <UserCheck className="mr-2 h-4 w-4" /> {t('assignJudgeBtn')}
- </Button>
- </div>
- </TableCell>
- </TableRow>
- ))
- ) : (
- <TableRow>
- <TableCell colSpan={6} className="py-32 text-center">
- <div className="flex flex-col items-center justify-center space-y-4">
-  <div className="h-20 w-20 rounded-[2rem] bg-muted/10 flex items-center justify-center rotate-6 border border-border shadow-inner">
-  <UserCheck className="h-10 w-10 text-[#4A5568] opacity-20" />
-  </div>
-  <div className="space-y-1">
-  <p className="text-xl font-black font-display text-[#1A202C]">{t('allAssigned')}</p>
-  <p className="text-sm font-bold text-[#4A5568] opacity-100">{t('noCasesWaitingAssignment')}</p>
-  </div>
- </div>
- </TableCell>
- </TableRow>
- )}
- </TableBody>
- </Table>
- </div>
- )}
- </CardContent>
- </Card>
- </TabsContent>
-
  {/* ALL CASES TAB */}
  <TabsContent value="all" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
  <Card className="bg-card shadow-sm border-border border-border shadow-2xl overflow-hidden">
@@ -468,10 +367,10 @@ export default function RegistrarDashboardPage() {
  <TableCell className="text-right pr-8" onClick={(e) => e.stopPropagation()}>
  <div className="flex justify-end gap-2">
  {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (c.status === "PAID" || c.status === "APPROVED") ? (
- <Button size="sm" variant="outline" className="rounded-xl font-bold text-[10px] uppercase tracking-tight border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 gap-1.5" onClick={(e) => { e.stopPropagation(); handleDefendantClick(c); }}>
- <UserPlus className="h-3.5 w-3.5" /> Defendant
- </Button>
- ) : null}
+  <Button size="sm" variant="outline" className="rounded-xl font-bold text-[10px] uppercase tracking-tight border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10 gap-1.5" onClick={(e) => { e.stopPropagation(); handleDefendantClick(c); }}>
+  <UserPlus className="h-3.5 w-3.5" /> Defendant
+  </Button>
+  ) : null}
  
  <DropdownMenu>
  <DropdownMenuTrigger asChild>
@@ -487,11 +386,6 @@ export default function RegistrarDashboardPage() {
  >
  <FileSearch className="h-4 w-4 text-primary" /> {t('viewDetailsOption')}
  </DropdownMenuItem>
- {(c.status === "PAID" || c.status === "APPROVED" || c.status === "ASSIGNMENT_FAILED") && (
- <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors" onSelect={(e) => { e.preventDefault(); handleAssignClick(c); }}>
- <UserCheck className="h-4 w-4 text-primary" /> Assign Judge
- </DropdownMenuItem>
- )}
  {(!c.defendant || c.defendant === "PENDING_DEFENDANT") && (
  <DropdownMenuItem className="rounded-lg font-bold text-xs uppercase tracking-tight py-2.5 gap-2 cursor-pointer focus:bg-indigo-500/10 focus:text-indigo-500 transition-colors" onSelect={(e) => { e.preventDefault(); handleDefendantClick(c); }}>
  <UserPlus className="h-4 w-4" /> Create Defendant

@@ -183,7 +183,7 @@ export default function RegistrarPaymentsPage() {
  </Badge>
  </TableCell>
  <TableCell className="text-right">
- {t.status === 'PENDING' && (
+ {t.status === 'PENDING' && t.payment_method === 'BANK_TRANSFER' && (
  <Button
  size="sm"
  variant="default"

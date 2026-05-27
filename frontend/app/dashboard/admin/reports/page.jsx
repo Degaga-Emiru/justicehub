@@ -365,7 +365,7 @@ export default function ReportsPage() {
  </div>
  </CardHeader>
  <CardContent>
- <div className="text-4xl font-black font-display text-foreground">${totalRevenue?.toLocaleString() || systemData?.total_revenue?.toLocaleString() || "0"}</div>
+ <div className="text-4xl font-black font-display text-foreground">{totalRevenue?.toLocaleString() || systemData?.total_revenue?.toLocaleString() || "0"} ETB</div>
  <p className="text-xs font-bold text-foreground uppercase tracking-tight mt-1">Fees processed</p>
  </CardContent>
  </Card>
@@ -903,7 +903,7 @@ export default function ReportsPage() {
   <div className="text-center px-6 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-1">Total Verified Revenue</p>
   <p className="text-3xl font-black font-display text-emerald-500">
-  {totalRevenue > 0 ? `$${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '$0.00'}
+  {totalRevenue > 0 ? `${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ETB` : '0.00 ETB'}
   </p>
   </div>
   <div className="text-center px-6 py-3 rounded-2xl bg-primary/10 border border-primary/20">
@@ -963,12 +963,12 @@ export default function ReportsPage() {
   tickLine={false}
   axisLine={false}
   tick={{ fill: 'currentColor' }}
-  tickFormatter={(v) => `$${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`}
+  tickFormatter={(v) => `${v >= 1000 ? (v/1000).toFixed(0)+'k' : v} ETB`}
   width={55}
   />
   <RechartsTooltip
   contentStyle={CustomTooltipStyle}
-  formatter={(value) => [`$${Number(value).toLocaleString('en-US', {minimumFractionDigits: 2})}`, 'Revenue']}
+  formatter={(value) => [`${Number(value).toLocaleString('en-US', {minimumFractionDigits: 2})} ETB`, 'Revenue']}
   />
   <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={60} />
   </BarChart>
@@ -1012,7 +1012,7 @@ export default function ReportsPage() {
   </Pie>
   <RechartsTooltip
   contentStyle={CustomTooltipStyle}
-  formatter={(value) => [`$${Number(value).toLocaleString('en-US', {minimumFractionDigits: 2})}`, 'Revenue']}
+  formatter={(value) => [`${Number(value).toLocaleString('en-US', {minimumFractionDigits: 2})} ETB`, 'Revenue']}
   />
   <Legend
   verticalAlign="bottom"
@@ -1054,7 +1054,7 @@ export default function ReportsPage() {
   </div>
   <span className="text-xs font-black text-muted-foreground w-12 text-right">{pct}%</span>
   <span className="text-sm font-black text-foreground w-28 text-right">
-  ${Number(item.value).toLocaleString('en-US', {minimumFractionDigits: 2})}
+  {Number(item.value).toLocaleString('en-US', {minimumFractionDigits: 2})} ETB
   </span>
   </div>
   );
@@ -1067,7 +1067,7 @@ export default function ReportsPage() {
     <InsightSection 
       title="Financial Intelligence Insight"
       question="What is the primary revenue driver?"
-      insight={`The system has collected $${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})} in judicial fees, with ${categoryRevenueData[0]?.name || "N/A"} contributing ${((categoryRevenueData[0]?.value / totalRevenue) * 100).toFixed(0)}% of total revenue.`}
+      insight={`The system has collected ${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})} ETB in judicial fees, with ${categoryRevenueData[0]?.name || "N/A"} contributing ${((categoryRevenueData[0]?.value / totalRevenue) * 100).toFixed(0)}% of total revenue.`}
       meaning="Revenue concentration in specific case types suggests high commercial or civil litigation volume which drives fiscal sustainability."
       action="Review fee structures for high-volume sectors to ensure they remain competitive yet reflective of administrative overhead."
       colorClass="rose"

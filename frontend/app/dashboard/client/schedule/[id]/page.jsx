@@ -194,29 +194,31 @@ export default function HearingDetailsPage() {
             <CardContent className="space-y-4">
               {loadingDocs ? (
                 <div className="space-y-2">
-                  {[1, 2].map(i => <div key={i} className="h-10 bg-muted rounded-xl animate-pulse" />)}
+                  {[1, 2].map((i) => <div key={`skeleton-${i}`} className="h-10 bg-muted rounded-xl animate-pulse" />)}
                 </div>
               ) : documents?.length > 0 ? (
-                documents.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border group hover:bg-muted/30 transition-all">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <FileText className="h-4 w-4 text-primary" />
+                <div className="space-y-3">
+                  {documents.map((doc, idx) => (
+                    <div key={doc.id || `doc-${idx}`} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border group hover:bg-muted/30 transition-all">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className="text-sm font-black text-[#1A202C] truncate">{doc.document_type_display || doc.document_type}</p>
+                          <p className="text-[10px] font-black text-[#4A5568] uppercase opacity-100">
+                            {doc.latest_version?.uploaded_at 
+                              ? format(new Date(doc.latest_version.uploaded_at), "MMM d, yyyy") 
+                              : "No Date"}
+                          </p>
+                        </div>
                       </div>
-                      <div className="overflow-hidden">
-                        <p className="text-sm font-black text-[#1A202C] truncate">{doc.document_type_display || doc.document_type}</p>
-                        <p className="text-[10px] font-black text-[#4A5568] uppercase opacity-100">
-                          {doc.latest_version?.uploaded_at 
-                            ? format(new Date(doc.latest_version.uploaded_at), "MMM d, yyyy") 
-                            : "No Date"}
-                        </p>
-                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg group-hover:bg-primary/20">
+                        <Download className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg group-hover:bg-primary/20">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-6 text-muted-foreground text-sm font-bold">
                   No documents found.

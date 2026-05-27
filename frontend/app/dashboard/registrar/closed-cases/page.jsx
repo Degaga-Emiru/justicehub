@@ -44,13 +44,6 @@ export default function ClosedCasesPage() {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Button 
-            variant="outline" 
-            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 h-12 px-6 font-bold"
-            onClick={() => router.push('/dashboard/registrar/closed-cases/analytics')}
-          >
-            <TrendingUp className="mr-2 h-4 w-4" /> Archive Analytics
-          </Button>
           <div className="relative flex-1 md:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4A5568] group-focus-within:text-primary transition-colors opacity-100" />
             <Input 
@@ -90,7 +83,7 @@ export default function ClosedCasesPage() {
                       <TableRow 
                         key={c.id} 
                         className="border-border hover:bg-muted/30 transition-colors group cursor-pointer" 
-                        onClick={() => router.push(`/dashboard/registrar/closed-cases/${c.id}`)}
+                        onClick={() => router.push(`/dashboard/clerk/cases/${c.id}`)}
                       >
                         <TableCell className="font-mono text-xs font-black text-[#4A5568] pl-8 opacity-100">{c.file_number}</TableCell>
                         <TableCell className="py-6">
