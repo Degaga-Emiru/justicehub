@@ -337,3 +337,5 @@ Addis Ababa, Ethiopia 🇪🇹
 
 - **Degaga Emiru** — Full Stack Developer, Project Lead ([GitHub](https://github.com/Degaga-Emiru))
 - **Abdi** — Final year project contributor (branch: `abdi-branch`)
+
+---
