@@ -31,19 +31,32 @@ class PaymentInitiateView(views.APIView):
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 
 class PaymentCallbackView(views.APIView):
-    """Callback from Chapa after payment"""
+    """Callback from Chapa after payment — handles both browser redirect (GET) and server webhook (POST)"""
     permission_classes = [AllowAny]
-    
-    def get(self, request):
-        tx_ref = request.query_params.get('tx_ref') or request.query_params.get('trx_ref')
+
+    def _process_callback(self, request):
+        tx_ref = (
+            request.query_params.get('tx_ref')
+            or request.query_params.get('trx_ref')
+            or (request.data.get('tx_ref') if hasattr(request, 'data') else None)
+            or (request.data.get('trx_ref') if hasattr(request, 'data') else None)
+        )
         if not tx_ref:
             return Response({"error": "tx_ref is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Verify and complete
+
         payment = PaymentService.verify_and_complete_payment(tx_ref)
         if payment and payment.status == Payment.Status.SUCCESS:
-            return Response({"status": "ok", "message": "Payment successful"})
+            return Response({"status": "ok", "message": "Payment verified and judge assignment triggered"})
         return Response({"status": "failed", "message": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        """Browser redirect from Chapa return_url after user completes payment"""
+        return self._process_callback(request)
+
+    def post(self, request):
+        """Server-side webhook from Chapa (fired independently of browser redirect)"""
+        return self._process_callback(request)
+
 
 class PaymentVerifyView(views.APIView):
     """Manually verify a payment by its reference"""

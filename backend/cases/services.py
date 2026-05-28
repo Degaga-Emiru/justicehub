@@ -236,6 +236,28 @@ class JudgeAssignmentService:
             title='Judge Assigned to Case',
             message=messages
         )
+
+        # Send detailed SMS to case creator (plaintiff)
+        case_creator = assignment.case.created_by
+        if case_creator and case_creator.phone_number:
+            plaintiff_sms = (
+                f"JusticeHub: A judge has been assigned to your case '{assignment.case.title[:30]}' "
+                f"(File No: {assignment.case.file_number}). "
+                f"Assigned Judge: {assignment.judge.get_full_name()}. "
+                f"Your case is now in the ASSIGNED phase. The judge will review your filing and schedule a hearing. "
+                f"Log in to JusticeHub to track your case progress."
+            )
+            send_sms(case_creator.phone_number, plaintiff_sms)
+
+        # Send detailed SMS to the assigned judge
+        if assignment.judge.phone_number:
+            judge_sms = (
+                f"JusticeHub: You have been assigned to case '{assignment.case.title[:30]}' "
+                f"(File No: {assignment.case.file_number}, Category: {assignment.case.category.name}). "
+                f"Plaintiff: {case_creator.get_full_name() if case_creator else 'N/A'}. "
+                f"Please log in to JusticeHub to review the case documents and schedule the first hearing."
+            )
+            send_sms(assignment.judge.phone_number, judge_sms)
     
 
     

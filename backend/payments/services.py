@@ -112,8 +112,10 @@ class PaymentService:
         description = f"Payment for Case {clean_title}"[:100]
 
         # 4. Call Chapa to initialize
+        # NOTE: tx_ref MUST be appended to the return_url so the success page
+        # can call verify_and_complete_payment automatically (no manual verification).
         callback_url = f"{settings.BACKEND_URL}/api/payments/callback/"
-        return_url = f"{settings.FRONTEND_URL}/dashboard/client/payment-success/"
+        return_url = f"{settings.FRONTEND_URL}/dashboard/client/payment-success/?tx_ref={tx_ref}&case_id={case.id}"
         checkout_url = ChapaService.initialize_transaction(
             amount=amount,
             email=user.email,
@@ -207,8 +209,13 @@ class PaymentService:
         create_notification(
             user=payment.user,
             type='PAYMENT_RECEIVED',
-            title='Payment Received',
-            message=f"Thank you. Your payment for case {case.file_number} has been verified.",
+            title='Payment Received & Judge Assigned',
+            message=(
+                f"Your Chapa payment of ETB {payment.amount} for case '{case.title}' "
+                f"(File No: {case.file_number}) has been verified and confirmed. "
+                f"Your case is now progressing to the judge assignment stage. "
+                f"You will receive another notification once a judge is assigned."
+            ),
             case=case
         )
         
@@ -287,6 +294,30 @@ class PaymentService:
             entity_name=payment.tx_ref
         )
 
+        # Notify client via SMS about their submission
+        if user.phone_number:
+            client_sms = (
+                f"JusticeHub: Your bank transfer details for case '{case.title[:30]}' "
+                f"(File No: {case.file_number}) have been received. "
+                f"Bank: {bank_name}, Ref: {transaction_reference}, Amount: ETB {payment_amount}. "
+                f"A registrar will verify your payment shortly. "
+                f"You will be notified once verification is complete and a judge is assigned."
+            )
+            send_sms(user.phone_number, client_sms)
+
+        # Notify registrars via SMS about pending verification
+        from accounts.models import User as UserModel
+        registrar_sms_targets = UserModel.objects.filter(role='REGISTRAR', is_active=True, phone_number__isnull=False).exclude(phone_number='')
+        for registrar in registrar_sms_targets:
+            reg_sms = (
+                f"JusticeHub Alert: {user.get_full_name()} has submitted bank transfer proof "
+                f"for case '{case.title[:30]}' (File No: {case.file_number}). "
+                f"Bank: {bank_name}, Ref: {transaction_reference}, Amount: ETB {payment_amount}. "
+                f"Please log in to the Registrar portal and verify this payment to proceed with judge assignment."
+            )
+            send_sms(registrar.phone_number, reg_sms)
+
+
         return payment
 
     @staticmethod
@@ -359,15 +390,28 @@ class PaymentService:
         create_notification(
             user=case.created_by,
             type='PAYMENT_RECEIVED',
-            title='Payment Confirmed (Manual)',
-            message=f"Your manual payment for case {case.file_number} has been confirmed by the registrar.",
+            title='Bank Transfer Payment Verified',
+            message=(
+                f"Your bank transfer payment of ETB {payment.amount} for case '{case.title}' "
+                f"(File No: {case.file_number}) has been verified and confirmed by the Registrar "
+                f"{registrar.get_full_name()}. Your case is now moving to judge assignment. "
+                f"You will be notified as soon as a judge specializing in your case category is assigned."
+            ),
             case=case
         )
+
+        # Send SMS to client about verification
+        if case.created_by.phone_number:
+            sms_msg = (
+                f"JusticeHub: Your bank transfer of ETB {payment.amount} for case '{case.title[:30]}' "
+                f"(File No: {case.file_number}) has been verified by Registrar {registrar.get_full_name()}. "
+                f"Your case is now moving to judge assignment. You will receive a notification when a judge is assigned."
+            )
+            send_sms(case.created_by.phone_number, sms_msg)
 
         # 6. Auto Assign Judge
         JudgeAssignmentService.assign_judge(case, assigned_by=registrar)
 
-        # Notify user (if needed we can trigger another notification here)
         return payment
 
     @staticmethod
@@ -389,9 +433,14 @@ class PaymentService:
         
         # Send SMS notification
         if payment.user.phone_number:
-            sms_msg = f"Justice Hub: Payment of {payment.amount} ETB required for case {payment.case.file_number}. Check your email for payment link."
-            if len(sms_msg) > 160:
-                sms_msg = sms_msg[:157] + "..."
+            sms_msg = (
+                f"JusticeHub Notice: Your case '{payment.case.title[:30]}' "
+                f"(File No: {payment.case.file_number}) has been approved. "
+                f"A filing fee of ETB {payment.amount} is required. "
+                f"Log in to your JusticeHub account and click 'Pay Filing Fee' "
+                f"to pay securely via Chapa or Bank Transfer. "
+                f"For assistance, contact support."
+            )
             send_sms(payment.user.phone_number, sms_msg)
 
     @staticmethod
@@ -412,7 +461,11 @@ class PaymentService:
         
         # Send SMS notification
         if payment.user.phone_number:
-            sms_msg = f"Justice Hub: Payment of {payment.amount} ETB for case {payment.case.file_number} confirmed. Thank you."
-            if len(sms_msg) > 160:
-                sms_msg = sms_msg[:157] + "..."
+            sms_msg = (
+                f"JusticeHub Payment Confirmed: Your payment of ETB {payment.amount} "
+                f"for case '{payment.case.title[:30]}' (File No: {payment.case.file_number}) "
+                f"has been successfully verified. Your case is now moving to judge assignment. "
+                f"You will be notified when a judge is assigned to your case. "
+                f"Thank you for using JusticeHub."
+            )
             send_sms(payment.user.phone_number, sms_msg)
