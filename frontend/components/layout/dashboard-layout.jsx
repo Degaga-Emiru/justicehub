@@ -52,7 +52,7 @@ export function DashboardLayout({ children }) {
  'JUDGE': 'judge',
  'CLERK': 'clerk',
  'ADMIN': 'admin',
- 'REGISTRAR': 'clerk'
+ 'REGISTRAR': 'registrar'
  };
  
  const normalizedRole = user?.role ? (roleMap[user.role.toUpperCase()] || user.role.toLowerCase()) : "client";
@@ -211,6 +211,11 @@ const mobileRoleMenus = {
  { key: "navCases", href: "/dashboard/defendant/cases", icon: FileText },
  { key: "navSchedule", href: "/dashboard/defendant/schedule", icon: Calendar },
  ],
+ registrar: [
+ { key: "navDashboard", href: "/dashboard/registrar", icon: LayoutDashboard },
+ { key: "navCases", href: "/dashboard/registrar/cases", icon: FileText },
+ { key: "navPayments", href: "/dashboard/registrar/payments", icon: CreditCard },
+ ],
 };
 
 function MobileSidebarContent({ user, logout, onClose, pathname }) {
@@ -223,7 +228,7 @@ function MobileSidebarContent({ user, logout, onClose, pathname }) {
  'JUDGE': 'judge',
  'CLERK': 'clerk',
  'ADMIN': 'admin',
- 'REGISTRAR': 'clerk'
+ 'REGISTRAR': 'registrar'
  };
  
  const normalizedRole = roleMap[user.role?.toUpperCase()] || user.role?.toLowerCase() || "client";

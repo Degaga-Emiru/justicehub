@@ -74,7 +74,7 @@ class AdminCreateUserView(generics.CreateAPIView):
             profile, _ = JudgeProfile.objects.get_or_create(
                 user=user,
                 defaults={
-                    'max_active_cases': 3,
+                    'max_active_cases': 50,
                     'is_active': True,
                     'years_of_experience': 0,
                 }

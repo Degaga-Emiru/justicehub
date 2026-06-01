@@ -23,7 +23,7 @@ import { useLanguage } from "@/components/language-provider";
 const step1Schema = z.object({
  defendantFirstName: z.string().min(2, "Defendant first name is required"),
  defendantLastName: z.string().min(2, "Defendant last name is required"),
- defendantAddress: z.string().optional(),
+ defendantAddress: z.string().min(5, "Defendant address is required"),
 });
 
 // Schema for Step 2: Case Details
@@ -107,9 +107,7 @@ const step3Schema = z.object({
  formData.append("description", allData.description);
  formData.append("defendant_first_name", allData.defendantFirstName);
 		formData.append("defendant_last_name", allData.defendantLastName);
-		if (allData.defendantAddress) {
-			formData.append("defendant_address", allData.defendantAddress);
-		}
+		formData.append("defendant_address", allData.defendantAddress);
 
  
  // Expected backend fields map directly now.
@@ -186,8 +184,9 @@ const step3Schema = z.object({
   {errors.defendantLastName && <p className="text-xs text-destructive font-bold">{errors.defendantLastName.message}</p>}
   </div>
   <div className="space-y-2">
-  <Label htmlFor="defendantAddress" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantAddress")}</Label>
+  <Label htmlFor="defendantAddress" className="text-xs font-black uppercase tracking-widest text-[#2D3748] opacity-100">{t("lblDefendantAddress")} *</Label>
   <Input id="defendantAddress" placeholder={t("phDefendantAddress")} {...register("defendantAddress")} className="font-bold text-[#1A202C]" />
+  {errors.defendantAddress && <p className="text-xs text-destructive font-bold">{errors.defendantAddress.message}</p>}
   </div>
   </div>
 

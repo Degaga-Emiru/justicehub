@@ -49,32 +49,53 @@ class JudgeAssignmentService:
     def find_available_judges(cls, category):
         """Find available judges for a case category with fallback"""
         from accounts.models import User
-        
+        # Preferred judge email (explicit request to prefer this judge when fallback is needed)
+        PREFERRED_JUDGE_EMAIL = 'destayeandegna@gmail.com'
+
+        def _collect_available(judge_qs):
+            items = []
+            for judge in judge_qs:
+                # Skip if no judge_profile
+                jp = judge.judge_profile if hasattr(judge, 'judge_profile') else None
+                # If judge_profile exists, use its max_active_cases, else assume a generous default
+                max_cases = jp.max_active_cases if jp else 1000
+                active_count = JudgeAssignment.objects.filter(judge=judge, is_active=True).count()
+                if active_count < max_cases:
+                    items.append({'judge': judge, 'active_count': active_count, 'max_cases': max_cases})
+            return items
+
         # 1. Try to find judges with the required specialization
-        judges = User.objects.filter(
+        specialized = User.objects.filter(
             role='JUDGE',
             judge_profile__specializations=category,
             judge_profile__is_active=True,
             is_active=True
         ).select_related('judge_profile')
-        
-        # Note: General fallback removed to ensure strict category-based assignment.
-            
-        available_judges = []
-        for judge in judges:
-            active_count = JudgeAssignment.objects.filter(
-                judge=judge,
-                is_active=True
-            ).count()
-            
-            if active_count < judge.judge_profile.max_active_cases:
-                available_judges.append({
-                    'judge': judge,
-                    'active_count': active_count,
-                    'max_cases': judge.judge_profile.max_active_cases
-                })
-        
-        # Sort by active count (lowest first)
+
+        available_judges = _collect_available(specialized)
+        if available_judges:
+            return sorted(available_judges, key=lambda x: x['active_count'])
+
+        # 2. Try preferred judge by email if configured and available
+        try:
+            preferred = User.objects.get(email=PREFERRED_JUDGE_EMAIL, role='JUDGE', is_active=True)
+            jp = preferred.judge_profile if hasattr(preferred, 'judge_profile') else None
+            pref_max = jp.max_active_cases if jp else 1000
+            pref_active = JudgeAssignment.objects.filter(judge=preferred, is_active=True).count()
+            if pref_active < pref_max:
+                return [{'judge': preferred, 'active_count': pref_active, 'max_cases': pref_max}]
+        except User.DoesNotExist:
+            pass
+
+        # 3. Fallback: any active judge with an active judge_profile
+        any_active = User.objects.filter(role='JUDGE', judge_profile__is_active=True, is_active=True).select_related('judge_profile')
+        available_judges = _collect_available(any_active)
+        if available_judges:
+            return sorted(available_judges, key=lambda x: x['active_count'])
+
+        # 4. Last resort: include judges without a judge_profile (newly added judges)
+        any_judges = User.objects.filter(role='JUDGE', is_active=True).select_related('judge_profile')
+        available_judges = _collect_available(any_judges)
         return sorted(available_judges, key=lambda x: x['active_count'])
     
     @classmethod
@@ -94,11 +115,13 @@ class JudgeAssignmentService:
         # Select judge with lowest caseload
         selected = available[0]['judge']
         
+        assigned_by_user = assigned_by or case.reviewed_by or case.created_by
+        
         # Create assignment
         assignment = JudgeAssignment.objects.create(
             case=case,
             judge=selected,
-            assigned_by=assigned_by or case.reviewed_by,
+            assigned_by=assigned_by_user,
             is_active=True
         )
         
@@ -110,7 +133,7 @@ class JudgeAssignmentService:
             action_type=AuditLog.ActionType.CASE_ASSIGNED,
             obj=case,
             description=f"Judge {selected.get_full_name()} assigned to case {case.file_number}.",
-            user=assigned_by or case.reviewed_by,
+            user=assigned_by_user,
             changes={'judge': {'old': None, 'new': selected.get_full_name()}},
             entity_name=case.file_number
         )

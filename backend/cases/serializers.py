@@ -371,6 +371,33 @@ class CaseCreateSerializer(serializers.ModelSerializer):
                 "A person cannot be both Plaintiff and Defendant in the same case."
             )
 
+        # 1. Enforce Defendant Address
+        defendant_address = attrs.get('defendant_address', '')
+        if not defendant_address:
+            raise serializers.ValidationError({"defendant_address": "Defendant address is required."})
+
+        # 2. Prevent plaintiff from registering more than one case at a time or the same case
+        if plaintiff:
+            # Check for any pending or unpaid cases for this plaintiff
+            active_pending = Case.objects.filter(
+                plaintiff=plaintiff,
+                status__in=['PENDING_REVIEW', 'APPROVED'], 
+                payment_status='NOT_PAID'
+            ).exists()
+            if active_pending:
+                raise serializers.ValidationError("This plaintiff already has a pending or unpaid case. You cannot register multiple cases at a time.")
+            
+            # Check for exact duplicate case (same title and category)
+            title = attrs.get('title')
+            category = attrs.get('category')
+            duplicate = Case.objects.filter(
+                plaintiff=plaintiff,
+                title=title,
+                category=category
+            ).exists()
+            if duplicate:
+                raise serializers.ValidationError("This plaintiff has already registered a case with this same title and category.")
+
         return attrs
 
     def to_representation(self, instance):

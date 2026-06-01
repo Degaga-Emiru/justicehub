@@ -231,6 +231,36 @@ export const useAuthStore = create((set) => ({
                 if (profileRes.ok) {
                     const userProfile = await profileRes.json();
                     set({ user: userProfile, isAuthenticated: true, isInitialized: true });
+                } else if (profileRes.status === 401) {
+                    // Access token expired — try to silently refresh it
+                    const refresh = localStorage.getItem("refresh_token");
+                    if (refresh) {
+                        try {
+                            const refreshRes = await fetch(`${getApiUrl()}/auth/token/refresh/`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ refresh }),
+                            });
+                            if (refreshRes.ok) {
+                                const refreshData = await refreshRes.json();
+                                const newAccessToken = refreshData.access;
+                                localStorage.setItem("access_token", newAccessToken);
+                                // Retry profile fetch with new token
+                                const retryRes = await fetch(`${getApiUrl()}/profile/`, {
+                                    headers: { "Authorization": `Bearer ${newAccessToken}` }
+                                });
+                                if (retryRes.ok) {
+                                    const userProfile = await retryRes.json();
+                                    set({ user: userProfile, isAuthenticated: true, isInitialized: true });
+                                    return;
+                                }
+                            }
+                        } catch (_) { /* network error during refresh */ }
+                    }
+                    // Refresh also failed — clear session
+                    localStorage.removeItem("access_token");
+                    localStorage.removeItem("refresh_token");
+                    set({ user: null, isAuthenticated: false, isInitialized: true });
                 } else {
                     localStorage.removeItem("access_token");
                     set({ user: null, isAuthenticated: false, isInitialized: true });

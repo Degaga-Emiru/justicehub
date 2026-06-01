@@ -1,5 +1,6 @@
 import logging
 import uuid
+import threading
 from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
@@ -155,89 +156,97 @@ class PaymentService:
         return payment
 
     @staticmethod
+    def _run_post_payment_tasks(payment_id, verification_data):
+        """Background thread for post-payment tasks."""
+        try:
+            with transaction.atomic():
+                payment = Payment.objects.select_related('case', 'user').get(id=payment_id)
+                case = payment.case
+
+                # Notifications
+                create_notification(
+                    user=payment.user,
+                    type='PAYMENT_RECEIVED',
+                    title='Payment Received & Judge Assigned',
+                    message=(
+                        f"Your Chapa payment of ETB {payment.amount} for case '{case.title}' "
+                        f"(File No: {case.file_number}) has been verified and confirmed. "
+                        f"Your case is now progressing to the judge assignment stage."
+                    ),
+                    case=case
+                )
+                PaymentService._send_confirmation_email(payment)
+
+                # Judge Assignment
+                assignment = JudgeAssignmentService.assign_judge(case)
+                if assignment:
+                    create_notification(
+                        user=payment.user,
+                        type='JUDGE_ASSIGNED',
+                        title='Judge Assigned',
+                        message=(
+                            f"A judge ({assignment.judge.get_full_name()}) has been assigned to your case."
+                        ),
+                        case=case
+                    )
+                else:
+                    from accounts.models import User
+                    staff = User.objects.filter(role__in=['REGISTRAR', 'CLERK', 'ADMIN'], is_active=True)
+                    for staff_user in staff:
+                        create_notification(user=staff_user, type='SYSTEM_ALERT', title='Judge Assignment Required', message=f"No judge assigned for {case.file_number}.", case=case)
+
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Post-payment background tasks failed: {str(e)}")
+
+    @staticmethod
     @transaction.atomic
     def verify_and_complete_payment(tx_ref):
         """Verifies Chapa payment and updates case status"""
         try:
             payment = Payment.objects.select_related('case', 'user', 'case__category').get(tx_ref=tx_ref)
         except Payment.DoesNotExist:
-            logging.getLogger(__name__).error(f"Verification failed: Payment with tx_ref {tx_ref} not found.")
             return None
 
         if payment.status in [Payment.Status.SUCCESS, Payment.Status.VERIFIED]:
             return payment
 
-        # 1. Verify with Chapa
         verification_data = ChapaService.verify_transaction(tx_ref)
         if not verification_data or verification_data.get('status') != 'success':
             payment.status = Payment.Status.FAILED
             payment.save()
             return payment
 
-        # 2. Security Check: Verify amount and currency
         verified_amount = Decimal(str(verification_data.get('amount')))
         if verified_amount != payment.amount:
-            logging.getLogger(__name__).error(f"Security Alert: Amount mismatch for {tx_ref}. Expected {payment.amount}, got {verified_amount}")
             payment.status = Payment.Status.FAILED
-            payment.notes = f"Amount mismatch. Expected {payment.amount}, got {verified_amount}"
             payment.save()
             return payment
 
-        # 3. Success Workflow
         payment.status = Payment.Status.SUCCESS
         payment.chapa_transaction_id = verification_data.get('reference')
         payment.paid_at = timezone.now()
         payment.save()
 
-        # Update Case Status and Payment Status
         case = payment.case
         case.status = CaseStatus.PAID
         case.payment_status = 'PAID'
         case.save()
 
-        # Audit/Transaction Record
         Transaction.objects.update_or_create(
             payment=payment,
-            defaults={
-                'amount': payment.amount,
-                'chapa_transaction_id': payment.chapa_transaction_id,
-                'details': verification_data
-            }
+            defaults={'amount': payment.amount, 'chapa_transaction_id': payment.chapa_transaction_id, 'details': verification_data}
         )
 
-        # Notifications
-        create_notification(
-            user=payment.user,
-            type='PAYMENT_RECEIVED',
-            title='Payment Received & Judge Assigned',
-            message=(
-                f"Your Chapa payment of ETB {payment.amount} for case '{case.title}' "
-                f"(File No: {case.file_number}) has been verified and confirmed. "
-                f"Your case is now progressing to the judge assignment stage. "
-                f"You will receive another notification once a judge is assigned."
-            ),
-            case=case
-        )
-        
-        # Email Confirmation
-        PaymentService._send_confirmation_email(payment)
-
-        # Audit Log
         create_audit_log(
             action_type=AuditLog.ActionType.PAYMENT_COMPLETED,
             obj=payment,
-            description=f"Chapa payment of ETB {payment.amount} verified and completed",
+            description=f"Chapa payment of ETB {payment.amount} verified",
             user=payment.user,
             entity_name=payment.tx_ref
         )
 
-        # Trigger automatic judge assignment
-        try:
-            from cases.services import JudgeAssignmentService
-            JudgeAssignmentService.assign_judge(case)
-        except Exception as e:
-            logging.getLogger(__name__).error(f"Automatic judge assignment failed after payment: {str(e)}")
-            # Fail gracefully, registrar can manually assign if needed.
+        payment_id = payment.id
+        transaction.on_commit(lambda: threading.Thread(target=PaymentService._run_post_payment_tasks, args=(payment_id, verification_data)).start())
 
         return payment
 

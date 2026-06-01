@@ -94,7 +94,7 @@ export async function refreshAccessToken() {
             localStorage.removeItem("access_token");
             localStorage.removeItem("refresh_token");
             if (typeof window !== "undefined") {
-                window.location.href = "/auth/login?expired=true";
+                window.location.href = "/login?expired=true";
             }
             return null;
         }
@@ -1539,7 +1539,7 @@ async function _fetchDocumentVersion(url) {
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
-                window.location.href = '/auth/login?expired=true';
+                window.location.href = '/login?expired=true';
             }
             throw new Error('Unauthorized. Please login again.');
         }

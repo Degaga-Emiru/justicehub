@@ -58,7 +58,7 @@ export default function ClerkCaseDetailPage() {
  // Decision Section State
  const [reviewAction, setReviewAction] = useState(""); // "accept" or "reject"
  const [rejectionReason, setRejectionReason] = useState("");
- const [courtName, setCourtName] = useState("");
+ const [courtName, setCourtName] = useState("Hawassa first instance court");
  const [courtRoom, setCourtRoom] = useState("");
 
  const { data: caseData, isLoading, isError } = useQuery({
@@ -370,18 +370,18 @@ export default function ClerkCaseDetailPage() {
  <div className="space-y-2">
  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Court Name</label>
  <Input 
- placeholder="e.g. Federal High Court" 
  value={courtName} 
- onChange={(e) => setCourtName(e.target.value)} 
- className="rounded-xl bg-muted/30 h-12 border-border focus:ring-emerald-500/20" 
+ readOnly
+ className="rounded-xl bg-muted/50 h-12 border-border font-bold text-muted-foreground cursor-not-allowed" 
  />
  </div>
  <div className="space-y-2">
  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Room/Bench</label>
  <Input 
- placeholder="e.g. Bench 04" 
+ placeholder="e.g. 4" 
  value={courtRoom} 
- onChange={(e) => setCourtRoom(e.target.value)} 
+ type="number"
+ onChange={(e) => setCourtRoom(e.target.value.replace(/\D/g, ''))} 
  className="rounded-xl bg-muted/30 h-12 border-border focus:ring-emerald-500/20" 
  />
  </div>

@@ -49,12 +49,14 @@ class Case(SoftDeleteModel):
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         DECIDED = 'DECIDED', 'Decided'
         CLOSED = 'CLOSED', 'Closed'
+        ASSIGNMENT_FAILED = 'ASSIGNMENT_FAILED', 'Assignment Failed'
 
     # Status Flow Definition
     STATUS_FLOW = {
         StatusChoices.PENDING_REVIEW: [StatusChoices.APPROVED, StatusChoices.REJECTED],
         StatusChoices.APPROVED: [StatusChoices.PAID],
-        StatusChoices.PAID: [StatusChoices.ASSIGNED],
+        StatusChoices.PAID: [StatusChoices.ASSIGNED, StatusChoices.ASSIGNMENT_FAILED],
+        StatusChoices.ASSIGNMENT_FAILED: [StatusChoices.ASSIGNED],
         StatusChoices.ASSIGNED: [StatusChoices.IN_PROGRESS, StatusChoices.DECIDED, StatusChoices.CLOSED],
         StatusChoices.IN_PROGRESS: [StatusChoices.DECIDED, StatusChoices.CLOSED],
         StatusChoices.DECIDED: [StatusChoices.CLOSED],
@@ -407,7 +409,7 @@ class JudgeProfile(models.Model):
         BUSY = 'BUSY', 'Busy'
         ON_LEAVE = 'ON_LEAVE', 'On Leave'
 
-    max_active_cases = models.IntegerField(default=10, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    max_active_cases = models.IntegerField(default=50, validators=[MinValueValidator(1), MaxValueValidator(50)])
     bar_certificate_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     years_of_experience = models.IntegerField(default=0)
     status = models.CharField(
