@@ -109,7 +109,7 @@ def send_otp_email(user, purpose='VERIFICATION'):
             message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=False,
+            fail_silently=True,
         )
         
         # Send SMS
@@ -146,7 +146,7 @@ def send_otp_email(user, purpose='VERIFICATION'):
             message=plain_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=False,
+            fail_silently=True,
         )
     
     # Send SMS regardless of HTML/Plain email success
