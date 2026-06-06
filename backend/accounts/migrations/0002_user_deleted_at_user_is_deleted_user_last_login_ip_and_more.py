@@ -10,31 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='user',
-            name='deleted_at',
-            field=models.DateTimeField(blank=True, null=True),
-        ),
-        migrations.AddField(
-            model_name='user',
-            name='is_deleted',
-            field=models.BooleanField(default=False),
-        ),
-        migrations.AddField(
-            model_name='user',
-            name='last_login_ip',
-            field=models.GenericIPAddressField(blank=True, null=True),
-        ),
-        migrations.AddField(
-            model_name='user',
-            name='login_count',
-            field=models.PositiveIntegerField(default=0),
-        ),
-        migrations.AddField(
-            model_name='user',
-            name='status_reason',
-            field=models.TextField(blank=True, null=True),
-        ),
         migrations.AlterField(
             model_name='user',
             name='role',
