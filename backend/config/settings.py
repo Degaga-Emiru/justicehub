@@ -10,14 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
-from dotenv import load_dotenv
+from pathlib import Path
 from datetime import timedelta
+
+from dotenv import load_dotenv
 import cloudinary
 import dj_database_url
 
 load_dotenv()
-
-from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -311,6 +311,10 @@ LOGGING = {
         },
     },
 }
+
+if not DEBUG:
+    if 'file' in LOGGING['handlers']:
+        del LOGGING['handlers']['file']
 
 # Ensure all Django responses use UTF-8 encoding
 DEFAULT_CHARSET = 'utf-8'
