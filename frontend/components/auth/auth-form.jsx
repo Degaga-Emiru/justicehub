@@ -19,6 +19,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Controller } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength";
 
 const loginSchema = z.object({
  email: z.string().email("invalidEmail"),
@@ -33,7 +34,16 @@ const signupSchema = z.object({
  sex: z.enum(["MALE", "FEMALE", "OTHER"], { required_error: "Required" }),
  address_subcity: z.string().min(2, "Required"),
  address_kebele: z.string().min(2, "Required"),
- password: z.string().min(8, "passwordMinLength"),
+ password: z.string()
+   .min(8, "passwordMinLength")
+   .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+   .regex(/[a-z]/, "Must contain at least one lowercase letter")
+   .regex(/[0-9]/, "Must contain at least one number")
+   .regex(/[!@#$%^&*(),.?":{}|<>]/, "Must contain at least one special character")
+   .refine(pwd => {
+     const common = ["123456", "12345678", "password", "qwerty", "123456789", "12345", "1234", "111111", "1234567"];
+     return !common.includes(pwd.toLowerCase());
+   }, "This password is too common"),
   terms: z.boolean().refine((val) => val === true, "agreeTerms"),
  confirm_password: z.string().min(8, "passwordMinLength"),
 }).refine((data) => data.password === data.confirm_password, {
@@ -62,7 +72,7 @@ export function AuthForm({ type = "login", onTypeChange }) {
 
  const {
  register,
- handleSubmit, control,
+ handleSubmit, control, watch,
  formState: { errors },
  } = useForm({
  resolver: zodResolver(schema),
@@ -78,6 +88,8 @@ export function AuthForm({ type = "login", onTypeChange }) {
  address_kebele: "",
  },
  });
+
+ const passwordValue = watch("password");
 
  const onSubmit = async (data) => {
  setIsLoading(true);
@@ -306,7 +318,10 @@ export function AuthForm({ type = "login", onTypeChange }) {
  )}
  </div>
  <PasswordInput id="password" {...register("password")} className="h-12 bg-background border-border rounded-xl focus:ring-primary/20" />
- {errors.password && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.password.message)}</p>}
+ {type === "signup" && passwordValue && (
+   <PasswordStrengthIndicator password={passwordValue} />
+ )}
+ {errors.password && <p className="text-[10px] font-bold text-destructive uppercase tracking-tight ml-1">{t(errors.password.message) || errors.password.message}</p>}
  </div>
  )}
 

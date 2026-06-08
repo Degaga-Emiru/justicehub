@@ -343,7 +343,11 @@ class CaseReviewService:
             
         # Trigger payment initialization (Sends email automatically)
         from payments.services import PaymentService
-        PaymentService.initiate_payment(case.id, case.created_by)
+        try:
+            PaymentService.initiate_payment(case.id, case.created_by)
+        except Exception as e:
+            logger.error(f"Payment initialization failed during case acceptance: {str(e)}")
+            # Client can still initiate payment manually from the dashboard.
         
         return case
     

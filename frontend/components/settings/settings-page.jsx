@@ -16,6 +16,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { changePassword, updateUserProfile, updateNotificationPreferences, uploadProfilePicture, fetchNotificationPreferences } from "@/lib/api";
 import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength";
 
 export function SettingsPage() {
  const { user, setProfile } = useAuthStore();
@@ -173,6 +174,12 @@ export function SettingsPage() {
  if (passwordData.new_password !== passwordData.confirm_password) {
  toast.error("New passwords do not match");
  return;
+ }
+ const pwd = passwordData.new_password;
+ const common = ["123456", "12345678", "password", "qwerty", "123456789", "12345", "1234", "111111", "1234567"];
+ if (pwd.length < 8 || !/[A-Z]/.test(pwd) || !/[a-z]/.test(pwd) || !/[0-9]/.test(pwd) || !/[!@#$%^&*(),.?":{}|<>]/.test(pwd) || common.includes(pwd.toLowerCase())) {
+   toast.error("Password does not meet complexity requirements.");
+   return;
  }
  passwordMutation.mutate({
  old_password: passwordData.old_password,
@@ -477,6 +484,7 @@ export function SettingsPage() {
  value={passwordData.new_password} 
  onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})} 
  />
+ {passwordData.new_password && <PasswordStrengthIndicator password={passwordData.new_password} />}
  </div>
  <div className="space-y-2 group">
  <Label>Confirm New Password</Label>
